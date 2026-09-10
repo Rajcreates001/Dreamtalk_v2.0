@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DreamTalk Head Mesh Viewer</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #1a1a2e; }
+  #info {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.75); color: #fff; padding: 10px 22px;
+    border-radius: 8px; font-size: 14px; z-index: 10;
+    pointer-events: none; backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  #controls {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; z-index: 10;
+  }
+  .btn {
+    background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    backdrop-filter: blur(4px); transition: background 0.2s;
+  }
+  .btn:hover { background: rgba(255,255,255,0.25); }
+  .btn.active { background: rgba(100,180,255,0.35); border-color: rgba(100,180,255,0.5); }
+  #stats {
+    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.5); font-size: 12px; z-index: 10;
+    text-align: center; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="info">🧊 DreamTalk Head Mesh — FLAME + Hair + Eyes</div>
+<div id="stats">Loading...</div>
+<div id="controls">
+  <button class="btn active" data-group="all">All</button>
+  <button class="btn" data-group="skin">Skin</button>
+  <button class="btn" data-group="eyes">Eyes</button>
+  <button class="btn" data-group="eyebrows">Brows</button>
+  <button class="btn" data-group="hair">Hair</button>
+  <button class="btn" data-toggle="wireframe">Wireframe</button>
+  <button class="btn" data-toggle="normals">Normals</button>
+  <button class="btn" data-toggle="autoRotate">Spin</button>
+  <button class="btn" data-reset>Reset</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.01, 100);
+camera.position.set(0.8, 0.4, 1.5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.05, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.3;
+controls.maxDistance = 5;
+
+// Lights
+const ambient = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambient);
+
+const keyLight = new THREE.DirectionalLight(0xffeedd, 2.2);
+keyLight.position.set(1, 2, 1.5);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x8888ff, 0.8);
+fillLight.position.set(-1, 0.5, -1);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffffff, 1.0);
+rimLight.position.set(0, -0.5, -2);
+scene.add(rimLight);
+
+const hemi = new THREE.HemisphereLight(0x8888ff, 0x443322, 0.6);
+scene.add(hemi);
+
+// Ground grid
+const gridHelper = new THREE.GridHelper(2, 20, 0x444466, 0x333355);
+gridHelper.position.y = -0.25;
+scene.add(gridHelper);
+
+// Store meshes by group
+const groups = { all: [] };
+let allMeshes = [];
+
+function toggleGroup(name) {
+  for (const [g, meshes] of Object.entries(groups)) {
+    const visible = (name === 'all' || g === name);
+    for (const m of meshes) m.visible = visible;
+  }
+  document.querySelectorAll('[data-group]').forEach(b => {
+    b.classList.toggle('active', b.dataset.group === name);
+  });
+}
+
+// Load OBJ
+const mtlLoader = new MTLLoader();
+mtlLoader.setPath('');
+
+// Try loading MTL first, fallback to OBJ without materials
+mtlLoader.load(
+  'dreamtalk_head_full.mtl',
+  (mtl) => {
+    mtl.preload();
+    const objLoader = new OBJLoader();
+    objLoader.setMaterials(mtl);
+    objLoader.load(
+      'dreamtalk_head_full.obj',
+      (obj) => onLoad(obj),
+      (xhr) => {
+        const pct = Math.round(xhr.loaded / xhr.total * 100);
+        document.getElementById('stats').textContent = `Loading... ${pct}%`;
+      },
+      (err) => { console.error('OBJ load error:', err); loadWithoutMTL(); }
+    );
+  },
+  undefined,
+  () => loadWithoutMTL()
+);
+
+function loadWithoutMTL() {
+  const loader = new OBJLoader();
+  loader.load(
+    'dreamtalk_head_full.obj',
+    (obj) => onLoad(obj),
+    undefined,
+    (err) => {
+      document.getElementById('stats').textContent = '⚠ Failed to load mesh';
+      console.error(err);
+    }
+  );
+}
+
+function onLoad(obj) {
+  document.getElementById('stats').textContent = ''; // Clear loading msg
+  
+  // Assign materials and organize by group
+  const materialMap = {
+    skin: new THREE.MeshStandardMaterial({ 
+      color: 0xf5d0b0, roughness: 0.6, metalness: 0.0,
+      flatShading: false
+    }),
+    eyes: new THREE.MeshStandardMaterial({ 
+      color: 0xf0f0f8, roughness: 0.1, metalness: 0.3,
+      envMapIntensity: 0.5
+    }),
+    eyebrows: new THREE.MeshStandardMaterial({ 
+      color: 0x3a2a1a, roughness: 0.9, metalness: 0.0 
+    }),
+    hair: new THREE.MeshStandardMaterial({ 
+      color: 0x2a1a0a, roughness: 0.85, metalness: 0.05 
+    }),
+    pupils: new THREE.MeshStandardMaterial({ 
+      color: 0x111118, roughness: 0.1, metalness: 0.5,
+      emissive: 0x111118, emissiveIntensity: 0.1
+    }),
+    iris: new THREE.MeshStandardMaterial({ 
+      color: 0x4a3520, roughness: 0.2, metalness: 0.1 
+    }),
+    default: new THREE.MeshStandardMaterial({ 
+      color: 0xcccccc, roughness: 0.5 
+    })
+  };
+
+  obj.traverse((child) => {
+    if (child.isMesh) {
+      // Determine group from material name or OBJ group name
+      let group = 'default';
+      const matName = child.material?.name?.toLowerCase() || '';
+      if (matName.includes('skin')) group = 'skin';
+      else if (matName.includes('eye') || matName.includes('pupil') || matName.includes('iris')) group = 'eyes';
+      else if (matName.includes('eyebrow') || matName.includes('brow')) group = 'eyebrows';
+      else if (matName.includes('hair')) group = 'hair';
+      
+      // Apply material from map
+      if (materialMap[group]) {
+        child.material = materialMap[group].clone();
+      }
+      
+      child.castShadow = true;
+      child.receiveShadow = true;
+      
+      // Store reference
+      child.userData.group = group;
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(child);
+      groups.all.push(child);
+      allMeshes.push(child);
+    }
+  });
+
+  // Center and scale
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = box.getCenter(new THREE.Vector3());
+  obj.position.sub(center);
+  obj.position.y += 0.05; // Lift slightly above grid
+
+  scene.add(obj);
+  
+  // Update stats
+  const vertCount = allMeshes.reduce((sum, m) => sum + (m.geometry.attributes.position?.count || 0), 0);
+  const faceCount = allMeshes.reduce((sum, m) => sum + ((m.geometry.index?.count || m.geometry.attributes.position?.count) / 3 || 0), 0);
+  
+  document.getElementById('stats').innerHTML = `
+    ${allMeshes.length} meshes · ~${vertCount.toLocaleString()} vertices · ~${faceCount.toLocaleString()} faces
+  `;
+
+  // Controls
+  let wireframeMode = false;
+  let normalsMode = false;
+  let autoRotate = false;
+
+  document.querySelectorAll('[data-group]').forEach(btn => {
+    btn.addEventListener('click', () => toggleGroup(btn.dataset.group));
+  });
+
+  document.querySelector('[data-toggle="wireframe"]').addEventListener('click', function() {
+    wireframeMode = !wireframeMode;
+    this.classList.toggle('active', wireframeMode);
+    for (const m of allMeshes) {
+      m.material.wireframe = wireframeMode;
+    }
+  });
+
+  document.querySelector('[data-toggle="normals"]').addEventListener('click', function() {
+    normalsMode = !normalsMode;
+    this.classList.toggle('active', normalsMode);
+    if (normalsMode) {
+      if (window._normalsHelper) scene.remove(window._normalsHelper);
+      const helper = new THREE.VertexNormalsHelper(obj, 0.005, 0x00ff88);
+      scene.add(helper);
+      window._normalsHelper = helper;
+    } else {
+      if (window._normalsHelper) {
+        scene.remove(window._normalsHelper);
+        window._normalsHelper = null;
+      }
+    }
+  });
+
+  document.querySelector('[data-toggle="autoRotate"]').addEventListener('click', function() {
+    autoRotate = !autoRotate;
+    this.classList.toggle('active', autoRotate);
+  });
+
+  document.querySelector('[data-reset]').addEventListener('click', () => {
+    camera.position.set(0.8, 0.4, 1.5);
+    controls.target.set(0, 0.05, 0);
+    controls.update();
+    autoRotate = false;
+    document.querySelector('[data-toggle="autoRotate"]').classList.remove('active');
+  });
+}
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

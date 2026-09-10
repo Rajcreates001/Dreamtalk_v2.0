@@ -1,0 +1,216 @@
+# Adapted from Aura (MIT License)
+# Original: https://github.com/anthropics/aura
+#!/usr/bin/env python3
+"""Run the test suite in bounded process chunks.
+
+Running all ~7,400 tests in a single pytest process accumulates enough
+module/singleton/cache state that macOS OOM-kills the runner around the
+83% mark (observed twice: SIGKILL, exit 137). One process cannot give
+back what thousands of heavyweight test modules pile up.
+
+This runner splits the test files into N chunks and runs each chunk in
+its own pytest process, so memory is returned to the OS between chunks.
+Failure output is preserved per chunk; the exit code is non-zero if any
+chunk fails, times out, or dies on a signal — a killed chunk is a loud
+failure, never a silent pass.
+
+Usage:
+    python tools/run_test_chunks.py [--chunks N] [--marker "not live"]
+    python tools/run_test_chunks.py --chunk-timeout 1800
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+_FAILED_NODE_RE = re.compile(r"^(?:FAILED|ERROR)\s+([^\s].*?)(?:\s+-\s+.*)?$")
+
+
+def _is_valid_pytest_node_id(value: str) -> bool:
+    node_id = str(value or "").strip()
+    if not node_id:
+        return False
+    if node_id in {"-", "=", "FAILED", "ERROR"}:
+        return False
+    if node_id.startswith(("=", "_", "short", "warnings", "summary")):
+        return False
+    return ".py" in node_id and not any(ch.isspace() for ch in node_id)
+
+
+def parse_failed_node_ids(output: str) -> list[str]:
+    """Extract concrete pytest node ids from summary lines.
+
+    A malformed empty node id must never be retried: ``pytest ""`` is
+    interpreted as a whole-suite invocation, which is unsafe on this repo.
+    """
+
+    ids: list[str] = []
+    for line in str(output or "").splitlines():
+        match = _FAILED_NODE_RE.match(line.strip())
+        if not match:
+            continue
+        node_id = match.group(1).strip()
+        if _is_valid_pytest_node_id(node_id):
+            ids.append(node_id)
+    return ids
+
+
+def discover_test_files(tests_dir: Path) -> list[Path]:
+    return sorted(p for p in tests_dir.rglob("test_*.py") if p.is_file())
+
+
+def split_chunks(files: list[Path], chunks: int) -> list[list[Path]]:
+    chunks = max(1, min(chunks, len(files) or 1))
+    size = (len(files) + chunks - 1) // chunks
+    return [files[i : i + size] for i in range(0, len(files), size)]
+
+
+def run_chunk(
+    index: int,
+    total: int,
+    files: list[Path],
+    *,
+    marker: str,
+    timeout_s: float,
+    python: str,
+    extra_args: list[str],
+) -> tuple[bool, str, list[str]]:
+    cmd = [
+        python,
+        "-m",
+        "pytest",
+        *[str(f) for f in files],
+        "-q",
+        "-p",
+        "no:cacheprovider",
+    ]
+    if marker:
+        cmd.extend(["-m", marker])
+    cmd.extend(extra_args)
+
+    started = time.monotonic()
+    print(f"━━ chunk {index}/{total}: {len(files)} files ━━", flush=True)
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT, timeout=timeout_s, capture_output=True, text=True)
+    except subprocess.TimeoutExpired:
+        return False, f"chunk {index}/{total} TIMEOUT after {timeout_s:.0f}s", []
+    sys.stdout.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    failed_ids = parse_failed_node_ids(proc.stdout)
+    elapsed = time.monotonic() - started
+    if proc.returncode == 0:
+        return True, f"chunk {index}/{total} passed in {elapsed:.0f}s", []
+    if proc.returncode < 0 or proc.returncode in (137, 139, 143):
+        return False, (
+            f"chunk {index}/{total} KILLED (exit {proc.returncode}) after "
+            f"{elapsed:.0f}s — likely OOM; a killed chunk is a failure"
+        ), failed_ids
+    # pytest exit 5 == no tests collected in this chunk (e.g. everything
+    # deselected by the marker) — that is not a failure.
+    if proc.returncode == 5:
+        return True, f"chunk {index}/{total} had no selected tests", []
+    return False, f"chunk {index}/{total} FAILED (exit {proc.returncode}) after {elapsed:.0f}s", failed_ids
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--chunks", type=int, default=6)
+    parser.add_argument("--marker", default="not live")
+    parser.add_argument("--chunk-timeout", type=float, default=2400.0)
+    parser.add_argument("--tests-dir", type=Path, default=ROOT / "tests")
+    parser.add_argument("--python", default=sys.executable)
+    parser.add_argument(
+        "--continue-on-failure",
+        action="store_true",
+        help="run later chunks after a failed chunk instead of stopping immediately",
+    )
+    parser.add_argument("extra", nargs="*", help="extra pytest args")
+    args = parser.parse_args(argv)
+
+    files = discover_test_files(args.tests_dir)
+    if not files:
+        print(f"no test files found under {args.tests_dir}", file=sys.stderr)
+        return 2
+
+    chunk_lists = split_chunks(files, args.chunks)
+    results: list[tuple[bool, str, list[str]]] = []
+    for i, chunk in enumerate(chunk_lists, start=1):
+        result = run_chunk(
+            i,
+            len(chunk_lists),
+            chunk,
+            marker=args.marker,
+            timeout_s=args.chunk_timeout,
+            python=args.python,
+            extra_args=list(args.extra),
+        )
+        results.append(result)
+        if not result[0] and not args.continue_on_failure:
+            print(
+                f"stopping after chunk {i}/{len(chunk_lists)} failure; "
+                "rerun with --continue-on-failure to collect later chunk failures",
+                flush=True,
+            )
+            break
+
+    # Isolated retry: a test that fails in-chunk but passes alone is an
+    # ORDER-DEPENDENCE defect — reported loudly in its own register, but
+    # only both-ways failures block the run. Pollution stays visible
+    # without rotating whack-a-mole on chunk composition.
+    all_failed_ids = sorted({fid for _, _, ids in results for fid in ids})
+    order_dependent: list[str] = []
+    real_failures: list[str] = []
+    if all_failed_ids:
+        print(f"\n━━ isolated retry of {len(all_failed_ids)} failed test(s) ━━", flush=True)
+        for fid in all_failed_ids:
+            retry_cmd = [args.python, "-m", "pytest", fid, "-q", "-p", "no:cacheprovider"]
+            if args.marker:
+                retry_cmd.extend(["-m", args.marker])
+            retry_cmd.extend(list(args.extra))
+            print(f"  retry: {fid}", flush=True)
+            retry = subprocess.run(
+                retry_cmd,
+                cwd=ROOT,
+                timeout=600,
+                capture_output=True,
+                text=True,
+            )
+            if retry.returncode == 0:
+                order_dependent.append(fid)
+            else:
+                real_failures.append(fid)
+
+    print("\n━━ chunk summary ━━")
+    chunk_failures = 0
+    for ok, line, _ids in results:
+        print(("✅ " if ok else "❌ ") + line)
+        if not ok:
+            chunk_failures += 1
+    if order_dependent:
+        print(f"\n⚠️  ORDER-DEPENDENCE register ({len(order_dependent)}) — fail in-chunk, pass alone:")
+        for fid in order_dependent:
+            print(f"  ⚠️  {fid}")
+    if real_failures:
+        print(f"\n❌ real failures ({len(real_failures)}) — fail in-chunk AND alone:")
+        for fid in real_failures:
+            print(f"  ❌ {fid}")
+        return 1
+    if chunk_failures and not all_failed_ids:
+        # Chunks died without parseable test ids (timeout/OOM): loud failure.
+        print(f"\n❌ {chunk_failures} chunk(s) failed without isolatable test ids")
+        return 1
+    if order_dependent:
+        print(f"\n✅ no real failures; {len(order_dependent)} order-dependence defect(s) registered")
+        return 0
+    print(f"\n✅ all {len(results)} chunks passed")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

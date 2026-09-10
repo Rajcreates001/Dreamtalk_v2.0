@@ -1,0 +1,89 @@
+# ═══════ Virtual envs / package caches ═══════
+dt_venv/
+dreamtalk/venv/
+dreamtalk/frontend/node_modules/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.poetry/
+.uv/
+
+# ═══════ ML model weights & caches (GB-scale — download via scripts) ═══════
+dreamtalk/weights/
+dreamtalk/D:OllamaModels/
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# ═══════ Build artifacts ═══════
+dreamtalk/frontend/.next/
+dreamtalk/frontend/out/
+dreamtalk/frontend/coverage/
+dist/
+build/
+
+# ═══════ SECRETS — never commit ═══════
+.env
+.env.*
+!.env.example
+!*.env.example
+dreamtalk/frontend/.env*.local
+
+# ═══════ Nested third-party git repos (cloned for reference) ═══════
+dreamtalk/repos-used/
+fairseq_repo/
+
+# ═══════ Logs, temp output, uploads ═══════
+*.log
+*_stderr.log
+*_stdout.log
+*_stderr.txt
+*_stdout.txt
+backend_indicf5.txt
+indicf5_stderr.log
+indicf5_stdout.log
+nul
+avatar_test_*.wav
+avatar_test_*.mp3
+test_edge_*.mp3
+test_edge_*.wav
+tts_probe.mp3
+p1.mp3
+p2.mp3
+p3.mp3
+llm_test_tamil.txt
+translate_test.txt
+pipeline_uploads/
+dreamtalk/pipeline_test_data/
+dreamtalk/local_upload_testing/
+local_upload_testing/
+!dreamtalk/local_upload_testing/Image_local/sample1.jpeg
+!dreamtalk/local_upload_testing/Voice_local/sample1.wav
+
+# ═══════ Pipelines / results (regenerable) ═══════
+pipeline_outputs/
+dreamtalk/pipeline_outputs/
+results/
+dreamtalk/results/
+dreamtalk/pipeline_test_results.json
+dreamtalk/indicf5_test_output.wav
+dreamtalk/tamil_test.wav
+
+# ═══════ Vendored runtime bundles ═══════
+dreamtalk/espeak-ng/
+dreamtalk/espeak-extract/
+
+# ═══════ OS / editor ═══════
+Thumbs.db
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# ═══════ Tooling state ═══════
+.nanocoder/
+.freebuff/

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamTalk — Dr. Lakshmi | Real-Time Doctor Avatar</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+  #app { display: grid; grid-template-columns: minmax(300px, 1fr) 380px; grid-template-rows: 1fr; height: 100vh; width: 100vw; }
+  @media (max-width: 700px) { #app { grid-template-columns: 1fr; grid-template-rows: 55vh 45vh; } }
+  #avatar-panel { position: relative; background: #0d1117; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  #avatar-wrap { position: relative; width: 100%; max-width: 500px; aspect-ratio: 3/4; }
+  #avatar-photo { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
+  #avatar-overlay-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  #avatar-header { position: absolute; top: 20px; left: 20px; z-index: 10; }
+  #avatar-header h1 { font-size: 1.4rem; color: #58a6ff; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+  #avatar-header .sub { font-size: 0.85rem; color: #8b949e; margin-top: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+  #emotion-badge { position: absolute; top: 20px; right: 20px; background: rgba(22,27,34,0.85); border: 1px solid #30363d; border-radius: 20px; padding: 6px 16px; font-size: 0.8rem; z-index: 10; backdrop-filter: blur(8px); }
+  #emotion-badge .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: #58a6ff; }
+  #status-bar { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; gap: 12px; align-items: center; z-index: 10; }
+  #status-bar .pill { background: rgba(22,27,34,0.8); border: 1px solid #30363d; border-radius: 16px; padding: 4px 12px; font-size: 0.75rem; color: #8b949e; backdrop-filter: blur(8px); }
+  #status-bar .pill.connected { border-color: #238636; color: #3fb950; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  #chat-panel { display: flex; flex-direction: column; background: #161b22; border-left: 1px solid #21262d; }
+  #chat-header { padding: 16px 20px; border-bottom: 1px solid #21262d; display: flex; align-items: center; gap: 12px; }
+  #chat-header .thumb { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #238636, #1a7f37); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  #chat-header .info { flex: 1; }
+  #chat-header .info h3 { font-size: 0.95rem; color: #e6edf3; }
+  #chat-header .info span { font-size: 0.75rem; color: #3fb950; }
+  #lang-select { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+  #chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  #chat-messages::-webkit-scrollbar { width: 4px; }
+  #chat-messages::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+  .msg { max-width: 90%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.5; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.user { align-self: flex-end; background: #1f6feb; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.doctor { align-self: flex-start; background: #21262d; color: #e6edf3; border-bottom-left-radius: 4px; border: 1px solid #30363d; }
+  .msg .label { font-size: 0.7rem; color: #8b949e; margin-bottom: 4px; }
+  .msg.doctor .label { color: #3fb950; }
+  .msg .thinking { color: #8b949e; font-style: italic; }
+  #chat-input-area { padding: 12px 16px; border-top: 1px solid #21262d; display: flex; gap: 8px; align-items: center; }
+  #chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 10px 14px; border-radius: 10px; font-size: 0.9rem; outline: none; resize: none; max-height: 80px; }
+  #chat-input:focus { border-color: #1f6feb; }
+  #chat-input::placeholder { color: #484f58; }
+  .btn-icon { width: 40px; height: 40px; border-radius: 10px; border: 1px solid #30363d; background: #21262d; color: #e6edf3; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s; }
+  .btn-icon:hover { background: #30363d; }
+  .btn-icon.active { background: #1f6feb; border-color: #1f6feb; }
+  .btn-icon.recording { background: #da3633; border-color: #da3633; animation: pulse 1s infinite; }
+  #controls { padding: 8px 16px; border-top: 1px solid #21262d; display: flex; gap: 8px; justify-content: center; }
+  #controls .btn-icon { width: 36px; height: 36px; font-size: 1rem; }
+
+  /* ── WebRTC Camera Feed ── */
+  #camera-feed {
+    position: absolute;
+    bottom: 60px;
+    right: 16px;
+    width: 140px;
+    height: 105px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(88,166,255,0.4);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 20;
+    display: none;
+    background: #111;
+  }
+  #camera-feed.active { display: block; animation: fadeIn 0.3s ease; }
+  #camera-feed video {
+    width: 100%; height: 100%; object-fit: cover;
+    transform: scaleX(-1);
+  }
+  #camera-feed .cam-label {
+    position: absolute;
+    bottom: 4px; left: 6px;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.5);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  #camera-feed .cam-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #f85149;
+    animation: pulse 1s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="avatar-panel">
+    <div id="avatar-wrap">
+      <img id="avatar-photo" src="/api/static/doctor_final.jpg" alt="Dr. Lakshmi" crossorigin="anonymous"
+           onerror="this.src='/api/static/doctor_photo_hd.jpg'; this.onerror=()=>this.src='/api/static/doctor_photorealistic.jpg';" />
+      <canvas id="avatar-overlay-canvas"></canvas>
+    </div>
+    <div id="avatar-header"><h1>Dr. Lakshmi</h1><div class="sub">General Medicine &bull; Tamil Nadu</div></div>
+    <div id="emotion-badge"><span class="dot"></span><span id="emotion-label">Neutral</span></div>
+    <div id="camera-feed">
+      <video id="camera-video" autoplay muted playsinline></video>
+      <div class="cam-dot"></div>
+      <div class="cam-label">You</div>
+    </div>
+    <div id="status-bar">
+      <div class="pill" id="ws-status">Disconnected</div>
+      <div class="pill" id="tts-status">No audio</div>
+      <div class="pill" id="latency-pill">--ms</div>
+    </div>
+  </div>
+  <div id="chat-panel">
+    <div id="chat-header">
+      <div class="thumb">👩‍⚕️</div>
+      <div class="info"><h3>Dr. Lakshmi</h3><span id="conn-text">Connecting...</span></div>
+      <select id="lang-select">
+        <option value="ta" selected>Tamil</option>
+        <option value="hi">Hindi</option>
+        <option value="en">English</option>
+        <option value="kn">Kannada</option>
+        <option value="te">Telugu</option>
+        <option value="ml">Malayalam</option>
+        <option value="bn">Bengali</option>
+        <option value="mr">Marathi</option>
+        <option value="gu">Gujarati</option>
+      </select>
+    </div>
+    <div id="chat-messages">
+      <div class="msg doctor"><div class="label">Dr. Lakshmi</div><div>வணக்கம்! I am Dr. Lakshmi. How can I help you today?</div></div>
+    </div>
+    <div id="chat-input-area">
+      <button class="btn-icon" id="mic-btn" title="Voice input">🎤</button>
+      <textarea id="chat-input" rows="1" placeholder="Type your message..."></textarea>
+      <button class="btn-icon" id="send-btn" title="Send">➤</button>
+    </div>
+    <div id="controls">
+      <button class="btn-icon" id="camera-btn" title="Toggle Camera">📹</button>
+      <button class="btn-icon" id="record-btn" title="Screen Record">⏺</button>
+      <button class="btn-icon" id="screenshot-btn" title="Screenshot">📷</button>
+      <button class="btn-icon" id="mute-btn" title="Mute TTS">🔊</button>
+      <button class="btn-icon" id="full-btn" title="Fullscreen">⛶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Photo-based avatar with animated overlays
+// ═══════════════════════════════════════════════════════════════
+const WS_URL = `${window.location.origin.replace('http','ws')}/api/avatar/ws/doctor`;
+let ws = null, isConnected = false, isRecordingScreen = false, mediaRecorder = null;
+let recordedChunks = [], isMuted = false, isListening = false, recognition = null;
+let requestStart = 0, audioCtx = null;
+let emotionState = 'neutral', mouthOpen = 0, mouthOpenTarget = 0;
+let ttsChunks = [], ttsStreaming = false;
+let headX = 0, headY = 0, headTargetX = 0, headTargetY = 0;
+let breathPhase = 0, blinkTimer = 0, isBlinking = false, blinkPhase = 0;
+let eyeOffX = 0, eyeOffY = 0, eyeTargetX = 0, eyeTargetY = 0;
+
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const langSelect = document.getElementById('lang-select');
+const photo = document.getElementById('avatar-photo');
+const overlayCanvas = document.getElementById('avatar-overlay-canvas');
+const octx = overlayCanvas.getContext('2d');
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// Wait for photo to load to calibrate face positions
+let faceCalibrated = false;
+let faceX = 0.5, faceY = 0.38, eyeLX = 0.42, eyeLY = 0.37, eyeRX = 0.58, eyeRY = 0.37;
+let mouthX = 0.5, mouthY = 0.52, noseX = 0.5, noseY = 0.45;
+
+photo.onload = () => {
+  faceCalibrated = true;
+  // Photo natural proportions: eyes ~37%, nose ~45%, mouth ~52% from top
+  overlayCanvas.width = photo.naturalWidth;
+  overlayCanvas.height = photo.naturalHeight;
+};
+
+function resizeOverlay() {
+  if (photo.naturalWidth) {
+    overlayCanvas.width = photo.naturalWidth;
+    overlayCanvas.height = photo.naturalHeight;
+  }
+}
+window.addEventListener('resize', resizeOverlay);
+
+// ── Animation Loop ──
+function animateOverlay() {
+  const w = overlayCanvas.width, h = overlayCanvas.height;
+  if (!w || !h) { requestAnimationFrame(animateOverlay); return; }
+  octx.clearRect(0, 0, w, h);
+
+  // Update animations
+  breathPhase += 0.012;
+  if (Math.random() < 0.012) { eyeTargetX = (Math.random() - 0.5) * 0.003; eyeTargetY = (Math.random() - 0.5) * 0.001; }
+  eyeOffX = lerp(eyeOffX, eyeTargetX, 0.03);
+  eyeOffY = lerp(eyeOffY, eyeTargetY, 0.03);
+  blinkTimer++;
+  if (!isBlinking && blinkTimer > 150 + Math.random() * 150) { isBlinking = true; blinkPhase = 0; blinkTimer = 0; }
+  if (isBlinking) { blinkPhase += 0.18; if (blinkPhase >= Math.PI) { isBlinking = false; blinkPhase = 0; } }
+  const blink = isBlinking ? Math.sin(blinkPhase) : 0;
+  if (Math.random() < 0.005) { headTargetX = (Math.random() - 0.5) * 0.003; headTargetY = (Math.random() - 0.5) * 0.001; }
+  headX = lerp(headX, headTargetX, 0.015);
+  headY = lerp(headY, headTargetY, 0.015);
+  mouthOpen = lerp(mouthOpen, mouthOpenTarget, 0.12);
+
+  const breath = Math.sin(breathPhase) * 0.001;
+
+  // Apply subtle head movement to the photo
+  const tx = headX * w * 2;
+  const ty = headY * h * 2 + breath * h;
+  photo.style.transform = `translate(${tx}px, ${ty}px) scale(1.01)`;
+
+  // Draw animated overlays on the transparent canvas
+  // Eye positions (relative to image)
+  const elx = eyeLX * w + eyeOffX * w, ely = eyeLY * h + eyeOffY * h;
+  const erx = eyeRX * w + eyeOffX * w, ery = eyeRY * h + eyeOffY * h;
+
+  // ── Blinking eyelids ──
+  if (blink > 0.1) {
+    const eyeW = w * 0.045;
+    const eyeH = h * 0.012 * blink;
+    // Left eyelid
+    octx.fillStyle = `rgba(90, 55, 30, ${blink * 0.85})`;
+    octx.beginPath();
+    octx.ellipse(elx, ely, eyeW, eyeH + 2, 0, 0, Math.PI * 2);
+    octx.fill();
+    // Right eyelid
+    octx.beginPath();
+    octx.ellipse(erx, ery, eyeW, eyeH + 2, 0, 0, Math.PI * 2);
+    octx.fill();
+  }
+
+  // ── Subtle eye highlights (glint) ──
+  octx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  octx.beginPath(); octx.arc(elx - 2, ely - 1, 1.5, 0, Math.PI * 2); octx.fill();
+  octx.beginPath(); octx.arc(erx - 2, ery - 1, 1.5, 0, Math.PI * 2); octx.fill();
+
+  // ── Eyebrow emotion overlays ──
+  const browY = (eyeLY - 0.035) * h;
+  const browW = w * 0.04;
+  const browH = h * 0.003;
+  let browOffset = 0;
+  if (emotionState === 'sad' || emotionState === 'concerned') browOffset = h * 0.005;
+  if (emotionState === 'surprised') browOffset = -h * 0.008;
+  if (emotionState === 'angry') browOffset = h * 0.003;
+
+  // Subtle emotion shadow on brows
+  if (emotionState !== 'neutral') {
+    octx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    octx.beginPath();
+    octx.ellipse(elx, browY + browOffset, browW, browH, 0, 0, Math.PI * 2);
+    octx.fill();
+    octx.beginPath();
+    octx.ellipse(erx, browY + browOffset, browW, browH, 0, 0, Math.PI * 2);
+    octx.fill();
+  }
+
+  // ── Mouth animation (lip sync overlay) ──
+  const mx = mouthX * w;
+  const my = mouthY * h;
+  const mouthW = w * 0.04;
+  const mouthH = mouthOpen * h * 0.015;
+
+  if (mouthOpen > 0.05) {
+    // Dark mouth opening
+    octx.fillStyle = `rgba(40, 15, 10, ${Math.min(mouthOpen * 1.5, 0.7)})`;
+    octx.beginPath();
+    octx.ellipse(mx, my + mouthH * 0.3, mouthW, mouthH, 0, 0, Math.PI * 2);
+    octx.fill();
+
+    // Teeth hint
+    if (mouthOpen > 0.15) {
+      octx.fillStyle = `rgba(245, 240, 235, ${Math.min((mouthOpen - 0.15) * 2, 0.6)})`;
+      octx.beginPath();
+      octx.ellipse(mx, my, mouthW * 0.8, mouthH * 0.3, 0, 0, Math.PI);
+      octx.fill();
+    }
+  }
+
+  // ── Emotion mouth modifiers ──
+  if (emotionState === 'happy' || emotionState === 'empathetic') {
+    // Subtle smile curve
+    octx.strokeStyle = 'rgba(160, 80, 60, 0.2)';
+    octx.lineWidth = 1;
+    octx.beginPath();
+    octx.moveTo(mx - mouthW, my);
+    octx.quadraticCurveTo(mx - mouthW * 0.5, my - h * 0.003, mx, my);
+    octx.stroke();
+    octx.beginPath();
+    octx.moveTo(mx + mouthW, my);
+    octx.quadraticCurveTo(mx + mouthW * 0.5, my - h * 0.003, mx, my);
+    octx.stroke();
+  }
+
+  if (emotionState === 'sad' || emotionState === 'concerned') {
+    // Subtle frown
+    octx.strokeStyle = 'rgba(100, 50, 30, 0.15)';
+    octx.lineWidth = 1;
+    octx.beginPath();
+    octx.moveTo(mx - mouthW, my);
+    octx.quadraticCurveTo(mx, my + h * 0.003, mx + mouthW, my);
+    octx.stroke();
+  }
+
+  // ── Subtle blush when speaking ──
+  if (mouthOpen > 0.1) {
+    const blushAlpha = Math.min(mouthOpen * 0.3, 0.08);
+    octx.fillStyle = `rgba(200, 100, 80, ${blushAlpha})`;
+    octx.beginPath();
+    octx.ellipse(mx - mouthW * 2, my - h * 0.04, w * 0.02, h * 0.012, 0, 0, Math.PI * 2);
+    octx.fill();
+    octx.beginPath();
+    octx.ellipse(mx + mouthW * 2, my - h * 0.04, w * 0.02, h * 0.012, 0, 0, Math.PI * 2);
+    octx.fill();
+  }
+
+  requestAnimationFrame(animateOverlay);
+}
+animateOverlay();
+
+// ── Serve fallback images via backend static route ──
+// The backend needs a /static/ route. Let me check if it exists.
+
+// ── WebSocket ──
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    isConnected = true;
+    document.getElementById('ws-status').textContent = 'Connected';
+    document.getElementById('ws-status').className = 'pill connected';
+    document.getElementById('conn-text').textContent = 'Online';
+    document.getElementById('conn-text').style.color = '#3fb950';
+    ws.send(JSON.stringify({ type: 'set_language', language: langSelect.value }));
+  };
+  ws.onclose = () => {
+    isConnected = false;
+    document.getElementById('ws-status').textContent = 'Disconnected';
+    document.getElementById('ws-status').className = 'pill';
+    document.getElementById('conn-text').textContent = 'Reconnecting...';
+    setTimeout(connectWS, 2000);
+  };
+  ws.onmessage = (event) => {
+    // Binary messages are TTS audio chunks
+    if (event.data instanceof Blob) {
+      if (ttsStreaming && !isMuted) {
+        event.data.arrayBuffer().then(buf => ttsChunks.push(new Uint8Array(buf)));
+      }
+      return;
+    }
+    const data = JSON.parse(event.data);
+    if (data.type === 'doctor_response') {
+      const latency = Date.now() - requestStart;
+      document.getElementById('latency-pill').textContent = `${latency}ms`;
+      addMessage(data.text, 'doctor', data.emotion);
+      emotionState = data.emotion;
+      document.getElementById('emotion-label').textContent = data.emotion.charAt(0).toUpperCase() + data.emotion.slice(1);
+      // Streaming mode: collect chunks, play on tts_end
+      if (data.tts_streaming) {
+        ttsChunks = [];
+        ttsStreaming = true;
+        document.getElementById('tts-status').textContent = 'Generating...';
+      } else if (data.tts_data && !isMuted) {
+        // Fallback: non-streaming
+        playTTSAudio(data.tts_data);
+      }
+    } else if (data.type === 'tts_end') {
+      // All chunks received — assemble and play
+      ttsStreaming = false;
+      if (ttsChunks.length > 0 && !isMuted) {
+        const blob = new Blob(ttsChunks, { type: 'audio/mpeg' });
+        const reader = new FileReader();
+        reader.onload = () => playTTSAudio(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      }
+      ttsChunks = [];
+    } else if (data.type === 'tts_fallback' && data.tts_data && !isMuted) {
+      playTTSAudio(data.tts_data);
+    }
+  };
+}
+
+// ── TTS + Lip Sync ──
+function playTTSAudio(base64Data) {
+  const binary = atob(base64Data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.decodeAudioData(bytes.buffer).then(buffer => {
+    const source = audioCtx.createBufferSource(); source.buffer = buffer;
+    const analyser = audioCtx.createAnalyser(); analyser.fftSize = 256;
+    source.connect(analyser); analyser.connect(audioCtx.destination);
+    document.getElementById('tts-status').textContent = 'Speaking...';
+    source.start();
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    function lipSync() {
+      if (source.context.state === 'closed') return;
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0; for (let i = 0; i < 12; i++) sum += dataArray[i];
+      mouthOpenTarget = sum / (12 * 255);
+      if (mouthOpenTarget < 0.03) mouthOpenTarget = 0;
+      requestAnimationFrame(lipSync);
+    }
+    lipSync();
+    source.onended = () => {
+      mouthOpenTarget = 0;
+      document.getElementById('tts-status').textContent = 'Idle';
+      setTimeout(() => { emotionState = 'neutral'; document.getElementById('emotion-label').textContent = 'Neutral'; }, 3000);
+    };
+  }).catch(() => { mouthOpenTarget = 0; document.getElementById('tts-status').textContent = 'Audio error'; });
+}
+
+// ── Chat ──
+function sendChat(text) {
+  if (!text || !text.trim() || !isConnected) return;
+  addMessage(text, 'user'); requestStart = Date.now();
+  ws.send(JSON.stringify({ type: 'chat', text: text.trim() }));
+  chatInput.value = ''; chatInput.style.height = 'auto'; addThinking();
+}
+function addMessage(text, sender, emotion) {
+  removeThinking(); const div = document.createElement('div'); div.className = `msg ${sender}`;
+  div.innerHTML = sender === 'doctor'
+    ? `<div class="label">Dr. Lakshmi${emotion ? ' (' + emotion + ')' : ''}</div><div>${escapeHtml(text)}</div>`
+    : `<div class="label">You</div><div>${escapeHtml(text)}</div>`;
+  chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function addThinking() { removeThinking(); const d = document.createElement('div'); d.className = 'msg doctor'; d.id = 'thinking-indicator';
+  d.innerHTML = '<div class="label">Dr. Lakshmi</div><div class="thinking">Thinking...</div>';
+  chatMessages.appendChild(d); chatMessages.scrollTop = chatMessages.scrollHeight; }
+function removeThinking() { const el = document.getElementById('thinking-indicator'); if (el) el.remove(); }
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(chatInput.value); } });
+document.getElementById('send-btn').addEventListener('click', () => sendChat(chatInput.value));
+chatInput.addEventListener('input', () => { chatInput.style.height = 'auto'; chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px'; });
+langSelect.addEventListener('change', () => { if (ws && isConnected) ws.send(JSON.stringify({ type: 'set_language', language: langSelect.value })); });
+
+// ── Voice Input ──
+document.getElementById('mic-btn').addEventListener('click', () => {
+  if (isListening) { stopListening(); return; }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { addMessage('Speech recognition not supported. Use Chrome.', 'system'); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; recognition = new SR();
+  const langMap = { ta: 'ta-IN', hi: 'hi-IN', kn: 'kn-IN', te: 'te-IN', ml: 'ml-IN', bn: 'bn-IN', mr: 'mr-IN', gu: 'gu-IN' };
+  recognition.lang = langMap[langSelect.value] || 'en-US'; recognition.interimResults = true;
+  recognition.onresult = e => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+    chatInput.value = t; if (e.results[e.results.length - 1].isFinal) { sendChat(t); stopListening(); } };
+  recognition.onerror = () => stopListening(); recognition.onend = () => stopListening();
+  recognition.start(); isListening = true;
+  document.getElementById('mic-btn').classList.add('recording'); document.getElementById('mic-btn').textContent = '⏹';
+});
+function stopListening() { if (recognition) try { recognition.stop(); } catch(e) {} isListening = false;
+  document.getElementById('mic-btn').classList.remove('recording'); document.getElementById('mic-btn').textContent = '🎤'; }
+
+// ── Screen Recording ──
+document.getElementById('record-btn').addEventListener('click', async () => {
+  if (isRecordingScreen) { if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); isRecordingScreen = false;
+    document.getElementById('record-btn').classList.remove('recording'); document.getElementById('record-btn').textContent = '⏺'; return; }
+  try { const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: 'video/webm' }); const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `dr_lakshmi_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`; a.click();
+      addMessage('Recording saved!', 'system'); };
+    stream.getVideoTracks()[0].onended = () => { isRecordingScreen = false; document.getElementById('record-btn').classList.remove('recording');
+      document.getElementById('record-btn').textContent = '⏺'; };
+    mediaRecorder.start(1000); isRecordingScreen = true;
+    document.getElementById('record-btn').classList.add('recording'); document.getElementById('record-btn').textContent = '⏹';
+    addMessage('Screen recording started.', 'system'); } catch (err) { addMessage('Recording cancelled.', 'system'); }
+});
+document.getElementById('screenshot-btn').addEventListener('click', () => {
+  // Composite photo + overlay into a single image
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = photo.naturalWidth || 600; tmpCanvas.height = photo.naturalHeight || 800;
+  const tctx = tmpCanvas.getContext('2d');
+  tctx.drawImage(photo, 0, 0, tmpCanvas.width, tmpCanvas.height);
+  tctx.drawImage(overlayCanvas, 0, 0);
+  const a = document.createElement('a'); a.href = tmpCanvas.toDataURL('image/png');
+  a.download = `dr_lakshmi_${Date.now()}.png`; a.click(); addMessage('Screenshot saved!', 'system');
+});
+document.getElementById('mute-btn').addEventListener('click', () => { isMuted = !isMuted;
+  document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊'; document.getElementById('mute-btn').classList.toggle('active', isMuted); });
+document.getElementById('full-btn').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); });
+
+// ── WebRTC Camera Feed ──
+let cameraStream = null;
+let cameraActive = false;
+const cameraVideo = document.getElementById('camera-video');
+const cameraFeed = document.getElementById('camera-feed');
+const cameraBtn = document.getElementById('camera-btn');
+
+cameraBtn.addEventListener('click', async () => {
+  if (cameraActive) {
+    // Turn off camera
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    cameraVideo.srcObject = null;
+    cameraFeed.classList.remove('active');
+    cameraBtn.classList.remove('active');
+    cameraActive = false;
+    return;
+  }
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' },
+      audio: false
+    });
+    cameraVideo.srcObject = cameraStream;
+    cameraFeed.classList.add('active');
+    cameraBtn.classList.add('active');
+    cameraActive = true;
+  } catch (err) {
+    console.warn('Camera access denied:', err.message);
+    addMessage('Camera access denied. Please allow camera permissions.', 'system');
+  }
+});
+
+connectWS();
+</script>
+</body>
+</html>

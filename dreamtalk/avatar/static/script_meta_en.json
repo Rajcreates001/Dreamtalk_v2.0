@@ -1,0 +1,53 @@
+{
+  "total_parts": 9,
+  "script_path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\pipeline_outputs\\tts\\tts_f0f173de.wav",
+  "language": "en",
+  "total_chars": 2309,
+  "parts": [
+    {
+      "index": 0,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_00.wav",
+      "size": 140444
+    },
+    {
+      "index": 1,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_01.wav",
+      "size": 810044
+    },
+    {
+      "index": 2,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_02.wav",
+      "size": 1090844
+    },
+    {
+      "index": 3,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_03.wav",
+      "size": 1053644
+    },
+    {
+      "index": 4,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_04.wav",
+      "size": 1236044
+    },
+    {
+      "index": 5,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_05.wav",
+      "size": 946844
+    },
+    {
+      "index": 6,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_06.wav",
+      "size": 664844
+    },
+    {
+      "index": 7,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_07.wav",
+      "size": 693644
+    },
+    {
+      "index": 8,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\script_parts_en\\part_08.wav",
+      "size": 741644
+    }
+  ]
+}

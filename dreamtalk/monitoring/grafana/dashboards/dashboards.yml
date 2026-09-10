@@ -1,0 +1,17 @@
+# ═══════════════════════════════════════════════════════════════════════
+# DreamTalk Grafana Dashboard Provisioning
+# Automatically provisions the DreamTalk dashboard on startup
+# ═══════════════════════════════════════════════════════════════════════
+
+apiVersion: 1
+
+providers:
+  - name: DreamTalk
+    orgId: 1
+    folder: DreamTalk
+    type: file
+    disableDeletion: true
+    editable: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

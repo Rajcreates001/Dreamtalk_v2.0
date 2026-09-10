@@ -1,0 +1,36 @@
+# Adapted from IndicF5 (AI4Bharat/IndicF5) - MIT License
+from setuptools import setup, find_packages
+
+setup(
+    name="indicf5_tts",
+    version="0.1.0",
+    description="IndicF5 TTS - CFM-based TTS for 11 Indian languages with voice cloning",
+    packages=find_packages(include=["dreamtalk.voice.core.tts.indicf5", "dreamtalk.voice.core.tts.indicf5.*"]),
+    install_requires=[
+        "accelerate>=0.33.0",
+        "cached_path",
+        "click",
+        "datasets",
+        "ema_pytorch>=0.5.2",
+        "hydra-core>=1.3.0",
+        "jieba",
+        "librosa",
+        "matplotlib",
+        "numpy<=1.26.4",
+        "pydub",
+        "pypinyin",
+        "safetensors",
+        "soundfile",
+        "tomli",
+        "torch>=2.0.0",
+        "torchaudio>=2.0.0",
+        "torchdiffeq",
+        "tqdm>=4.65.0",
+        "transformers",
+        "transformers_stream_generator",
+        "vocos",
+        "wandb",
+        "x_transformers>=1.31.14",
+    ],
+    python_requires=">=3.7",
+)

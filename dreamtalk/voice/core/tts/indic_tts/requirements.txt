@@ -1,0 +1,12 @@
+# Adapted from Indic-TTS (AI4Bharat/Indic-TTS) - MIT License
+jupyter
+librosa
+pandas
+pytorch_lightning
+scikit-learn
+seaborn
+soundfile
+tqdm
+TTS
+tensorboard
+wandb

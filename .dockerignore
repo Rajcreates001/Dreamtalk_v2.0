@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════════════════════
+# DreamTalk .dockerignore — Exclude everything Docker doesn't need
+# Must be at the root of the build context (project root)
+# ═══════════════════════════════════════════════════════════════════════
+
+# Git
+.git
+.gitignore
+.gitattributes
+.gitmodules
+
+# Patent details (not needed in Docker)
+patent details/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments (huge — exclude all)
+dt_venv/
+.venv/
+venv/
+env/
+.conda/
+conda-env/
+
+# Node.js
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Large reference repositories
+repos-used/
+**/repos-used/
+
+# Test data
+pipeline_test_data/
+local_upload_testing/
+pipeline_uploads/
+voice_module/assets/
+tests/
+**/tests/
+test_*.py
+**/test_*.py
+
+# Model weights (downloaded at runtime)
+weights/
+**/weights/
+*.pt
+*.pth
+*.bin
+*.h5
+*.pkl
+*.onnx
+*.vrm
+*.safetensors
+*.msgpack
+
+# Config / env (secrets)
+.env
+.env.*
+*.secret
+*.md
+
+# Logs
+*.log
+logs/
+
+# Docker internal
+Dockerfile
+Dockerfile.*
+
+# Training artifacts
+checkpoints/
+**/checkpoints/
+runs/
+**/runs/
+lightning_logs/
+wandb/
+
+# CI/CD
+.github/
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# Jupyter notebooks
+*.ipynb
+
+# Documentation
+docs/
+**/docs/

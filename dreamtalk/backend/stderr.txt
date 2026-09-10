@@ -1,0 +1,7 @@
+WARNING:tensorflow:From D:\Anaconda\Lib\site-packages\tf_keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+INFO:     Started server process [4840]
+INFO:     Waiting for application startup.
+  [FAIL] Kokoro TTS: [WinError 127] The specified procedure could not be found. Error loading "D:\Anaconda\Lib\site-packages\torch\lib\shm.dll" or one of its dependencies.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)

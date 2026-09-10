@@ -1,0 +1,39 @@
+# Adapted from IndicF5 (AI4Bharat/IndicF5) - MIT License
+model:
+  name: F5TTS_Small
+  tokenizer: pinyin
+  arch:
+    dim: 768
+    depth: 18
+    heads: 12
+    ff_mult: 2
+    text_dim: 512
+    conv_layers: 4
+  mel_spec:
+    n_fft: 1024
+    hop_length: 256
+    win_length: 1024
+    n_mel_channels: 100
+    target_sample_rate: 24000
+    mel_spec_type: vocos
+  vocoder:
+    is_local: false
+    local_path: ""
+optim:
+  epochs: 100
+  learning_rate: 0.0001
+  num_warmup_updates: 20000
+  grad_accumulation_steps: 1
+  max_grad_norm: 1.0
+  bnb_optimizer: false
+datasets:
+  name: Emilia_ZH_EN
+  batch_size_per_gpu: 3200
+  batch_size_type: frame
+  max_samples: 64
+  num_workers: 16
+ckpts:
+  save_per_updates: 1000
+  last_per_steps: 40000
+  save_dir: ckpts/F5TTS_Small
+  logger: wandb

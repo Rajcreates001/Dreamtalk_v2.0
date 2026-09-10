@@ -1,0 +1,21 @@
+[run]
+omit =
+    .nox/*
+    *tests*
+    docs/*
+    omegaconf/version.py
+    .stubs
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise AssertionError
+    raise NotImplementedError
+    raise TypeError
+    assert False
+    @abstractmethod
+    \.\.\.
+
+
+[html]
+directory = docs/build/coverage

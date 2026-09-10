@@ -1,0 +1,26 @@
+# Dreamtalk - Orchestration Module
+# Default configuration (extracted from OpenAvatarChat, Apache 2.0)
+
+default:
+  logger:
+    log_level: "INFO"
+  service:
+    host: "0.0.0.0"
+    port: 8282
+  chat_engine:
+    model_root: "models"
+    handler_search_path:
+      - "dreamtalk/orchestration/chat/handlers"
+    handler_configs:
+      ChatAgent:
+        module: agent/handler
+        enabled: true
+        llm_model: "qwen-plus"
+        api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        max_dialogue_turns: 20
+        tool_use:
+          enabled: true
+          max_tool_rounds: 5
+          register_demo_tools: true
+    logic_search_path: []
+    logic_configs: {}

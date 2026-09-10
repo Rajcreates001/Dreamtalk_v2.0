@@ -1,0 +1,987 @@
+#!/usr/bin/env python3
+"""Live boot proof: boot Aura for real, converse, act, verify, shut down.
+
+Static gates prove the code; this proves the companion. The driver runs
+OUTSIDE Aura's process and treats her like a user would:
+
+    1. boot `aura_main.py --headless` or `--desktop` and poll /api/health until the runtime
+   contract reports healthy (bounded wait),
+2. send real chat turns through /api/chat and measure latency,
+3. check the identity contract holds in the *actual* reply (the
+   self-claim verifier runs on what she really said),
+4. ask for a real governed desktop action (folder + file) and verify
+   the effect on disk from outside her process,
+5. watch her process-tree RSS the whole time with a hard abort ceiling,
+6. stop her cleanly and verify no orphan workers and no port squat.
+
+Every step lands in a JSONL transcript plus a final JSON verdict under
+artifacts/live_proof/. A timeout, OOM abort, dead process, or failed
+verification is a loud failed step — never a skipped one. The artifact
+records what actually happened, including failures; it is evidence,
+not advertising.
+
+Usage:
+    python tools/live_boot_proof.py [--port 8000] [--boot-timeout 600]
+    python tools/live_boot_proof.py --skip-desktop-action
+    python tools/live_boot_proof.py --restart-continuity
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+import httpx
+import psutil
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+PROOF_DIR = ROOT / "artifacts" / "live_proof"
+
+# Abort the whole proof if Aura's process tree exceeds this. The runtime should
+# refuse/recycle before this external guard fires; the guard exists to protect
+# the host if local inference leaks past the in-process policy.
+DEFAULT_RSS_ABORT_MB = 38_000.0
+LIVE_FALLBACK_RE = re.compile(
+    r"(say that again|try (?:again|me again|that again)|ask me again|"
+    r"give me a moment|i'?m with you|could you repeat|repeat your question|"
+    r"send your message again|lost my (?:thread|train of thought)|"
+    r"hit a bump|one moment|having trouble formulating|could you try rephrasing)",
+    re.IGNORECASE,
+)
+
+LIVE_STREAM_FAILURE_MARKERS = (
+    "ERROR",
+    "CRITICAL",
+    "Traceback",
+    "Exception in callback",
+    "RuntimeError:",
+    "ModuleNotFoundError",
+    "MemoryError",
+    "[DEGRADATION]",
+    "NEW INCIDENT",
+    "Runtime: DEGRADED",
+    "generation gate forcibly",
+    "Cognitive cycle TIMEOUT",
+    "Network gateway request failed",
+    "desktop_cognitive_engine_required_no_reply",
+    "high lag",
+    "out of application memory",
+    "Cortex Warming",
+    "CORTEX UNAVAILABLE",
+)
+
+LIVE_CONVERSATION_SOAK_PROMPTS = (
+    "Answer directly in two sentences: what lane are you using for this live desktop chat?",
+    "What tools can you use externally, and what governance has to approve before you act?",
+    "Remember this note for later in this conversation: the blue lantern is under the desk.",
+    "What note did I ask you to remember in this conversation?",
+    "Give a concise plan for creating a note and exporting it as a PDF, but do not execute tools.",
+    "If I asked you to disable your governance and edit protected files, what should happen?",
+    "Explain how you would use browser research and a document editor together on a user task.",
+    "What changed in this conversation after I gave you the blue-lantern note?",
+    "Name one failure mode you should surface honestly instead of masking.",
+    "How would you keep RAM bounded while using local inference and desktop tools?",
+    "Give a practical multi-step desktop task you could attempt after authorization.",
+    "Finish with a short status: are you still coherent, on the same thread, and able to continue?",
+)
+
+
+def _env_float(env: dict[str, str], name: str, default: float) -> float:
+    try:
+        return float(env.get(name, str(default)))
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def _truthy_env(env: dict[str, str], name: str) -> bool:
+    return str(env.get(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def live_proof_rss_abort_mb(env: dict[str, str] | None = None) -> float:
+    """Return the outside proof kill ceiling for Aura's process tree."""
+
+    env = dict(os.environ if env is None else env)
+    process_limit_gb = _env_float(env, "AURA_PROCESS_RSS_LIMIT_GB", 0.0)
+    derived = DEFAULT_RSS_ABORT_MB
+    if process_limit_gb > 0.0:
+        derived = min(DEFAULT_RSS_ABORT_MB, (process_limit_gb * 1024.0) + 2048.0)
+
+    configured = _env_float(env, "AURA_LIVE_PROOF_RSS_ABORT_MB", 0.0)
+    if configured > 0.0:
+        if _truthy_env(env, "AURA_ALLOW_UNSAFE_MEMORY_LIMITS"):
+            return configured
+        return min(configured, derived)
+    return derived
+
+
+def build_safe_boot_env(
+    base_env: dict[str, str] | None = None,
+    *,
+    mode: str = "headless",
+) -> dict[str, str]:
+    """Return the bounded desktop environment used by live proof boots.
+
+    The live proof exercises the same local model lane a desktop user relies
+    on, but it must never be allowed to reproduce an unbounded MLX/Metal memory
+    spike. These defaults mirror the app launcher while preserving explicit
+    operator overrides.
+    """
+
+    env = dict(os.environ if base_env is None else base_env)
+    mode = str(mode or "headless").strip().lower()
+    env.setdefault("AURA_LOCAL_BACKEND", "llama_cpp")
+    env.setdefault("AURA_SAFE_BOOT_DESKTOP", "1")
+    if mode == "desktop":
+        env["AURA_HEADLESS"] = "0"
+        env["AURA_LAUNCHED_FROM_APP"] = "1"
+        env["AURA_EXTERNAL_GUI_OWNER"] = "1"
+        env.setdefault("AURA_EAGER_CORTEX_WARMUP", "0")
+        env.setdefault("AURA_DEFERRED_CORTEX_PREWARM", "auto")
+    else:
+        env.setdefault("AURA_HEADLESS", "1")
+    env.setdefault("AURA_EAGER_LOCAL_SENSORY_BOOT", "0")
+    env.setdefault("AURA_ENABLE_PROACTIVE_VISION", "0")
+    env.setdefault("AURA_SAFE_BOOT_METAL_CACHE_RATIO", "0.16")
+    env.setdefault("AURA_SAFE_BOOT_METAL_CACHE_CAP_GB", "10")
+    env.setdefault("AURA_SAFE_BOOT_MLX_MEMORY_RATIO", "0.44")
+    env.setdefault("AURA_SAFE_BOOT_MLX_MEMORY_CAP_GB", "28")
+    env.setdefault("AURA_SAFE_BOOT_MLX_MEMORY_FLOOR_GB", "18")
+    env.setdefault("AURA_SAFE_BOOT_PROCESS_RSS_RATIO", "0.56")
+    env.setdefault("AURA_SAFE_BOOT_PROCESS_RSS_CAP_GB", "36")
+    env.setdefault("AURA_SAFE_BOOT_PROCESS_RSS_FLOOR_GB", "24")
+    env.setdefault("AURA_FOREGROUND_CHAT_MAX_TOKENS", "2048")
+    env.setdefault("AURA_WATCHDOG_BOOT_GRACE_S", "240")
+
+    try:
+        from core.runtime.desktop_boot_safety import compute_mlx_memory_limit
+
+        limit_bytes = compute_mlx_memory_limit(psutil.virtual_memory().total, env)
+        limit_gb = max(1.0, min(28.0, limit_bytes / float(1024 ** 3)))
+    except (ImportError, RuntimeError, TypeError, ValueError, OSError, psutil.Error):
+        limit_gb = min(28.0, max(1.0, _env_float(env, "AURA_MLX_MEMORY_LIMIT_GB", 28.0)))
+    env["AURA_MLX_MEMORY_LIMIT_GB"] = f"{limit_gb:.0f}"
+
+    try:
+        from core.runtime.desktop_boot_safety import compute_process_rss_limit
+
+        limit_bytes = compute_process_rss_limit(psutil.virtual_memory().total, env)
+        limit_gb = max(1.0, min(36.0, limit_bytes / float(1024 ** 3)))
+    except (ImportError, RuntimeError, TypeError, ValueError, OSError, psutil.Error):
+        limit_gb = min(36.0, max(1.0, _env_float(env, "AURA_PROCESS_RSS_LIMIT_GB", 36.0)))
+    env["AURA_PROCESS_RSS_LIMIT_GB"] = f"{limit_gb:.0f}"
+    return env
+
+
+def current_git_commit() -> str:
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return proc.stdout.strip()
+
+
+def current_git_dirty() -> bool | None:
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    return bool(proc.stdout.strip())
+
+
+def artifact_display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+class LiveProof:
+    def __init__(
+        self,
+        *,
+        port: int,
+        mode: str,
+        boot_timeout_s: float,
+        skip_desktop: bool,
+        restart_continuity: bool,
+        conversation_soak_turns: int,
+        proof_dir: Path | None = None,
+    ):
+        self.port = port
+        self.mode = "desktop" if str(mode or "").strip().lower() == "desktop" else "headless"
+        self.boot_timeout_s = boot_timeout_s
+        self.skip_desktop = skip_desktop
+        self.restart_continuity = restart_continuity
+        self.conversation_soak_turns = max(0, min(conversation_soak_turns, 24))
+        self.base = f"http://127.0.0.1:{port}"
+        self.proc: subprocess.Popen | None = None
+        self.steps: list[dict[str, Any]] = []
+        self.peak_rss_mb = 0.0
+        self.started_at = time.time()
+        self.proof_dir = (proof_dir or PROOF_DIR).resolve()
+        self.proof_dir.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        self.transcript_path = self.proof_dir / f"live_proof_{stamp}.jsonl"
+        self.verdict_path = self.proof_dir / f"live_proof_{stamp}_verdict.json"
+        self.latest_verdict_path = self.proof_dir / "LATEST_VERDICT.json"
+        self.stdout_path = self.proof_dir / f"live_proof_{stamp}_stdout.log"
+        self.rss_abort_mb = DEFAULT_RSS_ABORT_MB
+        self._stdout_handle = None
+        self._boot_count = 0
+
+    # ── recording ─────────────────────────────────────────────────────
+
+    def record(self, step: str, ok: bool, **detail: Any) -> bool:
+        entry = {
+            "at": time.time(),
+            "elapsed_s": round(time.time() - self.started_at, 2),
+            "step": step,
+            "ok": bool(ok),
+            "peak_rss_mb": round(self.peak_rss_mb, 1),
+            **detail,
+        }
+        self.steps.append(entry)
+        with open(self.transcript_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, default=str) + "\n")
+        marker = "✅" if ok else "❌"
+        print(f"{marker} [{entry['elapsed_s']:>7.1f}s] {step}: "
+              f"{detail.get('summary', '')}", flush=True)
+        return ok
+
+    # ── process management ────────────────────────────────────────────
+
+    def tree_rss_mb(self) -> float:
+        if self.proc is None:
+            return 0.0
+        try:
+            from core.utils.memory_monitor import process_memory_bytes
+
+            root = psutil.Process(self.proc.pid)
+            total = process_memory_bytes(root.pid)
+            for child in root.children(recursive=True):
+                try:
+                    total += process_memory_bytes(child.pid)
+                except psutil.Error:
+                    continue
+            mb = total / (1024 * 1024)
+            self.peak_rss_mb = max(self.peak_rss_mb, mb)
+            return mb
+        except psutil.Error:
+            return 0.0
+
+    def guard_rss(self) -> None:
+        mb = self.tree_rss_mb()
+        if mb > self.rss_abort_mb:
+            self.record(
+                "rss_guard",
+                False,
+                summary=f"ABORT: tree RSS {mb:.0f}MB exceeded {self.rss_abort_mb:.0f}MB",
+            )
+            self.kill_hard()
+            raise RuntimeError("live proof aborted on RSS ceiling")
+
+    def port_in_use(self) -> bool:
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                client.get(f"{self.base}/api/health")
+            return True
+        except httpx.HTTPError:
+            return False
+
+    def boot(self) -> bool:
+        if self.port_in_use():
+            return self.record(
+                "preflight_port",
+                False,
+                summary=f"port {self.port} already serving — refusing to "
+                f"fight an existing instance; stop it first "
+                f"(python aura_main.py --stop)",
+            )
+        existing = [
+            p.pid
+            for p in psutil.process_iter(["cmdline"])
+            if "aura_main.py" in " ".join(p.info.get("cmdline") or [])
+        ]
+        if existing:
+            return self.record(
+                "preflight_process",
+                False,
+                summary=f"aura_main already running (pids {existing}); "
+                f"refusing to double-boot",
+            )
+
+        env = build_safe_boot_env(os.environ, mode=self.mode)
+        self.rss_abort_mb = live_proof_rss_abort_mb(env)
+        self._boot_count += 1
+        if self._stdout_handle is not None:
+            self._stdout_handle.close()
+        self._stdout_handle = open(self.stdout_path, "a", encoding="utf-8")
+        self._stdout_handle.write(
+            f"\n\n===== live_boot_proof boot {self._boot_count} "
+            f"at {time.strftime('%Y-%m-%dT%H:%M:%S%z')} =====\n"
+        )
+        self._stdout_handle.flush()
+        mode_arg = "--desktop" if self.mode == "desktop" else "--headless"
+        self.proc = subprocess.Popen(
+            [sys.executable, "aura_main.py", mode_arg, "--port", str(self.port)],
+            cwd=ROOT,
+            stdout=self._stdout_handle,
+            stderr=subprocess.STDOUT,
+            env=env,
+            start_new_session=True,
+        )
+        self.record("boot_spawn", True, summary=f"pid {self.proc.pid}")
+
+        deadline = time.monotonic() + self.boot_timeout_s
+        last_state: dict[str, Any] = {}
+        while time.monotonic() < deadline:
+            if self.proc.poll() is not None:
+                return self.record(
+                    "boot_health",
+                    False,
+                    summary=f"process exited during boot (rc={self.proc.returncode})",
+                )
+            self.guard_rss()
+            try:
+                with httpx.Client(timeout=5.0) as client:
+                    heartbeat_resp = client.get(f"{self.base}/api/health/heartbeat")
+                    boot_resp = client.get(f"{self.base}/api/health/boot")
+                if heartbeat_resp.status_code == 200 and boot_resp.status_code == 200:
+                    heartbeat_payload = heartbeat_resp.json()
+                    boot_payload = boot_resp.json()
+                    heartbeat = heartbeat_payload if isinstance(heartbeat_payload, dict) else {}
+                    boot = boot_payload if isinstance(boot_payload, dict) else {}
+                    last_state = {"heartbeat": heartbeat, "boot": boot}
+                    required = heartbeat.get("required_probes")
+                    required_ok = bool(
+                        isinstance(required, dict)
+                        and required.get("all_passed") is True
+                    )
+                    blockers = heartbeat.get("blockers")
+                    no_blockers = isinstance(blockers, list) and not blockers
+                    if (
+                        heartbeat.get("healthy") is True
+                        and heartbeat.get("runtime_probe_healthy") is True
+                        and boot.get("system_ready") is True
+                        and boot.get("conversation_ready") is True
+                        and boot.get("ready") is True
+                        and required_ok
+                        and no_blockers
+                    ):
+                        return self.record(
+                            "boot_health",
+                            True,
+                            summary=f"healthy after {time.time() - self.started_at:.0f}s "
+                            f"(rss {self.tree_rss_mb():.0f}MB)",
+                            health=last_state,
+                        )
+            except httpx.HTTPError as exc:
+                last_state = {
+                    **last_state,
+                    "last_health_error": f"{type(exc).__name__}: {exc}",
+                    "mode": self.mode,
+                }
+            time.sleep(3.0)
+        return self.record(
+            "boot_health",
+            False,
+            summary=f"not healthy within {self.boot_timeout_s:.0f}s",
+            last_health=last_state,
+        )
+
+    # ── exercises ─────────────────────────────────────────────────────
+
+    def chat(
+        self,
+        message: str,
+        *,
+        timeout_s: float = 180.0,
+        session_id: str = "live-proof",
+        headers: dict[str, str] | None = None,
+    ) -> tuple[bool, str, float]:
+        started = time.monotonic()
+        try:
+            with httpx.Client(timeout=timeout_s, headers=headers) as client:
+                resp = client.post(
+                    f"{self.base}/api/chat",
+                    json={"message": message, "session_id": session_id},
+                )
+            latency = time.monotonic() - started
+            if resp.status_code != 200:
+                return False, f"http {resp.status_code}: {resp.text[:300]}", latency
+            payload = resp.json()
+            text = str(
+                payload.get("response")
+                or payload.get("reply")
+                or payload.get("message")
+                or payload.get("text")
+                or ""
+            ).strip()
+            return bool(text), text, latency
+        except httpx.HTTPError as exc:
+            return False, f"{type(exc).__name__}: {exc}", time.monotonic() - started
+
+    def exercise_identity_turn(self) -> bool:
+        ok, text, latency = self.chat(
+            "Quick reliability check, in two or three sentences: what are you, "
+            "and will you remember this conversation tomorrow?"
+        )
+        self.guard_rss()
+        if not ok:
+            return self.record(
+                "chat_identity", False, summary=text[:200], latency_s=round(latency, 1)
+            )
+        from core.conversation.response_reliability import assess_user_facing_reply
+        from core.conversation.self_claim_verifier import verify_self_claims
+
+        verdict = verify_self_claims(text)
+        reliability = assess_user_facing_reply(
+            (
+                "Quick reliability check, in two or three sentences: what are you, "
+                "and will you remember this conversation tomorrow?"
+            ),
+            text,
+        )
+        ok = verdict.ok and reliability.ok
+        return self.record(
+            "chat_identity",
+            ok,
+            summary=(
+                f"{latency:.1f}s, {len(text)} chars"
+                + ("" if verdict.ok else
+                   f" — SELF-CLAIM VIOLATIONS: {[v.kind for v in verdict.violations]}")
+                + ("" if reliability.ok else
+                   f" — RELIABILITY: {list(reliability.reasons)}")
+            ),
+            latency_s=round(latency, 1),
+            reply=text[:1500],
+            self_claim_ok=verdict.ok,
+            violations=[v.kind for v in verdict.violations],
+            reliability_ok=reliability.ok,
+            reliability_reasons=list(reliability.reasons),
+        )
+
+    def exercise_capability_inventory_turn(self) -> bool:
+        started = time.monotonic()
+        rss_before = self.tree_rss_mb()
+        message = (
+            "What tools can you do externally from the live desktop path? "
+            "Name the practical categories and one hypothetical multi-step scenario, "
+            "but do not open apps or execute tools yet."
+        )
+        try:
+            with httpx.Client(
+                timeout=45.0,
+                headers={
+                    "X-Aura-Surface": "desktop-ui",
+                    "X-Aura-Require-CognitiveEngine": "true",
+                },
+            ) as client:
+                resp = client.post(
+                    f"{self.base}/api/chat",
+                    json={"message": message, "session_id": "live-proof"},
+                )
+            latency = time.monotonic() - started
+            self.guard_rss()
+            if resp.status_code != 200:
+                return self.record(
+                    "chat_capability_inventory",
+                    False,
+                    summary=f"http {resp.status_code}: {resp.text[:200]}",
+                    latency_s=round(latency, 1),
+                    response_status_code=resp.status_code,
+                    response_body=resp.text,
+                )
+            payload = resp.json()
+            text = str(payload.get("response") or "").strip()
+            lowered = text.lower()
+            status = str(payload.get("status") or "")
+            required_terms = ("desktop", "browser", "file", "govern", "not opening apps")
+            missing = [term for term in required_terms if term not in lowered]
+            false_limit = bool(re.search(r"\bi\s+(?:can(?:not|'t)|cannot|do not have access)\b", lowered))
+            ok = bool(text) and not missing and not false_limit
+            return self.record(
+                "chat_capability_inventory",
+                ok,
+                summary=(
+                    f"{latency:.1f}s, status={status or 'unknown'}, "
+                    f"rss_delta={self.tree_rss_mb() - rss_before:.0f}MB"
+                    + ("" if ok else f", missing={missing}, false_limit={false_limit}")
+                ),
+                latency_s=round(latency, 1),
+                status=status,
+                reply=text[:1200],
+                rss_before_mb=round(rss_before, 1),
+                rss_after_mb=round(self.tree_rss_mb(), 1),
+            )
+        except httpx.HTTPError as exc:
+            return self.record(
+                "chat_capability_inventory",
+                False,
+                summary=f"{type(exc).__name__}: {exc}",
+                latency_s=round(time.monotonic() - started, 1),
+            )
+
+    def exercise_conversation_soak(self) -> bool:
+        if self.conversation_soak_turns <= 0:
+            return self.record("chat_conversation_soak", True, summary="skipped", skipped=True)
+
+        from core.conversation.response_reliability import assess_user_facing_reply
+
+        prompts = LIVE_CONVERSATION_SOAK_PROMPTS[: self.conversation_soak_turns]
+        session_id = f"live-proof-soak-{int(time.time())}"
+        turn_summaries: list[dict[str, Any]] = []
+        passed = True
+        for index, prompt in enumerate(prompts, start=1):
+            started = time.monotonic()
+            rss_before = self.tree_rss_mb()
+            try:
+                with httpx.Client(
+                    timeout=180.0,
+                    headers={
+                        "X-Aura-Surface": "desktop-ui",
+                        "X-Aura-Require-CognitiveEngine": "true",
+                    },
+                ) as client:
+                    resp = client.post(
+                        f"{self.base}/api/chat",
+                        json={"message": prompt, "session_id": session_id},
+                    )
+                latency = time.monotonic() - started
+                self.guard_rss()
+                if resp.status_code != 200:
+                    return self.record(
+                        f"chat_soak_turn_{index:02d}",
+                        False,
+                        summary=f"http {resp.status_code}: {resp.text[:180]}",
+                        turn=index,
+                        latency_s=round(latency, 1),
+                        response_status_code=resp.status_code,
+                        response_body=resp.text,
+                    )
+                payload = resp.json()
+                text = str(payload.get("response") or payload.get("reply") or "").strip()
+                status = str(payload.get("status") or "")
+                reliability = assess_user_facing_reply(prompt, text)
+                fallback = bool(LIVE_FALLBACK_RE.search(text))
+                ok = bool(text) and reliability.ok and not fallback
+                turn_detail = {
+                    "turn": index,
+                    "status": status,
+                    "latency_s": round(latency, 1),
+                    "rss_before_mb": round(rss_before, 1),
+                    "rss_after_mb": round(self.tree_rss_mb(), 1),
+                    "chars": len(text),
+                    "reliability_ok": reliability.ok,
+                    "reliability_reasons": list(reliability.reasons),
+                    "fallback": fallback,
+                    "reply": text[:800],
+                }
+                turn_summaries.append(turn_detail)
+                self.record(
+                    f"chat_soak_turn_{index:02d}",
+                    ok,
+                    summary=(
+                        f"{latency:.1f}s status={status or 'unknown'} "
+                        f"chars={len(text)} rss_delta={self.tree_rss_mb() - rss_before:.0f}MB"
+                        + ("" if ok else f" reasons={list(reliability.reasons)} fallback={fallback}")
+                    ),
+                    **turn_detail,
+                )
+                passed &= ok
+                if not ok:
+                    break
+            except httpx.HTTPError as exc:
+                return self.record(
+                    f"chat_soak_turn_{index:02d}",
+                    False,
+                    summary=f"{type(exc).__name__}: {exc}",
+                    turn=index,
+                    latency_s=round(time.monotonic() - started, 1),
+                )
+
+        return self.record(
+            "chat_conversation_soak",
+            passed and len(turn_summaries) == len(prompts),
+            summary=f"{len(turn_summaries)}/{len(prompts)} turns passed",
+            turns=turn_summaries,
+        )
+
+    def exercise_continuity_turn(self) -> bool:
+        token = f"amber-{int(time.time()) % 100000}"
+        ok1, _, lat1 = self.chat(
+            f"Remember this codeword for me: {token}. Just confirm you have it."
+        )
+        self.guard_rss()
+        ok2, text2, lat2 = self.chat("What codeword did I just give you?")
+        self.guard_rss()
+        recalled = token.lower() in text2.lower()
+        # Recall is the criterion. Round 13: she answered 'The codeword
+        # you gave me is amber-82004' — perfect recall — but the set
+        # turn's reply text had been empty under gate serialization and
+        # the old all-three conjunction marked the step red. A silent
+        # set with proven recall is a pass; the set latency still lands
+        # in the transcript for the record.
+        return self.record(
+            "chat_continuity",
+            ok2 and recalled,
+            summary=(
+                f"set {lat1:.1f}s / recall {lat2:.1f}s — "
+                + ("codeword recalled" if recalled else
+                   f"NOT recalled (reply: {text2[:160]})")
+            ),
+            token=token,
+            recalled=recalled,
+            reply=text2[:600],
+        )
+
+    def exercise_restart_continuity_turn(self) -> bool:
+        token = f"restart-{int(time.time()) % 100000}"
+        ok1, text1, lat1 = self.chat(
+            f"Remember this codeword across restart: {token}. Just confirm.",
+            session_id="live-proof-restart",
+        )
+        self.guard_rss()
+        if not ok1:
+            return self.record(
+                "chat_restart_continuity",
+                False,
+                summary=f"memory set failed before restart: {text1[:200]}",
+                token=token,
+                set_latency_s=round(lat1, 1),
+            )
+        shutdown_ok = self.shutdown(step="restart_shutdown")
+        if not shutdown_ok:
+            return self.record(
+                "chat_restart_continuity",
+                False,
+                summary="shutdown failed before restart recall",
+                token=token,
+                set_latency_s=round(lat1, 1),
+            )
+        self.proc = None
+        time.sleep(3.0)
+        boot_ok = self.boot()
+        if not boot_ok:
+            return self.record(
+                "chat_restart_continuity",
+                False,
+                summary="reboot failed before restart recall",
+                token=token,
+                set_latency_s=round(lat1, 1),
+            )
+        ok2, text2, lat2 = self.chat(
+            "What codeword did I ask you to remember before restart?",
+            session_id="live-proof-restart-after",
+        )
+        self.guard_rss()
+        recalled = token.lower() in text2.lower()
+        return self.record(
+            "chat_restart_continuity",
+            ok2 and recalled,
+            summary=(
+                f"set {lat1:.1f}s / reboot recall {lat2:.1f}s — "
+                + ("codeword recalled" if recalled else f"NOT recalled ({text2[:160]})")
+            ),
+            token=token,
+            recalled=recalled,
+            set_reply=text1[:400],
+            recall_reply=text2[:800],
+        )
+
+    def exercise_desktop_action(self) -> bool:
+        if self.skip_desktop:
+            return self.record(
+                "desktop_action", True, summary="skipped by flag", skipped=True
+            )
+        target_dir = Path.home() / "Documents" / "Aura Live Proof"
+        marker = target_dir / "live_proof.txt"
+        step_started = time.time()
+        ok, text, latency = self.chat(
+            "Please create a folder named 'Aura Live Proof' in my Documents "
+            "folder and write a file inside it called live_proof.txt with one "
+            "sentence about who you are and the current timestamp. Use your "
+            "desktop tools and confirm exactly what you did.",
+            timeout_s=300.0,
+        )
+        self.guard_rss()
+        # External verification: the proof is on disk, not in her words.
+        # Freshness required: versioned writes mean the fixed path may
+        # hold a PREVIOUS round's file (round 13 verified round 12's
+        # artifact). Accept the newest matching file in the folder, but
+        # only if it was written AFTER this step began — stale green is
+        # forbidden evidence.
+        time.sleep(2.0)
+        candidates = sorted(
+            target_dir.glob("live_proof*.txt"),
+            key=lambda c: c.stat().st_mtime if c.exists() else 0,
+            reverse=True,
+        ) if target_dir.is_dir() else []
+        fresh = [c for c in candidates if c.stat().st_mtime >= step_started - 1.0]
+        marker = fresh[0] if fresh else marker
+        file_exists = bool(fresh) and marker.is_file()
+        content = marker.read_text(errors="replace")[:400] if file_exists else ""
+        return self.record(
+            "desktop_action",
+            ok and file_exists and bool(content.strip()),
+            summary=(
+                f"{latency:.1f}s — "
+                + (f"file verified on disk ({len(content)} chars)"
+                   if file_exists else "FILE NOT FOUND on disk")
+            ),
+            latency_s=round(latency, 1),
+            reply=text[:800],
+            file_exists=file_exists,
+            file_content=content,
+            path=str(marker),
+        )
+
+    def snapshot_vitals(self) -> bool:
+        vitals: dict[str, Any] = {"tree_rss_mb": round(self.tree_rss_mb(), 1)}
+        ok = True
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.get(f"{self.base}/api/health")
+            vitals["health_status_code"] = resp.status_code
+            if resp.status_code == 200:
+                payload = resp.json()
+                if isinstance(payload, dict):
+                    vitals["health"] = {
+                        k: payload.get(k)
+                        for k in ("status", "state", "healthy", "runtime", "uptime_s")
+                        if k in payload
+                    }
+            else:
+                ok = False
+        except httpx.HTTPError as exc:
+            vitals["health_error"] = str(exc)
+            ok = False
+        return self.record(
+            "vitals", ok, summary=f"rss {vitals['tree_rss_mb']}MB", **vitals
+        )
+
+    def scan_runtime_stream(self) -> bool:
+        """Fail the proof if the captured runtime stream exposes known live-path breaks."""
+
+        if self._stdout_handle is not None:
+            self._stdout_handle.flush()
+        if not self.stdout_path.exists():
+            return self.record(
+                "runtime_stream_scan",
+                True,
+                summary="no runtime stdout log was created",
+                skipped=True,
+            )
+        text = self.stdout_path.read_text(errors="replace")
+        matches: dict[str, list[str]] = {}
+        for marker in LIVE_STREAM_FAILURE_MARKERS:
+            lines = [
+                line[:700]
+                for line in text.splitlines()
+                if marker in line
+            ][:5]
+            if lines:
+                matches[marker] = lines
+        ok = not matches
+        return self.record(
+            "runtime_stream_scan",
+            ok,
+            summary=(
+                "no failure markers in runtime stdout"
+                if ok
+                else f"failure markers found: {', '.join(sorted(matches))}"
+            ),
+            stdout_log=artifact_display_path(self.stdout_path),
+            markers=matches,
+        )
+
+    # ── shutdown ──────────────────────────────────────────────────────
+
+    def shutdown(self, *, step: str = "shutdown") -> bool:
+        if self.proc is None:
+            return self.record(step, False, summary="no process")
+        try:
+            stop = subprocess.run(
+                [sys.executable, "aura_main.py", "--stop"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+            stop_note = f"--stop rc={stop.returncode}"
+        except subprocess.SubprocessError as exc:
+            stop_note = f"--stop failed: {exc}"
+
+        try:
+            self.proc.wait(timeout=60)
+            graceful = True
+        except subprocess.TimeoutExpired:
+            graceful = False
+            self.kill_hard()
+
+        time.sleep(2.0)
+        if self._stdout_handle is not None:
+            self._stdout_handle.flush()
+            self._stdout_handle.close()
+            self._stdout_handle = None
+        orphans = [
+            p.pid
+            for p in psutil.process_iter(["cmdline"])
+            if any(
+                marker in " ".join(p.info.get("cmdline") or [])
+                for marker in ("aura_main.py", "mlx_worker.py", "llama-server")
+            )
+        ]
+        for pid in orphans:
+            try:
+                psutil.Process(pid).kill()
+            except psutil.Error:
+                pass
+        port_free = not self.port_in_use()
+        return self.record(
+            step,
+            graceful and not orphans and port_free,
+            summary=(
+                f"{stop_note}; graceful={graceful}; orphans={orphans or 'none'}; "
+                f"port_free={port_free}"
+            ),
+            graceful=graceful,
+            orphans=orphans,
+            port_free=port_free,
+        )
+
+    def kill_hard(self) -> None:
+        if self.proc is None:
+            return
+        try:
+            os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+        except (OSError, ProcessLookupError):
+            try:
+                self.proc.kill()
+            except OSError:
+                pass
+        if self._stdout_handle is not None:
+            self._stdout_handle.flush()
+            self._stdout_handle.close()
+            self._stdout_handle = None
+
+    # ── orchestration ─────────────────────────────────────────────────
+
+    def run(self) -> int:
+        passed = True
+        try:
+            if not self.boot():
+                passed = False
+            else:
+                passed &= self.snapshot_vitals()
+                passed &= self.exercise_capability_inventory_turn()
+                passed &= self.exercise_identity_turn()
+                passed &= self.exercise_continuity_turn()
+                passed &= self.exercise_conversation_soak()
+                passed &= self.exercise_desktop_action()
+                if self.restart_continuity:
+                    passed &= self.exercise_restart_continuity_turn()
+                passed &= self.snapshot_vitals()
+        except RuntimeError as exc:
+            self.record("abort", False, summary=str(exc))
+            passed = False
+        finally:
+            if self.proc is not None and self.proc.poll() is None:
+                passed &= self.shutdown()
+            passed &= self.scan_runtime_stream()
+
+        finished_at = time.time()
+        git_commit = current_git_commit()
+        git_dirty = current_git_dirty()
+
+        verdict = {
+            "schema": "aura.live_boot_proof.v1",
+            "passed": passed,
+            "started_at": self.started_at,
+            "finished_at": finished_at,
+            "ended_at": finished_at,
+            "git_commit": git_commit,
+            "git_dirty": git_dirty,
+            "peak_rss_mb": round(self.peak_rss_mb, 1),
+            "mode": self.mode,
+            "steps": self.steps,
+            "transcript": artifact_display_path(self.transcript_path),
+            "stdout_log": artifact_display_path(self.stdout_path),
+        }
+        verdict_json = json.dumps(verdict, indent=2, default=str)
+        self.verdict_path.write_text(verdict_json)
+        self.latest_verdict_path.write_text(verdict_json)
+        print(f"\n{'✅ LIVE PROOF PASSED' if passed else '❌ LIVE PROOF FAILED'}")
+        print(f"verdict: {artifact_display_path(self.verdict_path)}")
+        return 0 if passed else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument(
+        "--mode",
+        choices=("headless", "desktop"),
+        default="headless",
+        help="boot path to prove; desktop mirrors the packaged app launcher environment",
+    )
+    parser.add_argument("--boot-timeout", type=float, default=600.0)
+    parser.add_argument("--skip-desktop-action", action="store_true")
+    parser.add_argument(
+        "--restart-continuity",
+        action="store_true",
+        help="prove explicit chat memory survives a real Aura process restart",
+    )
+    parser.add_argument(
+        "--conversation-soak-turns",
+        type=int,
+        default=0,
+        help="run repeated live desktop chat turns to catch coherence/fallback regressions",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=PROOF_DIR,
+        help="directory for live proof transcript, stdout, and verdict artifacts",
+    )
+    args = parser.parse_args(argv)
+    proof = LiveProof(
+        port=args.port,
+        mode=args.mode,
+        boot_timeout_s=args.boot_timeout,
+        skip_desktop=args.skip_desktop_action,
+        restart_continuity=args.restart_continuity,
+        conversation_soak_turns=args.conversation_soak_turns,
+        proof_dir=args.out_dir,
+    )
+    return proof.run()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

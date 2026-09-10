@@ -1,0 +1,129 @@
+{
+  "title": "DreamTalk Overview",
+  "description": "DreamTalk AI Digital Workforce Platform — Service Health & Performance",
+  "schemaVersion": 38,
+  "version": 1,
+  "timezone": "browser",
+  "editable": false,
+  "refresh": "30s",
+  "tags": ["dreamtalk", "ai", "platform"],
+  "panels": [
+    {
+      "title": "Service Status",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_uptime_seconds", "legendFormat": "Uptime (s)"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Database",
+      "type": "stat",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_db_connected", "legendFormat": "DB Connected"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Redis",
+      "type": "stat",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_redis_connected", "legendFormat": "Redis Connected"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Weaviate",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_weaviate_connected", "legendFormat": "Weaviate Connected"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Celery",
+      "type": "stat",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_celery_loaded", "legendFormat": "Celery"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Sentry",
+      "type": "stat",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 4},
+      "targets": [
+        {"expr": "dreamtalk_sentry_enabled", "legendFormat": "Sentry"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      }
+    },
+    {
+      "title": "Uptime (hours)",
+      "type": "gauge",
+      "gridPos": {"x": 0, "y": 4, "w": 8, "h": 6},
+      "targets": [
+        {"expr": "dreamtalk_uptime_seconds / 3600", "legendFormat": "Uptime (h)"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "min": 0,
+          "max": 720,
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 168}, {"color": "red", "value": 720}]}
+        }
+      }
+    },
+    {
+      "title": "System Info",
+      "type": "table",
+      "gridPos": {"x": 8, "y": 4, "w": 16, "h": 6},
+      "targets": [
+        {"expr": "dreamtalk_version", "legendFormat": "Version"},
+        {"expr": "dreamtalk_models_loaded", "legendFormat": "Models Loaded"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"displayMode": "auto"},
+          "color": {"mode": "thresholds"}
+        }
+      }
+    }
+  ]
+}

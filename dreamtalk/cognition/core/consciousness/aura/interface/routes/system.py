@@ -1,0 +1,2418 @@
+"""interface/routes/system.py
+─────────────────────────────
+Extracted from server.py — Health, telemetry, metrics, bootstrap,
+and all collector/diagnostic helpers.
+"""
+from __future__ import annotations
+
+import asyncio
+import inspect
+import json
+import logging
+import math
+import os
+import subprocess
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
+from typing import Any, cast
+
+import fastapi.responses as fastapi_responses
+import psutil
+from fastapi import APIRouter, Body, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from core.config import config
+from core.container import ServiceContainer
+from core.health.boot_status import build_boot_health_snapshot
+from core.runtime.errors import record_degradation
+from core.runtime.health_contract import (
+    REQUIRED_HEALTH_PROBE_GROUPS,
+    required_probe_blockers,
+    required_probe_groups_pass,
+)
+from core.runtime_tools import get_runtime_state
+from core.scheduler import scheduler
+from core.version import VERSION, version_string
+from interface.auth import _require_internal, _restore_owner_session_from_request
+from interface.websocket_manager import broadcast_bus, runtime_heartbeat_payload, ws_manager
+
+_SYSTEM_RECOVERABLE_ERRORS = (
+    AttributeError,
+    ImportError,
+    LookupError,
+    OSError,
+    RuntimeError,
+    TimeoutError,
+    TypeError,
+    ValueError,
+    asyncio.InvalidStateError,
+    asyncio.QueueEmpty,
+    asyncio.QueueFull,
+    json.JSONDecodeError,
+    psutil.Error,
+    subprocess.SubprocessError,
+)
+
+_TOOL_CATALOG_BOOTSTRAP_MAX_ITEMS = 256
+_TOOL_CATALOG_BOOTSTRAP_READ_BUDGET_S = 0.35
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return number if math.isfinite(number) else default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def _env_positive_float(name: str, default: float) -> float:
+    value = _safe_float(os.getenv(name, ""), default)
+    return value if value > 0.0 else default
+
+
+try:
+    ORJSONResponse = fastapi_responses.ORJSONResponse
+except _SYSTEM_RECOVERABLE_ERRORS:
+    ORJSONResponse = JSONResponse
+
+logger = logging.getLogger("Aura.Server.System")
+
+router = APIRouter()
+
+_DESKTOP_ACCESS_CACHE_TTL_S = _env_positive_float("AURA_DESKTOP_ACCESS_CACHE_TTL_S", 30.0)
+_SSE_IDLE_HEARTBEAT_S = _env_positive_float("AURA_SSE_IDLE_HEARTBEAT_S", 15.0)
+_SSE_QUEUE_BACKLOG_LIMIT = max(1, _safe_int(os.getenv("AURA_SSE_QUEUE_BACKLOG_LIMIT", ""), 100))
+_HEALTH_PROBE_TIMEOUT_S = _env_positive_float("AURA_HEALTH_PROBE_TIMEOUT_S", 2.5)
+_HEALTH_PROBE_LOCK = threading.Lock()
+_HEALTH_PROBE_EXECUTOR = ThreadPoolExecutor(
+    max_workers=max(2, min(4, _safe_int(os.getenv("AURA_HEALTH_PROBE_WORKERS", ""), 2))),
+    thread_name_prefix="AuraHealthProbe",
+)
+_HEALTH_CACHE_TTL_S = _env_positive_float("AURA_HEALTH_CACHE_TTL_S", 5.0)
+_HEALTH_MANIFEST_FALLBACK_TTL_S = _env_positive_float(
+    "AURA_HEALTH_MANIFEST_FALLBACK_TTL_S",
+    15.0,
+)
+_boot_health_cache_lock = threading.Lock()
+_boot_health_cache: dict[str, Any] = {
+    "captured_at": 0.0,
+    "payload": None,
+    "status_code": 503,
+}
+_desktop_access_cache: dict[str, Any] = {
+    "captured_at": 0.0,
+    "payload": None,
+}
+
+
+# ── Collector Helpers ─────────────────────────────────────────
+
+def _fallback_conversation_lane_status(reason: str) -> dict[str, Any]:
+    desired_endpoint: str | None = None
+    background_endpoint: str | None = None
+    try:
+        from core.brain.llm.model_registry import BRAINSTEM_ENDPOINT, PRIMARY_ENDPOINT
+
+        desired_endpoint = PRIMARY_ENDPOINT
+        background_endpoint = BRAINSTEM_ENDPOINT
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Conversation lane fallback endpoint lookup failed: %s", exc)
+
+    return {
+        "desired_model": "Cortex (32B)",
+        "desired_endpoint": desired_endpoint,
+        "foreground_endpoint": desired_endpoint,
+        "background_endpoint": background_endpoint,
+        "foreground_tier": "local",
+        "background_tier": "local_fast",
+        "state": "degraded",
+        "last_failure_reason": str(reason or "conversation_lane_status_unavailable")[:240],
+        "conversation_ready": False,
+        "last_transition_at": time.time(),
+        "warmup_attempted": False,
+        "warmup_in_flight": False,
+        "expected_model": "Cortex (32B)",
+        "detected_models": [],
+        "runtime_identity_ok": False,
+        "kernel_tick_age_s": None,
+    }
+
+
+def _collect_recent_degraded_events(limit: int = 12) -> list[dict[str, Any]]:
+    try:
+        from core.health.degraded_events import get_recent_degraded_events
+
+        return get_recent_degraded_events(limit=limit)
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Recent degraded event collection failed: %s", exc)
+        return []
+
+
+def _collect_conversation_lane_status() -> dict[str, Any]:
+    return _collect_conversation_lane_status_resilient()
+
+
+def _collect_conversation_lane_status_resilient() -> dict[str, Any]:
+    """Import and delegate to the canonical implementation in chat routes."""
+    overridden = globals().get("_collect_conversation_lane_status")
+    if callable(overridden) and overridden is not _NATIVE_CONVERSATION_LANE_STATUS_WRAPPER:
+        try:
+            lane = overridden()
+            if isinstance(lane, dict):
+                return lane
+            raise TypeError(f"conversation lane collector returned {type(lane).__name__}")
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation("system", exc)
+            logger.debug("Overridden conversation lane status unavailable: %s", exc)
+            return _fallback_conversation_lane_status(str(exc))
+
+    try:
+        from interface.routes.chat import _collect_conversation_lane_status as _impl
+
+        lane = _impl()
+        if isinstance(lane, dict):
+            return lane
+        raise TypeError(f"conversation lane collector returned {type(lane).__name__}")
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Conversation lane status unavailable: %s", exc)
+        return _fallback_conversation_lane_status(str(exc))
+
+
+def _conversation_lane_is_standby(lane: dict[str, Any] | None) -> bool:
+    return _conversation_lane_is_standby_resilient(lane)
+
+
+def _conversation_lane_is_standby_resilient(lane: dict[str, Any] | None) -> bool:
+    overridden = globals().get("_conversation_lane_is_standby")
+    if callable(overridden) and overridden is not _NATIVE_CONVERSATION_LANE_STANDBY_WRAPPER:
+        try:
+            return overridden(lane)
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation("system", exc)
+            logger.debug("Overridden conversation lane standby helper unavailable: %s", exc)
+
+    try:
+        from interface.routes.chat import _conversation_lane_is_standby as _impl
+
+        return _impl(lane)
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Conversation lane standby helper unavailable: %s", exc)
+        lane = dict(lane or {})
+        state = str(lane.get("state", "") or "").strip().lower()
+        return (
+            not bool(lane.get("conversation_ready", False))
+            and state in {"cold", "closed", ""}
+            and not bool(lane.get("warmup_attempted", False))
+            and not bool(lane.get("warmup_in_flight", False))
+        )
+
+
+def _conversation_lane_user_message(lane: dict[str, Any], **kwargs) -> str:
+    return _conversation_lane_user_message_resilient(lane, **kwargs)
+
+
+def _conversation_lane_user_message_resilient(lane: dict[str, Any], **kwargs) -> str:
+    overridden = globals().get("_conversation_lane_user_message")
+    if callable(overridden) and overridden is not _NATIVE_CONVERSATION_LANE_MESSAGE_WRAPPER:
+        try:
+            return overridden(lane, **kwargs)
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation("system", exc)
+            logger.debug("Overridden conversation lane message helper unavailable: %s", exc)
+
+    try:
+        from interface.routes.chat import _conversation_lane_user_message as _impl
+
+        return _impl(lane, **kwargs)
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Conversation lane message helper unavailable: %s", exc)
+        reason = str((lane or {}).get("last_failure_reason") or exc or "status unavailable")
+        return f"The conversation lane is degraded right now: {reason[:180]}"
+
+
+_NATIVE_CONVERSATION_LANE_STATUS_WRAPPER = _collect_conversation_lane_status
+_NATIVE_CONVERSATION_LANE_STANDBY_WRAPPER = _conversation_lane_is_standby
+_NATIVE_CONVERSATION_LANE_MESSAGE_WRAPPER = _conversation_lane_user_message
+
+
+def _build_boot_health_payload_sync(*, is_gui_proxy: bool) -> tuple[dict[str, Any], int]:
+    """Build boot health with a single-flight guard for HTTP readiness probes."""
+
+    acquired = _HEALTH_PROBE_LOCK.acquire(False)
+    if not acquired:
+        raise TimeoutError("health_probe_already_running")
+    try:
+        orch = ServiceContainer.get("orchestrator", default=None)
+        rt = _get_runtime_state_safe()
+        conversation_lane = _collect_conversation_lane_status_resilient()
+        try:
+            payload, status_code = build_boot_health_snapshot(
+                orch,
+                rt,
+                is_gui_proxy=is_gui_proxy,
+                conversation_lane=conversation_lane,
+            )
+            _store_boot_health_cache(payload, status_code)
+            return payload, status_code
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation("system", exc)
+            logger.error("Boot health snapshot failed: %s", exc, exc_info=True)
+            payload = {
+                "ready": False,
+                "status": "degraded",
+                "issues": [str(exc)],
+                "conversation_lane": conversation_lane,
+                "timestamp": datetime.now(tz=UTC).isoformat(),
+            }
+            _store_boot_health_cache(payload, 503)
+            return payload, 503
+    finally:
+        _HEALTH_PROBE_LOCK.release()
+
+
+def _store_boot_health_cache(payload: dict[str, Any], status_code: int) -> None:
+    with _boot_health_cache_lock:
+        _boot_health_cache["captured_at"] = time.monotonic()
+        _boot_health_cache["payload"] = dict(payload)
+        _boot_health_cache["status_code"] = int(status_code)
+
+
+def _cached_boot_health_payload(reason: str) -> tuple[dict[str, Any], int]:
+    now = time.monotonic()
+    with _boot_health_cache_lock:
+        captured_at = float(_boot_health_cache.get("captured_at") or 0.0)
+        payload = _boot_health_cache.get("payload")
+        status_code = int(_boot_health_cache.get("status_code") or 503)
+
+    if isinstance(payload, dict) and now - captured_at <= _HEALTH_CACHE_TTL_S:
+        cached = dict(payload)
+        cached["cache_status"] = "fresh"
+        cached["cache_reason"] = reason
+        cached["cache_age_s"] = round(now - captured_at, 3)
+        return cached, status_code
+
+    manifest_payload = _runtime_manifest_boot_health_payload(reason)
+    if manifest_payload is not None:
+        return manifest_payload
+
+    return (
+        {
+            "ready": False,
+            "status": "unhealthy",
+            "issues": [reason],
+            "required_probes": {"all_passed": False},
+            "blockers": [reason],
+            "boot_phase": reason,
+            "conversation_ready": False,
+            "cache_status": "miss",
+            "cache_reason": reason,
+            "timestamp": datetime.now(tz=UTC).isoformat(),
+        },
+        503,
+    )
+
+
+def _runtime_manifest_boot_health_payload(reason: str) -> tuple[dict[str, Any], int] | None:
+    try:
+        manifest_path = config.paths.project_root / "artifacts" / "current" / "runtime_manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        readiness = manifest.get("readiness_snapshot")
+        if not isinstance(readiness, dict):
+            return None
+        generated_at = _safe_float(manifest.get("generated_at_unix"), 0.0)
+        manifest_age_s = max(0.0, time.time() - generated_at) if generated_at > 0.0 else float("inf")
+        if manifest_age_s > _HEALTH_MANIFEST_FALLBACK_TTL_S:
+            return (
+                {
+                    "ready": False,
+                    "status": "unhealthy",
+                    "system_ready": False,
+                    "launcher_ready": False,
+                    "conversation_ready": False,
+                    "boot_phase": "manifest_stale",
+                    "required_probes": {"all_passed": False},
+                    "blockers": ["health_manifest_stale", reason],
+                    "cache_status": "manifest_stale",
+                    "cache_reason": reason,
+                    "manifest_age_s": round(manifest_age_s, 3),
+                    "timestamp": datetime.now(tz=UTC).isoformat(),
+                },
+                503,
+            )
+        ready = bool(readiness.get("ready") is True)
+        blockers = [str(item) for item in readiness.get("required_probe_blockers", []) if str(item)]
+        if not ready and not blockers:
+            blockers = [reason]
+        status_code = 200 if ready and not blockers else 503
+        required_probes: dict[str, Any] = {"all_passed": ready}
+        for group_name, components in REQUIRED_HEALTH_PROBE_GROUPS.items():
+            required_probes[group_name] = {
+                "ok": ready,
+                "components": {component: ready for component in components},
+            }
+        return (
+            {
+                "ready": ready,
+                "status": "ready" if status_code == 200 else "unhealthy",
+                "system_ready": ready,
+                "launcher_ready": ready,
+                "conversation_ready": ready,
+                "boot_phase": "manifest_ready" if ready else "manifest_unhealthy",
+                "required_probes": required_probes,
+                "blockers": blockers,
+                "cache_status": "manifest",
+                "cache_reason": reason,
+                "manifest_generated_at_unix": manifest.get("generated_at_unix"),
+                "manifest_age_s": round(manifest_age_s, 3),
+                "timestamp": datetime.now(tz=UTC).isoformat(),
+            },
+            status_code,
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Runtime manifest health fallback failed: %s", exc)
+        return None
+
+
+async def _build_boot_health_payload_bounded(*, is_gui_proxy: bool) -> tuple[dict[str, Any], int]:
+    """Return a boot-health snapshot without allowing probes to hang the HTTP loop."""
+
+    if _HEALTH_PROBE_LOCK.locked():
+        return _cached_boot_health_payload("health_probe_already_running")
+
+    loop = asyncio.get_running_loop()
+    try:
+        return await asyncio.wait_for(
+            loop.run_in_executor(
+                _HEALTH_PROBE_EXECUTOR,
+                lambda: _build_boot_health_payload_sync(is_gui_proxy=is_gui_proxy),
+            ),
+            timeout=_HEALTH_PROBE_TIMEOUT_S,
+        )
+    except TimeoutError as exc:
+        failure_reason = str(exc) or "health_probe_timeout"
+        if failure_reason not in {"health_probe_already_running"}:
+            failure_reason = "health_probe_timeout"
+        if failure_reason != "health_probe_already_running":
+            record_degradation(
+                "system",
+                exc,
+                severity="warning",
+                action="failed health readiness probe closed instead of hanging HTTP response",
+                enforce_failure_policy=False,
+            )
+        return _cached_boot_health_payload(failure_reason)
+
+
+def _get_runtime_state_safe() -> dict[str, Any]:
+    try:
+        rt = get_runtime_state()
+        if isinstance(rt, dict):
+            return rt
+        raise TypeError(f"runtime state returned {type(rt).__name__}")
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Runtime state snapshot failed: %s", exc)
+        return {
+            "state": {},
+            "status": "degraded",
+            "error": str(exc)[:240],
+            "timestamp": datetime.now(tz=UTC).isoformat(),
+        }
+
+
+def _collect_stability_details() -> dict[str, Any]:
+    details: dict[str, Any] = {
+        "status": "unknown",
+        "healthy": False,
+        "active_issues": [],
+    }
+    try:
+        guardian = ServiceContainer.get("stability_guardian", default=None)
+        if guardian is None:
+            details["status"] = "unavailable"
+            details["active_issues"].append(
+                {
+                    "name": "stability_guardian",
+                    "message": "StabilityGuardian is not registered.",
+                    "severity": "warning",
+                    "action_taken": "withhold healthy status until guardian is online",
+                }
+            )
+        elif hasattr(guardian, "get_latest_report"):
+            report = guardian.get_latest_report() or {}
+            checks = report.get("checks", []) if isinstance(report, dict) else []
+            active_issues = []
+            for check in checks:
+                if not bool(check.get("healthy", False)):
+                    active_issues.append(
+                        {
+                            "name": check.get("name", "unknown"),
+                            "message": check.get("message", ""),
+                            "severity": check.get("severity", "warning"),
+                            "action_taken": check.get("action_taken"),
+                        }
+                    )
+            if report:
+                details["healthy"] = bool(report.get("overall_healthy", False))
+                details["status"] = "healthy" if details["healthy"] else "degraded"
+                details["active_issues"] = active_issues
+                details["memory_pct"] = report.get("memory_pct")
+                details["cpu_pct"] = report.get("cpu_pct")
+            elif hasattr(guardian, "get_health_summary"):
+                summary = guardian.get_health_summary()
+                if isinstance(summary, dict):
+                    details["healthy"] = bool(summary.get("healthy", False))
+                    details["status"] = str(summary.get("status") or "unknown")
+                    details["active_issues"] = list(summary.get("active_issues") or [])
+                    if details["status"] == "initializing":
+                        details["healthy"] = False
+            else:
+                details["status"] = "no_report"
+                details["active_issues"] = [
+                    {
+                        "name": "stability_report",
+                        "message": "StabilityGuardian has not produced a health report.",
+                        "severity": "warning",
+                        "action_taken": "withhold healthy status until probes run",
+                    }
+                ]
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Stability detail collection failed: %s", exc)
+
+    try:
+        lane = _collect_conversation_lane_status_resilient()
+        if isinstance(lane, dict) and not bool(lane.get("conversation_ready", False)):
+            details["healthy"] = False
+            if details.get("status") == "unknown":
+                details["status"] = "degraded"
+            details.setdefault("active_issues", []).append(
+                {
+                    "name": "conversation_lane",
+                    "message": _conversation_lane_user_message_resilient(lane),
+                    "severity": "warning" if str(lane.get("state", "") or "").lower() != "failed" else "error",
+                    "action_taken": None,
+                }
+            )
+        if isinstance(lane, dict) and not bool(lane.get("runtime_identity_ok", True)):
+            details["healthy"] = False
+            if details.get("status") == "unknown":
+                details["status"] = "degraded"
+            details.setdefault("active_issues", []).append(
+                {
+                    "name": "conversation_lane_model_mismatch",
+                    "message": (
+                        f"Expected {lane.get('expected_model') or 'the configured Cortex model'}, "
+                        f"but detected {', '.join(lane.get('detected_models') or []) or 'an unexpected runtime model'} "
+                        "on the reserved conversation lane."
+                    ),
+                    "severity": "error",
+                    "action_taken": None,
+                }
+            )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Conversation lane stability detail merge failed: %s", exc)
+    if details.get("status") == "unknown":
+        details["status"] = "healthy" if bool(details.get("healthy", False)) else "degraded"
+    return details
+
+
+def _normalize_percentish(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if abs(number) <= 1.0:
+        number *= 100.0
+    return max(0.0, min(100.0, number))
+
+
+def _json_safe(value: Any) -> Any:
+    """Recursively coerce runtime payloads into JSON-safe primitives."""
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if hasattr(value, "item"):
+        try:
+            return _json_safe(value.item())
+        except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
+            logger.debug("Unable to coerce scalar-like value with item(): %s", exc)
+    if hasattr(value, "tolist") and not isinstance(value, (str, bytes, bytearray)):
+        try:
+            return _json_safe(value.tolist())
+        except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
+            logger.debug("Unable to coerce array-like value with tolist(): %s", exc)
+    try:
+        coerced = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if math.isnan(coerced) or math.isinf(coerced):
+        return None
+    return coerced
+
+
+def _collect_liquid_state_payload(
+    ls_data: dict[str, Any],
+    *,
+    runtime_state: dict[str, Any],
+    homeostasis_data: dict[str, Any],
+) -> dict[str, Any]:
+    runtime_affect = runtime_state.get("affect", {}) if isinstance(runtime_state.get("affect"), dict) else {}
+    payload: dict[str, Any] = {}
+
+    def _pick_metric(key: str, *, runtime_fallback: Any = None) -> float | None:
+        primary = _normalize_percentish(ls_data.get(key))
+        fallback = _normalize_percentish(runtime_fallback if runtime_fallback is not None else runtime_affect.get(key))
+        if primary is None:
+            return fallback
+        if primary == 0.0 and fallback not in (None, 0.0):
+            return fallback
+        return primary
+
+    derived_frustration = runtime_affect.get("frustration")
+    if derived_frustration is None:
+        try:
+            valence = float(runtime_affect.get("valence"))
+            if valence < 0.0:
+                derived_frustration = min(100.0, abs(valence) * 100.0)
+        except (TypeError, ValueError):
+            derived_frustration = None
+
+    for key in ("energy", "curiosity", "frustration", "focus", "confidence"):
+        runtime_fallback = None
+        if key == "frustration":
+            runtime_fallback = derived_frustration
+        elif key == "curiosity":
+            runtime_fallback = runtime_affect.get("curiosity", homeostasis_data.get("curiosity"))
+        elif key == "confidence":
+            runtime_fallback = runtime_affect.get(
+                "confidence",
+                _homeostasis_vitality_value(homeostasis_data),
+            )
+        normalized = _pick_metric(key, runtime_fallback=runtime_fallback)
+        if normalized is not None:
+            payload[key] = round(normalized, 1)
+
+    if "confidence" not in payload:
+        normalized = _normalize_percentish(_homeostasis_vitality_value(homeostasis_data))
+        if normalized is not None:
+            payload["confidence"] = round(normalized, 1)
+
+    if ls_data.get("mood") is not None:
+        payload["mood"] = ls_data.get("mood")
+    elif runtime_affect.get("mood") is not None:
+        payload["mood"] = runtime_affect.get("mood")
+
+    if isinstance(ls_data.get("vad"), dict):
+        payload["vad"] = ls_data["vad"]
+
+    return payload
+
+
+def _homeostasis_vitality_value(homeostasis_data: dict[str, Any]) -> Any:
+    """Return the public vitality/confidence source from homeostasis data.
+
+    ``will_to_live`` is retained as an internal legacy key in the homeostasis
+    subsystem. Public health payloads should prefer operational labels so UI and
+    API consumers do not treat a homeostatic scalar as proof of subjectivity.
+    """
+    for key in ("operational_confidence", "vitality", "will_to_live"):
+        value = homeostasis_data.get(key)
+        if value is not None:
+            return value
+    return None
+
+
+def _collect_homeostasis_public_payload(homeostasis_data: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(homeostasis_data or {})
+    legacy_vitality = payload.pop("will_to_live", None)
+    vitality_source = None
+    for key in ("vitality", "operational_confidence"):
+        value = payload.get(key)
+        if value is not None:
+            vitality_source = value
+            break
+    if vitality_source is None:
+        vitality_source = legacy_vitality
+    normalized = _normalize_percentish(vitality_source)
+    if normalized is not None:
+        value = round(normalized / 100.0, 4)
+        payload.setdefault("vitality", value)
+        payload.setdefault("operational_confidence", value)
+    return payload
+
+
+async def _collect_soma_payload() -> dict[str, Any]:
+    def _system_fallback() -> dict[str, Any]:
+        try:
+            cpu_pct = float(psutil.cpu_percent(interval=None) or 0.0) / 100.0
+            ram = psutil.virtual_memory()
+            disk = psutil.disk_usage("/")
+            ram_pct = float(getattr(ram, "percent", 0.0) or 0.0) / 100.0
+            disk_pct = float(getattr(disk, "percent", 0.0) or 0.0) / 100.0
+            vitality = max(0.0, 1.0 - (max(cpu_pct, ram_pct, disk_pct) * 0.2))
+            return {
+                "thermal_load": cpu_pct,
+                "resource_anxiety": ram_pct,
+                "vitality": vitality,
+            }
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation('system', exc)
+            logger.debug("Soma fallback telemetry failed: %s", exc)
+            return {}
+
+    soma = ServiceContainer.get("soma", default=None)
+    if not soma:
+        return _system_fallback()
+
+    if hasattr(soma, "pulse"):
+        try:
+            await asyncio.wait_for(soma.pulse(), timeout=0.25)
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation('system', exc)
+            logger.debug("Soma pulse refresh failed: %s", exc)
+
+    try:
+        if hasattr(soma, "get_status"):
+            raw = soma.get_status() or {}
+            if isinstance(raw.get("soma"), dict):
+                payload = dict(raw["soma"])
+                if payload:
+                    return payload
+            if isinstance(raw, dict) and {"thermal_load", "resource_anxiety", "vitality"} & set(raw.keys()):
+                payload = {
+                    "thermal_load": float(raw.get("thermal_load", 0.0) or 0.0),
+                    "resource_anxiety": float(raw.get("resource_anxiety", 0.0) or 0.0),
+                    "vitality": float(raw.get("vitality", 0.0) or 0.0),
+                }
+                if payload:
+                    return payload
+        if hasattr(soma, "get_health"):
+            raw = soma.get_health() or {}
+            if isinstance(raw, dict):
+                payload = {
+                    "thermal_load": float(raw.get("thermal_load", 0.0) or 0.0),
+                    "resource_anxiety": float(raw.get("resource_anxiety", 0.0) or 0.0),
+                    "vitality": float(raw.get("vitality", 0.0) or 0.0),
+                }
+                if any(value > 0.0 for value in payload.values()):
+                    return payload
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Soma status collection failed: %s", exc)
+    return _system_fallback()
+
+
+def _collect_tool_catalog() -> list[dict[str, Any]]:
+    engine = ServiceContainer.get("capability_engine", default=None)
+    if not engine:
+        return []
+
+    try:
+        raw_catalog: Any = None
+        if hasattr(engine, "iter_tool_catalog"):
+            raw_catalog = engine.iter_tool_catalog(include_inactive=True)
+        elif hasattr(engine, "get_tool_catalog"):
+            get_tool_catalog = getattr(engine, "get_tool_catalog")
+            if inspect.isgeneratorfunction(get_tool_catalog):
+                raw_catalog = get_tool_catalog(include_inactive=True)
+            else:
+                logger.warning(
+                    "Skipping materialized tool catalog during UI bootstrap; "
+                    "capability_engine should expose iter_tool_catalog()."
+                )
+                return []
+
+        if raw_catalog is None:
+            return []
+
+        catalog: list[dict[str, Any]] = []
+        started_at = time.monotonic()
+        for index, item in enumerate(raw_catalog):
+            if index >= _TOOL_CATALOG_BOOTSTRAP_MAX_ITEMS:
+                break
+            if time.monotonic() - started_at > _TOOL_CATALOG_BOOTSTRAP_READ_BUDGET_S:
+                break
+            if isinstance(item, dict):
+                catalog.append(item)
+        catalog.sort(
+            key=lambda item: (
+                0 if bool(item.get("available")) else 1,
+                0 if bool(item.get("active")) else 1,
+                str(item.get("name") or ""),
+            )
+        )
+        return catalog
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Tool catalog collection failed: %s", exc)
+    return []
+
+
+def _collect_commitment_summary() -> dict[str, Any]:
+    try:
+        from core.agency.commitment_engine import get_commitment_engine
+
+        engine = get_commitment_engine()
+        active = engine.get_active_commitments()
+        return {
+            "active_count": len(active),
+            "reliability_score": round(float(engine.reliability_score), 4),
+            "active": [
+                {
+                    "id": item.id,
+                    "description": item.description,
+                    "outcome": item.outcome,
+                    "status": item.status.value if hasattr(item.status, "value") else str(item.status),
+                    "hours_remaining": round(float(item.hours_remaining()), 2),
+                }
+                for item in active[:5]
+            ],
+        }
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Commitment summary collection failed: %s", exc)
+        return {"active_count": 0, "reliability_score": 1.0, "active": []}
+
+
+def _collect_voice_summary() -> dict[str, Any]:
+    try:
+        from interface.routes.privacy import get_voice_engine_fn
+
+        _voice_engine_fn = get_voice_engine_fn()
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Voice engine resolver unavailable: %s", exc)
+        _voice_engine_fn = None
+    voice_available = bool(_voice_engine_fn)
+    summary = {
+        "available": voice_available,
+        "microphone_enabled": voice_available,
+        "speaking_enabled": voice_available,
+        "listening": False,
+        "auto_listen": False,
+        "server_capture": False,
+        "capture_available": False,
+        "stt_available": False,
+        "stt_initialized": False,
+        "streaming_available": voice_available,
+        "state": "ready" if voice_available else "unavailable",
+    }
+    try:
+        voice = _voice_engine_fn() if _voice_engine_fn else None
+        if voice is not None:
+            microphone_enabled = bool(getattr(voice, "microphone_enabled", True))
+            speaking_enabled = bool(getattr(voice, "speaking_enabled", True))
+            listening = bool(
+                getattr(voice, "_mic_listening", False)
+                or getattr(voice, "is_listening", False)
+            )
+            summary["microphone_enabled"] = microphone_enabled
+            summary["speaking_enabled"] = speaking_enabled
+            summary["listening"] = listening
+            if hasattr(voice, "get_status"):
+                voice_status = voice.get_status() or {}
+                if isinstance(voice_status, dict):
+                    summary["auto_listen"] = bool(voice_status.get("auto_listen", False))
+                    summary["server_capture"] = bool(voice_status.get("server_capture", False))
+                    summary["capture_available"] = bool(voice_status.get("capture_available", False))
+                    summary["stt_available"] = bool(voice_status.get("stt_available", False))
+                    summary["stt_initialized"] = bool(voice_status.get("stt_initialized", False))
+                    summary["capture_backend"] = voice_status.get("capture_backend")
+                    summary["stt_backend"] = voice_status.get("stt_backend")
+                    summary["stt"] = voice_status.get("stt")
+                    summary["tts"] = voice_status.get("tts")
+            if not microphone_enabled and not speaking_enabled:
+                summary["state"] = "muted"
+            else:
+                voice_state = getattr(getattr(voice, "state", None), "name", "") or ""
+                if voice_state:
+                    summary["state"] = str(voice_state).lower()
+                else:
+                    summary["state"] = "listening" if getattr(voice, "is_listening", False) else "ready"
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Voice summary collection failed: %s", exc)
+    return summary
+
+
+async def _collect_desktop_access_summary() -> dict[str, Any]:
+    cached_payload = _desktop_access_cache.get("payload")
+    cached_at = float(_desktop_access_cache.get("captured_at", 0.0) or 0.0)
+    if (
+        isinstance(cached_payload, dict)
+        and (time.monotonic() - cached_at) < max(1.0, _DESKTOP_ACCESS_CACHE_TTL_S)
+    ):
+        return cached_payload
+
+    payload: dict[str, Any] = {
+        "screen_recording": {"granted": False, "status": "unknown", "guidance": ""},
+        "accessibility": {"granted": False, "status": "unknown", "guidance": ""},
+        "automation": {"granted": False, "status": "unknown", "guidance": ""},
+        "direct_screen_recording": {"granted": False, "status": "unknown", "guidance": ""},
+        "direct_accessibility": {"granted": False, "status": "unknown", "guidance": ""},
+        "direct_automation": {"granted": False, "status": "unknown", "guidance": ""},
+        "screen_capture_ready": False,
+        "desktop_control_ready": False,
+        "screen_text_ready": False,
+        "direct_screen_capture_ready": False,
+        "direct_desktop_control_ready": False,
+        "direct_screen_text_ready": False,
+        "menu_clock_ready": False,
+        "menu_clock_text": "",
+        "menu_clock_error": "",
+        "frontmost_app": "",
+        "pyautogui_ready": False,
+        "pyautogui_error": "",
+        "permission_confidence": "unknown",
+        "permission_assumptions": [],
+    }
+    try:
+        from core.security.permission_guard import PermissionType, get_permission_guard
+        from core.skills._pyautogui_runtime import get_pyautogui
+
+        guard = ServiceContainer.get("permission_guard", default=None) or get_permission_guard()
+        if guard:
+            screen = await guard.check_permission(PermissionType.SCREEN, force=False)
+            accessibility = await guard.check_permission(PermissionType.ACCESSIBILITY, force=False)
+            automation = await guard.check_permission(PermissionType.AUTOMATION, force=False)
+            payload["screen_recording"] = screen
+            payload["accessibility"] = accessibility
+            payload["automation"] = automation
+            payload["frontmost_app"] = str(automation.get("detail", "") or "")
+            direct_probe = getattr(guard, "check_permission_direct", None)
+            if callable(direct_probe):
+                try:
+                    direct_screen, direct_accessibility, direct_automation = await asyncio.gather(
+                        asyncio.wait_for(direct_probe(PermissionType.SCREEN), timeout=3.0),
+                        asyncio.wait_for(direct_probe(PermissionType.ACCESSIBILITY), timeout=3.0),
+                        asyncio.wait_for(direct_probe(PermissionType.AUTOMATION), timeout=3.0),
+                    )
+                    payload["direct_screen_recording"] = direct_screen
+                    payload["direct_accessibility"] = direct_accessibility
+                    payload["direct_automation"] = direct_automation
+                except (asyncio.TimeoutError, _SYSTEM_RECOVERABLE_ERRORS) as exc:
+                    record_degradation(
+                        "system",
+                        exc,
+                        action="continued desktop access summary after direct permission probe failed",
+                        severity="warning",
+                    )
+
+        pyautogui, pyautogui_error = get_pyautogui()
+        payload["pyautogui_ready"] = pyautogui is not None
+        if pyautogui_error:
+            payload["pyautogui_error"] = str(pyautogui_error)[:240]
+
+        screen_granted = bool((payload["screen_recording"] or {}).get("granted"))
+        accessibility_granted = bool((payload["accessibility"] or {}).get("granted"))
+        automation_granted = bool((payload["automation"] or {}).get("granted"))
+        direct_screen_granted = bool((payload["direct_screen_recording"] or {}).get("granted"))
+        direct_accessibility_granted = bool((payload["direct_accessibility"] or {}).get("granted"))
+        direct_automation_granted = bool((payload["direct_automation"] or {}).get("granted"))
+        payload["screen_capture_ready"] = screen_granted
+        payload["desktop_control_ready"] = accessibility_granted and bool(payload["pyautogui_ready"])
+        payload["screen_text_ready"] = automation_granted and accessibility_granted
+        payload["direct_screen_capture_ready"] = direct_screen_granted
+        payload["direct_desktop_control_ready"] = direct_accessibility_granted and bool(payload["pyautogui_ready"])
+        payload["direct_screen_text_ready"] = direct_automation_granted and direct_accessibility_granted
+        payload["menu_clock_ready"] = automation_granted and accessibility_granted
+        if payload["menu_clock_ready"]:
+            from core.skills.computer_use import ComputerUseSkill
+
+            def _probe_menu_clock() -> dict[str, Any]:
+                from core.governance_context import local_internal_governed_scope
+                skill = ComputerUseSkill()
+                try:
+                    with local_internal_governed_scope("system.probe_menu_clock", domain="tool_execution"):
+                        text = skill._read_menu_clock_macos()
+                    return {"ready": True, "text": text[:240]}
+                except _SYSTEM_RECOVERABLE_ERRORS as exc:
+                    record_degradation('system', exc)
+                    return {"ready": False, "error": str(exc)[:240]}
+
+            menu_clock_probe = await asyncio.to_thread(_probe_menu_clock)
+            payload["menu_clock_ready"] = bool(menu_clock_probe.get("ready"))
+            payload["menu_clock_text"] = str(menu_clock_probe.get("text", "") or "")
+            payload["menu_clock_error"] = str(menu_clock_probe.get("error", "") or "")
+        primary_ready = [
+            payload["screen_capture_ready"],
+            payload["desktop_control_ready"],
+            payload["screen_text_ready"],
+        ]
+        direct_primary_ready = [
+            payload["direct_screen_capture_ready"],
+            payload["direct_desktop_control_ready"],
+            payload["direct_screen_text_ready"],
+        ]
+        payload["permission_assumptions"] = [
+            name for name, result in (
+                ("screen_recording", payload["screen_recording"]),
+                ("accessibility", payload["accessibility"]),
+                ("automation", payload["automation"]),
+            )
+            if str((result or {}).get("status") or "") == "asserted_env"
+        ]
+        payload["blocking_permissions"] = [
+            name for name, granted in (
+                ("screen_recording", screen_granted),
+                ("accessibility", accessibility_granted),
+                ("automation", automation_granted),
+            ) if not granted
+        ]
+        payload["direct_blocking_permissions"] = [
+            name for name, granted in (
+                ("screen_recording", direct_screen_granted),
+                ("accessibility", direct_accessibility_granted),
+                ("automation", direct_automation_granted),
+            ) if not granted
+        ]
+        payload["permission_confidence"] = (
+            "direct"
+            if all(direct_primary_ready) else
+            "asserted_env"
+            if all(primary_ready) and payload["permission_assumptions"] else
+            "partial_direct"
+            if any(direct_primary_ready) else
+            "unverified"
+            if payload["permission_assumptions"] else
+            "blocked"
+        )
+        payload["overall_status"] = (
+            "ready"
+            if all(direct_primary_ready) else
+            "assumed_ready"
+            if all(primary_ready) and payload["permission_assumptions"] else
+            "partial"
+            if any(primary_ready) or any(
+                bool((payload[key] or {}).get("granted"))
+                for key in ("screen_recording", "accessibility", "automation")
+            ) else
+            "blocked"
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Desktop access summary collection failed: %s", exc)
+    _desktop_access_cache["captured_at"] = time.monotonic()
+    _desktop_access_cache["payload"] = payload
+    return payload
+
+
+def _collect_neurodynamic_status() -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "status": "idle",
+        "action": "",
+        "uncertainty": 0.0,
+        "confidence": 0.0,
+        "advisory_only": True,
+        "authority_gateway_required_for_effects": True,
+    }
+    try:
+        advisor = ServiceContainer.get("spiking_active_inference", default=None)
+        if advisor is None or not hasattr(advisor, "snapshot"):
+            return payload
+        snapshot = advisor.snapshot() or {}
+        if not isinstance(snapshot, dict):
+            return payload
+        governance = snapshot.get("governance") or {}
+        if not isinstance(governance, dict):
+            governance = {}
+        payload.update(
+            {
+                "status": str(snapshot.get("status") or "active"),
+                "action": str(snapshot.get("action") or ""),
+                "uncertainty": _safe_float(snapshot.get("uncertainty"), 0.0),
+                "confidence": _safe_float(snapshot.get("confidence"), 0.0),
+                "advisory_only": bool(governance.get("advisory_only", True)),
+                "authority_gateway_required_for_effects": bool(
+                    governance.get("authority_gateway_required_for_effects", True)
+                ),
+            }
+        )
+        features = snapshot.get("features")
+        if isinstance(features, dict):
+            payload["features"] = {
+                "tool_pressure": _safe_float(features.get("tool_pressure"), 0.0),
+                "error_pressure": _safe_float(features.get("error_pressure"), 0.0),
+                "memory_pressure": _safe_float(features.get("memory_pressure"), 0.0),
+            }
+        stability = snapshot.get("stability")
+        if isinstance(stability, dict):
+            payload["stability"] = {
+                "spectral_radius": _safe_float(stability.get("spectral_radius"), 0.0),
+                "entropy": _safe_float(stability.get("entropy"), 0.0),
+                "winner_margin": _safe_float(stability.get("winner_margin"), 0.0),
+                "decision_instability": _safe_float(
+                    stability.get("decision_instability"), 0.0
+                ),
+                "ode_spectral_abscissa": _safe_float(
+                    stability.get("ode_spectral_abscissa"), 0.0
+                ),
+                "fixed_point_residual": _safe_float(
+                    stability.get("fixed_point_residual"), 0.0
+                ),
+                "bifurcation_pressure": _safe_float(
+                    stability.get("bifurcation_pressure"), 0.0
+                ),
+            }
+        working_memory = snapshot.get("working_memory")
+        if isinstance(working_memory, dict):
+            payload["working_memory"] = {
+                "admission": str(working_memory.get("admission") or "unknown"),
+                "admitted": bool(working_memory.get("admitted", True)),
+                "queue_load": _safe_float(working_memory.get("queue_load"), 0.0),
+                "overload_pressure": _safe_float(working_memory.get("overload_pressure"), 0.0),
+                "utilization": _safe_float(working_memory.get("utilization"), 0.0),
+                "expected_wait_s": _safe_float(working_memory.get("expected_wait_s"), 0.0),
+            }
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Neurodynamic status collection failed: %s", exc)
+    return payload
+
+
+def _collect_imagination_status() -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "status": "idle",
+        "frames": 0,
+        "latest": None,
+        "working_memory": {},
+        "attractor_bias": {},
+        "eligibility_trace": {},
+        "recent_outcomes": [],
+        "advisory_only": True,
+        "no_external_effects": True,
+        "authority_gateway_required_for_effects": True,
+    }
+    try:
+        engine = ServiceContainer.get("imagination_engine", default=None)
+        if engine is None or not hasattr(engine, "snapshot"):
+            return payload
+        snapshot = engine.snapshot() or {}
+        if not isinstance(snapshot, dict):
+            return payload
+        governance = snapshot.get("governance") or {}
+        if not isinstance(governance, dict):
+            governance = {}
+        payload.update(
+            {
+                "status": str(snapshot.get("status") or "active"),
+                "frames": int(_safe_float(snapshot.get("frames"), 0.0)),
+                "latest": snapshot.get("latest") if isinstance(snapshot.get("latest"), dict) else None,
+                "working_memory": snapshot.get("working_memory") if isinstance(snapshot.get("working_memory"), dict) else {},
+                "attractor_bias": snapshot.get("attractor_bias") if isinstance(snapshot.get("attractor_bias"), dict) else {},
+                "eligibility_trace": snapshot.get("eligibility_trace") if isinstance(snapshot.get("eligibility_trace"), dict) else {},
+                "recent_outcomes": snapshot.get("recent_outcomes") if isinstance(snapshot.get("recent_outcomes"), list) else [],
+                "advisory_only": bool(governance.get("advisory_only", True)),
+                "no_external_effects": bool(governance.get("no_external_effects", True)),
+                "authority_gateway_required_for_effects": bool(
+                    governance.get("authority_gateway_required_for_effects", True)
+                ),
+            }
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Imagination status collection failed: %s", exc)
+    return payload
+
+
+def _collect_runtime_capabilities(conversation_lane: dict[str, Any] | None = None) -> dict[str, Any]:
+    lane = conversation_lane if isinstance(conversation_lane, dict) else _collect_conversation_lane_status_resilient()
+    payload: dict[str, Any] = {
+        "local_backend": "unknown",
+        "local_runtime": "offline",
+        "conversation_model": str(lane.get("desired_model", "") or ""),
+        "conversation_endpoint": str(lane.get("desired_endpoint", "") or ""),
+        "conversation_state": str(lane.get("state", "") or ""),
+        "conversation_ready": bool(lane.get("conversation_ready", False)),
+        "neurodynamic_advisor": _collect_neurodynamic_status(),
+        "imagination_engine": _collect_imagination_status(),
+    }
+    try:
+        from core.brain.llm.model_registry import (
+            ACTIVE_MODEL,
+            BRAINSTEM_MODEL,
+            DEEP_MODEL,
+            FALLBACK_MODEL,
+            get_local_backend,
+        )
+
+        payload.update(
+            {
+                "local_backend": get_local_backend(),
+                "cortex_model": ACTIVE_MODEL,
+                "solver_model": DEEP_MODEL,
+                "brainstem_model": BRAINSTEM_MODEL,
+                "fallback_model": FALLBACK_MODEL,
+            }
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Runtime capability backend lookup failed: %s", exc)
+
+    state = str(payload.get("conversation_state", "") or "").lower()
+    if bool(payload.get("conversation_ready")):
+        payload["local_runtime"] = "online"
+    elif _conversation_lane_is_standby_resilient(lane):
+        payload["local_runtime"] = "standby"
+    elif state in {"cold", "warming", "spawning", "handshaking", "recovering", "ready"}:
+        payload["local_runtime"] = "warming"
+    elif state == "failed":
+        payload["local_runtime"] = "degraded"
+    return payload
+
+
+def _derive_ui_status_flags(
+    *,
+    state_summary: dict[str, Any],
+    executive_status: dict[str, Any],
+    boot_snapshot: dict[str, Any],
+    tool_catalog: list[dict[str, Any]],
+) -> list[str]:
+    flags: list[str] = []
+    if not bool(boot_snapshot.get("ready", False)):
+        flags.append("booting")
+    if bool(state_summary.get("thermal_guard")):
+        flags.append("thermal_guard")
+    if _safe_float(state_summary.get("coherence_score"), 1.0) < 0.72:
+        flags.append("coherence_low")
+    if _safe_float(state_summary.get("fragmentation_score"), 0.0) > 0.4:
+        flags.append("fragmentation_high")
+    if _safe_int(state_summary.get("contradiction_count"), 0) > 3:
+        flags.append("contradictions_present")
+    epistemics = state_summary.get("epistemics", {}) or {}
+    if _safe_int(epistemics.get("contested"), 0) > 0:
+        flags.append("beliefs_contested")
+    unavailable_count = sum(1 for tool in tool_catalog if not bool(tool.get("available")))
+    if unavailable_count >= 3:
+        flags.append("tool_unavailable")
+    if str(executive_status.get("last_target") or "").strip().lower() == "secondary":
+        flags.append("executive_hold")
+    return flags
+
+
+# ── Routes ────────────────────────────────────────────────────
+
+@router.get("/telemetry/stream")
+async def telemetry_stream(request: Request):
+    """Server-Sent Events stream for HUD telemetry."""
+    _require_internal(request)
+
+    async def event_generator():
+        try:
+            init_payload = {
+                "type": "telemetry",
+                "cpu_usage": psutil.cpu_percent(interval=None),
+                "memory_usage": psutil.virtual_memory().percent,
+                "timestamp": time.time(),
+            }
+        except _SYSTEM_RECOVERABLE_ERRORS as e:
+            record_degradation("system", e)
+            logger.debug("SSE initial telemetry snapshot failed: %s", e)
+            init_payload = {"type": "telemetry", "cpu_usage": 0.0, "memory_usage": 0.0, "timestamp": time.time()}
+        init_data = json.dumps(init_payload)
+        yield f"event: telemetry\ndata: {init_data}\n\n"
+
+        q = None
+        try:
+            q = await broadcast_bus.subscribe()
+            while not await request.is_disconnected():
+                while q.qsize() > _SSE_QUEUE_BACKLOG_LIMIT:
+                    try:
+                        q.get_nowait()
+                        q.task_done()
+                    except asyncio.QueueEmpty:
+                        break
+
+                try:
+                    item = await asyncio.wait_for(q.get(), timeout=_SSE_IDLE_HEARTBEAT_S)
+                except TimeoutError:
+                    heartbeat = json.dumps(runtime_heartbeat_payload("heartbeat"))
+                    yield f"event: heartbeat\ndata: {heartbeat}\n\n"
+                    continue
+
+                try:
+                    _priority, _ts, msg = item
+                    safe_msg = _json_safe(msg) if isinstance(msg, dict) else {"type": "message", "payload": _json_safe(msg)}
+                    msg_type = str(safe_msg.get("type", "message") or "message")
+                    data = json.dumps(safe_msg)
+                    yield f"event: {msg_type}\ndata: {data}\n\n"
+                except asyncio.CancelledError:
+                    break
+                except _SYSTEM_RECOVERABLE_ERRORS as e:
+                    record_degradation('system', e)
+                    logger.debug("SSE generate error: %s", e)
+                    await asyncio.sleep(0.1)
+                    continue
+                finally:
+                    q.task_done()
+        finally:
+            if q is not None:
+                await broadcast_bus.unsubscribe(q)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/metrics", tags=["metrics"])
+async def metrics(request: Request):
+    """System metrics for monitoring (JSON format, backwards compatible)."""
+    _require_internal(request)
+    try:
+        from core.runtime.health_contract import runtime_health_report
+
+        orch = ServiceContainer.get("orchestrator", default=None)
+        orch_status = orch.get_status() if orch else {}
+        contract = runtime_health_report()
+
+        return {
+            "status": contract.get("status", "unknown"),
+            "healthy": bool(contract.get("healthy", False)),
+            "operational": bool(contract.get("operational", False)),
+            "required_probes": contract.get("required_probes", {}),
+            "uptime": time.time() - (orch_status.get("start_time", time.time()) if orch_status else time.time()),
+            "active_connections": ws_manager.count(),
+            "cycle_count": orch_status.get("cycle_count", 0),
+            "cpu_usage": float(int(psutil.cpu_percent() * 10)) / 10.0 if 'psutil' in sys.modules else 0,
+            "memory_usage": float(int(psutil.virtual_memory().percent * 10)) / 10.0 if 'psutil' in sys.modules else 0,
+        }
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.error("Metrics collection failed: %s", e, exc_info=True)
+        return ORJSONResponse({"status": "error", "message": "Metrics collection failed"}, status_code=500)
+
+
+@router.get("/metrics/prometheus", tags=["metrics"])
+async def metrics_prometheus(request: Request):
+    """Prometheus-compatible metrics in text exposition format.
+
+    Scrape this endpoint with Prometheus or any compatible collector.
+    """
+    _require_internal(request)
+    try:
+        from fastapi.responses import Response
+
+        from core.observability.metrics import get_metrics
+
+        text = get_metrics().render_prometheus()
+        return Response(
+            content=text,
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.error("Prometheus metrics render failed: %s", e, exc_info=True)
+        return ORJSONResponse(
+            {"status": "error", "message": "Prometheus metrics unavailable"},
+            status_code=500,
+        )
+
+
+@router.get("/healthz", tags=["health"])
+async def healthz(request: Request):
+    """Liveness probe: is the process alive and responsive?
+
+    Returns 200 if the server can respond to HTTP at all.
+    Used by orchestrators (systemd, launchd, docker) to detect crashes.
+    """
+    try:
+        from core.observability.metrics import check_liveness
+
+        result = check_liveness()
+        return JSONResponse(result, status_code=200)
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.warning("Liveness check degraded; returning process-level alive response: %s", exc)
+        return JSONResponse({"status": "alive", "pid": os.getpid()}, status_code=200)
+
+
+@router.get("/readyz", tags=["health"])
+async def readyz(request: Request):
+    """Readiness probe: can Aura accept and process requests?
+
+    Returns 200 if ready, 503 if not. Checks:
+    - Last tick completed recently
+    - Substrate state is finite
+    - Database is accessible
+    """
+    try:
+        from core.observability.metrics import check_readiness
+
+        result = check_readiness()
+        status_code = 200 if result.get("ready", False) else 503
+        return JSONResponse(result, status_code=status_code)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse(
+            {"status": "not_ready", "ready": False, "issues": [str(e)]},
+            status_code=503,
+        )
+
+
+@router.get("/incidents", tags=["observability"])
+async def incidents(request: Request):
+    """Active incidents and incident manager summary."""
+    _require_internal(request)
+    try:
+        from core.resilience.incident_manager import get_incident_manager
+
+        manager = get_incident_manager()
+        return JSONResponse({
+            "summary": manager.get_summary(),
+            "active": manager.get_active(),
+        })
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse(
+            {"summary": {}, "active": [], "error": str(e)},
+            status_code=200,
+        )
+
+
+@router.get("/db-maintenance", tags=["observability"])
+async def db_maintenance_status(request: Request):
+    """Database maintenance status and last run results."""
+    _require_internal(request)
+    try:
+        from core.persistence.db_maintenance import get_db_maintenance
+        return JSONResponse(get_db_maintenance().get_status())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse({"error": str(e)}, status_code=200)
+
+
+@router.get("/resources", tags=["observability"])
+async def resource_status(request: Request):
+    """Resource governor status: thermal, memory, inference."""
+    _require_internal(request)
+    try:
+        from core.resource.resource_governor import get_resource_governor
+        return JSONResponse(get_resource_governor().get_status())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse({"error": str(e)}, status_code=200)
+
+
+@router.get("/initiative-overflow", tags=["observability"])
+async def initiative_overflow_status(request: Request):
+    """Initiative overflow and skill gap status."""
+    _require_internal(request)
+    try:
+        from core.autonomy.initiative_overflow import get_initiative_overflow
+        return JSONResponse(get_initiative_overflow().get_status())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse({"error": str(e)}, status_code=200)
+
+
+@router.get("/user-engagement", tags=["observability"])
+async def user_engagement_status(request: Request):
+    """User response tracking and engagement metrics."""
+    _require_internal(request)
+    try:
+        from core.autonomy.user_response_tracker import get_user_response_tracker
+        return JSONResponse(get_user_response_tracker().get_status())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse({"error": str(e)}, status_code=200)
+
+
+@router.get("/gemini-usage")
+async def gemini_usage(request: Request):
+    """Return daily Gemini API usage stats."""
+    _require_internal(request)
+    try:
+        from core.brain.llm.gemini_adapter import DailyRateLimiter
+        orch = ServiceContainer.get("orchestrator", default=None)
+        if orch and hasattr(orch, 'cognitive_engine'):
+            brain = getattr(orch.cognitive_engine, 'brain', None) or getattr(orch.cognitive_engine, '_brain', None)
+            if brain and hasattr(brain, 'llm_router'):
+                for _name, adapter in brain.llm_router.adapters.items():
+                    if hasattr(adapter, 'rate_limiter'):
+                        return JSONResponse(adapter.rate_limiter.get_usage())
+        from core.config import config
+        state_path = str(config.paths.data_dir / "gemini_rate_state.json")
+        limiter = DailyRateLimiter(state_path=state_path)
+        return JSONResponse(limiter.get_usage())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/health")
+async def api_health(request: Request):
+    try:
+        from interface.routes.privacy import get_voice_engine_fn
+
+        _voice_engine_fn = get_voice_engine_fn()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Voice engine resolver unavailable for health payload: %s", e)
+        _voice_engine_fn = None
+
+    _restore_owner_session_from_request(request)
+    orch       = ServiceContainer.get("orchestrator", default=None)
+    rt         = _get_runtime_state_safe()
+    runtime_payload = rt.get("state", {}) if isinstance(rt.get("state"), dict) else {}
+    status_obj = getattr(orch, "status", None)
+
+    initialized = getattr(status_obj, "initialized", False)
+    connected   = orch is not None and getattr(status_obj, "running", False)
+
+    try:
+        cpu = psutil.cpu_percent(interval=None)
+        ram = psutil.virtual_memory().percent
+        per_cpu = psutil.cpu_percent(interval=None, percpu=True)
+        p_core = per_cpu[0] if len(per_cpu) > 1 else cpu
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Hardware stats collection failed: %s", e)
+        cpu, ram, p_core = 0, 0, 0
+
+    orch_status = {}
+    if orch and hasattr(orch, "get_status"):
+        try:
+            orch_status = orch.get_status()
+        except _SYSTEM_RECOVERABLE_ERRORS as e:
+            record_degradation('system', e)
+            logger.debug("get_status failed: %s", e)
+    conversation_lane = _collect_conversation_lane_status_resilient()
+    boot_snapshot, _ = build_boot_health_snapshot(
+        orch,
+        rt,
+        is_gui_proxy=os.environ.get("AURA_GUI_PROXY") == "1",
+        conversation_lane=conversation_lane,
+    )
+    connected = bool(boot_snapshot.get("system_ready", False))
+
+    ls_data = {}
+    try:
+        ls = ServiceContainer.get("liquid_substrate", default=None) or ServiceContainer.get("liquid_state", default=None)
+        if ls and hasattr(ls, "get_status"):
+            ls_data = ls.get_status()
+
+        vad_data = {"valence": 0.0, "arousal": 0.0, "dominance": 0.0, "_stale": True}
+        engine = ServiceContainer.get("cognitive_engine", default=None)
+        if engine and hasattr(engine, "consciousness"):
+            v_state = await asyncio.wait_for(
+                engine.consciousness.substrate.get_state_summary(),
+                timeout=0.25,
+            )
+            vad_data = {
+                "valence": v_state.get("valence", 0.0),
+                "arousal": v_state.get("arousal", 0.0),
+                "dominance": v_state.get("dominance", 0.0),
+                "volatility": v_state.get("volatility", 0.0),
+                "_stale": False,
+            }
+            ls_dict = cast(dict, ls_data)
+            ls_dict["vad"] = vad_data
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Liquid state/VAD lookup failed: %s", e)
+    curiosity_status = orch_status.get("curiosity_status", {})
+
+    transcendence_data = {"meta_evolution": {"active": False, "acceleration_factor": 1.0}}
+    try:
+        meta = ServiceContainer.get("meta_cognition", default=None)
+        if meta:
+            transcendence_data["meta_evolution"] = meta.get_health()
+            transcendence_data["meta_evolution"]["active"] = True
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Transcendence status collection failed: %s", e)
+
+    # Agency: derive from energy + curiosity + active autonomous thought.
+    _energy_raw = _normalize_percentish(ls_data.get("energy")) or 0.0
+    _curiosity_raw = _normalize_percentish(ls_data.get("curiosity")) or 0.0
+    thought_task = getattr(orch, "_current_thought_task", None) if orch else None
+    try:
+        _thinking = bool(thought_task and hasattr(thought_task, "done") and not thought_task.done())
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Current thought task status failed: %s", e)
+        _thinking = False
+    _agency_score = (_energy_raw * 0.4 + _curiosity_raw * 0.4 + (30.0 if _thinking else 0.0))
+    _agency_score = min(100.0, max(0.0, _agency_score))
+
+    scratchpad_engine = ServiceContainer.get("scratchpad_engine", default=None)
+    subconscious_loop = ServiceContainer.get("subconscious_loop", default=None)
+    subconscious_active = bool(
+        subconscious_loop is not None
+        and getattr(subconscious_loop, "_running", False)
+    )
+
+    cortex = {
+        "agency":    float(int(_agency_score * 10)) / 10.0,
+        "curiosity": float(int(_curiosity_raw * 10)) / 10.0,
+        "fixes":     orch_status.get("stats", {}).get("modifications_made", 0),
+        "beliefs":   0,
+        "episodes":  0,
+        "active_topic": curiosity_status.get("active_topic", "None"),
+        "goals":     orch_status.get("stats", {}).get("goals_processed", 0),
+        "autonomy":  config.security.aura_full_autonomy,
+        "stealth":   config.security.enable_stealth_mode,
+        "scratchpad": scratchpad_engine is not None,
+        "forge":      ServiceContainer.get("hephaestus_engine", default=None) is not None,
+        "subconscious": "dreaming" if subconscious_active and _safe_float(getattr(orch, "boredom", 0), 0.0) > 45 else ("awake" if subconscious_active else "idle"),
+        "unity":      ServiceContainer.get("soma", default=None) is not None,
+        "p_core_usage": float(int(_safe_float(p_core) * 10)) / 10.0,
+        "singularity_factor": float(int(_safe_float(transcendence_data.get("meta_evolution", {}).get("acceleration_factor"), 1.0) * 100)) / 100.0,
+        "meta_loop_active": transcendence_data.get("meta_evolution", {}).get("active", False)
+    }
+
+    if config.security.force_unity_on:
+        cortex["unity"] = True
+    try:
+        if orch and hasattr(orch, "self_model") and orch.self_model:
+            cortex["beliefs"] = len(getattr(orch.self_model, "beliefs", []))
+
+        ep_mem = ServiceContainer.get("episodic_memory", default=None)
+        if ep_mem and hasattr(ep_mem, "get_summary"):
+            ep_summary = ep_mem.get_summary()
+            cortex["episodes"] = ep_summary.get("total_episodes", 0)
+        else:
+            mem_mgr = ServiceContainer.get("memory_manager", default=None)
+            if mem_mgr and hasattr(mem_mgr, "get_stats"):
+                mem_stats = mem_mgr.get_stats()
+                cortex["episodes"] = mem_stats.get("episodic_count", 0)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Cortex supplementary metrics failed: %s", e)
+
+    moral_data = {}
+    try:
+        moral = ServiceContainer.get("moral", default=None)
+        moral_data = moral.get_health() if moral and hasattr(moral, "get_health") else {}
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Moral health collection failed: %s", e)
+
+    homeo_data = {}
+    try:
+        homeostasis = ServiceContainer.get("homeostasis", default=None)
+        homeo_data = homeostasis.get_health() if homeostasis and hasattr(homeostasis, "get_health") else {}
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Homeostasis health collection failed: %s", e)
+    homeostasis_payload = _collect_homeostasis_public_payload(
+        homeo_data if isinstance(homeo_data, dict) else {}
+    )
+    liquid_state_payload = _collect_liquid_state_payload(
+        cast(dict[str, Any], ls_data if isinstance(ls_data, dict) else {}),
+        runtime_state=runtime_payload if isinstance(runtime_payload, dict) else {},
+        homeostasis_data=homeostasis_payload,
+    )
+    soma_data = await _collect_soma_payload()
+
+    social_data = {"depth": 0.0}
+    try:
+        social = ServiceContainer.get("social", default=None)
+        social_data = social.get_health() if social and hasattr(social, "get_health") else social_data
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Social health collection failed: %s", e)
+
+    swarm_data = {"active_count": 0}
+    try:
+        swarm_data = orch.swarm_status if orch and hasattr(orch, 'swarm_status') else swarm_data
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation("system", e)
+        logger.debug("Swarm status collection failed: %s", e)
+
+    executive_closure_data = {}
+    try:
+        executive_closure_data = orch_status.get("executive_closure", {}) or {}
+        if not executive_closure_data:
+            executive_closure = ServiceContainer.get("executive_closure", default=None)
+            if executive_closure and hasattr(executive_closure, "get_status"):
+                executive_closure_data = executive_closure.get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Executive closure status collection failed: %s", e)
+
+    consciousness_evidence = {}
+    try:
+        consciousness_evidence = orch_status.get("consciousness_evidence", {}) or {}
+        if not consciousness_evidence:
+            evidence = ServiceContainer.get("consciousness_evidence", default=None)
+            if evidence and hasattr(evidence, "snapshot"):
+                consciousness_evidence = evidence.snapshot()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Consciousness evidence collection failed: %s", e)
+
+    executive_authority_data = {}
+    try:
+        executive_authority = ServiceContainer.get("executive_authority", default=None)
+        if executive_authority and hasattr(executive_authority, "get_status"):
+            executive_authority_data = executive_authority.get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Executive authority status collection failed: %s", e)
+
+    interaction_signals_data = {}
+    try:
+        interaction_signals = ServiceContainer.get("interaction_signals", default=None)
+        if interaction_signals and hasattr(interaction_signals, "get_status"):
+            interaction_signals_data = interaction_signals.get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Interaction signal status collection failed: %s", e)
+
+    # ── Resilience Status ──
+    resilience_data: dict[str, Any] = {"circuit_breakers": {}, "snapshot": "unknown", "llm_tier": "unknown"}
+    try:
+        voice = ServiceContainer.get("voice_engine", default=None)
+        if voice:
+            for attr_name in ("_stt_breaker", "_tts_breaker"):
+                breaker = getattr(voice, attr_name, None)
+                if breaker and hasattr(breaker, "state"):
+                    cast(dict[str, Any], resilience_data["circuit_breakers"])[breaker.name] = breaker.state.value
+
+        cog = ServiceContainer.get("cognitive_engine", default=None)
+        if cog:
+            for attr_name in dir(cog):
+                obj = getattr(cog, attr_name, None)
+                if obj and hasattr(obj, "state") and hasattr(obj, "name") and hasattr(obj.state, "value"):
+                    if "breaker" in attr_name.lower():
+                        cast(dict[str, Any], resilience_data["circuit_breakers"])[obj.name] = obj.state.value
+
+        snap_mgr = ServiceContainer.get("snapshot_manager", default=None)
+        if snap_mgr and hasattr(snap_mgr, "snapshot_file"):
+            resilience_data["snapshot"] = "saved" if snap_mgr.snapshot_file.exists() else "none"
+
+        llm_router = ServiceContainer.get("llm_router", default=None)
+        tier_value = conversation_lane.get("foreground_tier")
+        if llm_router and hasattr(llm_router, "get_health_report"):
+            report = llm_router.get_health_report()
+            tier_value = report.get("foreground_tier") or tier_value
+        if not tier_value and cog:
+            tier_value = (getattr(cog, "_current_tier", None)
+                          or getattr(cog, "last_tier", None))
+        if tier_value:
+            resilience_data["llm_tier"] = str(tier_value)
+        else:
+            if llm_router and hasattr(llm_router, "_active_model"):
+                model = str(getattr(llm_router, "_active_model", "") or "")
+                resilience_data["llm_tier"] = "local" if "mlx" in model.lower() or "local" in model.lower() else "cloud"
+
+        resilience_data["active_endpoint"] = conversation_lane.get("foreground_endpoint")
+        resilience_data["background_endpoint"] = conversation_lane.get("background_endpoint")
+        resilience_data["conversation_lane"] = conversation_lane
+        if llm_router:
+            if hasattr(llm_router, "endpoints"):
+                ep_status = {}
+                for name, ep in llm_router.endpoints.items():
+                    ep_status[name] = {
+                        "tier": getattr(ep, "tier", "unknown"),
+                        "available": ep.is_available() if hasattr(ep, "is_available") else True,
+                        "state": ep.state.value if hasattr(ep, "state") and hasattr(ep.state, "value") else "unknown",
+                    }
+                resilience_data["llm_endpoints"] = ep_status
+
+        resilience_data["hardening_active"] = ServiceContainer.get("stability_guardian", default=None) is not None
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Resilience status collection failed: %s", e)
+
+    # ── Qualia Status ──
+    qualia_data: dict[str, Any] = {"pri": 0.0, "q_norm": 0.0, "dominant_dim": "none", "in_attractor": False, "_stale": True}
+    try:
+        qualia = ServiceContainer.get("qualia_synthesizer", default=None)
+        if not qualia and orch:
+            qualia = getattr(orch, "qualia", None)
+        if qualia:
+            qualia_data["_stale"] = False
+            qualia_data["pri"] = round(float(getattr(qualia, "pri", 0.0)), 4)
+            qualia_data["q_norm"] = round(float(getattr(qualia, "q_norm", 0.0)), 4)
+            qualia_data["dominant_dim"] = getattr(qualia, "_history", None) and len(qualia._history) > 0 and qualia._history[-1].dominant_dimension or "none"
+            qualia_data["in_attractor"] = getattr(qualia, "_in_attractor", False)
+            qualia_data["identity_coherence"] = round(float(getattr(qualia, "identity_drift_score", 1.0)) * 100, 1)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Qualia status collection failed: %s", e)
+
+    # ── Mycelial Network Status ──
+    mycelial_data: dict[str, Any] = {"nodes": 0, "edges": 0, "health": "offline"}
+    try:
+        mycelium = ServiceContainer.get("mycelial_network", default=None)
+        if mycelium:
+            if hasattr(mycelium, "pathways") and hasattr(mycelium, "hyphae"):
+                mycelial_data["nodes"] = len(mycelium.pathways)
+                mycelial_data["edges"] = len(mycelium.hyphae)
+            mycelial_data["health"] = "online"
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Mycelial network status collection failed: %s", e)
+
+    # ── PNEUMA Engine Status ──
+    pneuma_data: dict[str, Any] = {"temperature": 0.7, "arousal": 0.0, "stability": 0.0,
+                   "attractor_count": 0, "efe_score": 0.0, "online": False, "_stale": True}
+    try:
+        from core.pneuma.pneuma import get_pneuma
+        pn = get_pneuma()
+        if pn and pn._running:
+            pneuma_data["online"] = True
+            pneuma_data["_stale"] = False
+            pneuma_data["temperature"] = round(pn.get_llm_temperature(), 3)
+            pe = getattr(pn, "precision", None)
+            if pe and hasattr(pe, "fhn"):
+                s = pe.fhn.state
+                pneuma_data["arousal"] = round(float(s.v), 3)
+                pneuma_data["stability"] = round(float(s.w), 3)
+            tm = getattr(pn, "topo_memory", None)
+            if tm:
+                pneuma_data["attractor_count"] = int(tm.attractor_count)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("PNEUMA status collection failed: %s", e)
+
+    # ── MHAF Field Status ──
+    mhaf_data: dict[str, Any] = {"phi": 0.0, "nodes": 0, "edges": 0, "free_energy": 0.0,
+                 "lexicon_size": 0, "online": False, "_stale": True}
+    try:
+        from core.consciousness.mhaf_field import get_mhaf
+        mhaf = get_mhaf()
+        if mhaf and mhaf._running:
+            mhaf_data["online"] = True
+            mhaf_data["_stale"] = False
+            mhaf_data["nodes"] = len(mhaf._nodes)
+            mhaf_data["edges"] = len(mhaf._edges)
+            mhaf_data["free_energy"] = round(float(mhaf._free_energy), 4)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("MHAF status collection failed: %s", e)
+    # Wire real PhiCore IIT 4.0 phi into the MHAF data (replaces the surrogate)
+    try:
+        phi_core = ServiceContainer.get("phi_core", default=None)
+        if phi_core is not None:
+            result = phi_core._last_result
+            live_phi = 0.0
+            if hasattr(phi_core, "get_live_phi"):
+                live_phi = float(phi_core.get_live_phi(include_surrogate=True))
+            if live_phi > 0.0:
+                mhaf_data["phi"] = round(live_phi, 4)
+                mhaf_data["phi_source"] = "phi_s" if result is not None else "surrogate"
+            if result is not None:
+                mhaf_data["phi"] = round(float(result.phi_s), 4)
+                mhaf_data["phi_complex"] = result.is_complex
+                mhaf_data["phi_mip"] = result.mip_description
+                mhaf_data["phi_samples"] = result.tpm_n_samples
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("PhiCore status collection failed: %s", e)
+    if mhaf_data.get("phi", 0.0) <= 0.0:
+        try:
+            closed_loop = ServiceContainer.get("closed_causal_loop", default=None)
+            if closed_loop is not None and hasattr(closed_loop, "get_status"):
+                closed_loop_phi = float(
+                    ((closed_loop.get_status() or {}).get("phi") or {}).get("estimate") or 0.0
+                )
+                if closed_loop_phi > 0.0:
+                    mhaf_data["phi"] = round(closed_loop_phi, 4)
+                    mhaf_data["phi_source"] = "closed_loop"
+        except _SYSTEM_RECOVERABLE_ERRORS as e:
+            record_degradation('system', e)
+            logger.debug("Closed-loop phi fallback failed: %s", e)
+    try:
+        from core.consciousness.neologism_engine import get_neologism_engine
+        neo = get_neologism_engine()
+        if neo:
+            mhaf_data["lexicon_size"] = len(neo._lexicon)
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Neologism lexicon count failed: %s", e)
+
+    # ── Security Status ──
+    security_data: dict[str, Any] = {
+        "trust_level": "unknown", "threat_score": 0.0,
+        "integrity_ok": True, "passphrase_set": False, "_stale": True,
+    }
+    try:
+        from core.security.trust_engine import get_trust_engine
+        te = get_trust_engine()
+        ts = te.get_status()
+        security_data["trust_level"] = ts.get("level", "guest")
+        security_data["_stale"] = False
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Security status collection failed: %s", e)
+    try:
+        from core.security.emergency_protocol import get_emergency_protocol
+        ep = get_emergency_protocol()
+        eps = ep.get_status()
+        security_data["threat_score"] = eps.get("threat_score", 0.0)
+        security_data["threat_level"] = eps.get("threat_level", "none")
+    except _SYSTEM_RECOVERABLE_ERRORS as _exc:
+        record_degradation('system', _exc)
+        logger.debug("Emergency protocol status collection failed: %s", _exc)
+    try:
+        from core.security.integrity_guardian import get_integrity_guardian
+        igs = get_integrity_guardian().get_status()
+        security_data["integrity_ok"] = bool(
+            igs.get("integrity_ok", igs.get("alert_count", 0) == 0)
+        )
+        security_data["integrity_files"] = igs.get("manifest_files", 0)
+    except _SYSTEM_RECOVERABLE_ERRORS as _exc:
+        record_degradation('system', _exc)
+        logger.debug("Integrity guardian status collection failed: %s", _exc)
+    try:
+        from core.security.user_recognizer import get_user_recognizer
+        security_data["passphrase_set"] = get_user_recognizer().has_passphrase()
+    except _SYSTEM_RECOVERABLE_ERRORS as _exc:
+        record_degradation('system', _exc)
+        logger.debug("User recognizer status collection failed: %s", _exc)
+
+    # ── Circadian State ──
+    circadian_data: dict[str, Any] = {}
+    try:
+        from core.senses.circadian import get_circadian
+        ce = get_circadian()
+        ce.update()
+        s = ce.state
+        circadian_data = {
+            "phase": s.phase.value,
+            "arousal_baseline": round(s.arousal_baseline, 3),
+            "energy_modifier": round(s.energy_modifier, 3),
+            "cognitive_mode": s.cognitive_mode,
+        }
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Circadian status collection failed: %s", e)
+
+    # ── Substrate Learning ──
+    substrate_data: dict[str, Any] = {}
+    try:
+        from core.consciousness.crsm_lora_bridge import get_crsm_lora_bridge
+        substrate_data["lora_bridge"] = get_crsm_lora_bridge().get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("LoRA bridge status failed: %s", e)
+    try:
+        from core.consciousness.experience_consolidator import get_experience_consolidator
+        substrate_data["consolidator"] = get_experience_consolidator().get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Consolidator status failed: %s", e)
+
+    # ── Morphogenesis Status ──
+    morphogenesis_data: dict[str, Any] = {"online": False, "cells": 0, "organs": 0, "_stale": True}
+    try:
+        morpho_rt = ServiceContainer.get("morphogenetic_runtime", default=None)
+        if morpho_rt is not None and hasattr(morpho_rt, "status"):
+            ms = morpho_rt.status()
+            morphogenesis_data = {
+                "online": ms.get("running", False),
+                "enabled": ms.get("enabled", False),
+                "tick": ms.get("tick", 0),
+                "cells": ms.get("registry", {}).get("cells", 0),
+                "organs": ms.get("registry", {}).get("organs", 0),
+                "queued_signals": ms.get("queued_signals", 0),
+                "last_tick_error": ms.get("last_tick_error", ""),
+                "_stale": False,
+            }
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Morphogenesis status collection failed: %s", e)
+
+    # ── Terminal Fallback Status ──
+    terminal_data: dict[str, Any] = {"active": False, "pending": 0, "watchdog": False}
+    try:
+        from core.terminal_chat import get_terminal_fallback, get_terminal_watchdog
+        tf = get_terminal_fallback()
+        terminal_data["active"] = tf.is_active
+        terminal_data["pending"] = len(tf._pending)
+        tw = get_terminal_watchdog()
+        terminal_data["watchdog"] = tw._running if tw else False
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.debug("Terminal fallback status collection failed: %s", e)
+
+    desktop_access_data = await _collect_desktop_access_summary()
+    imagination_data = _collect_imagination_status()
+
+    # ── Final Response Assembly ──
+    try:
+        voice_mod = _voice_engine_fn() if _voice_engine_fn else None
+        smc_mod = ServiceContainer.get("sensory_motor_cortex", default=None)
+        from interface.routes.privacy import get_browser_camera_privacy
+
+        browser_camera_privacy = get_browser_camera_privacy()
+
+        privacy_data = {
+            "camera_enabled": bool(browser_camera_privacy.get("enabled", False)),
+            "camera_mode": browser_camera_privacy.get("mode", "off"),
+            "camera_reason": browser_camera_privacy.get("reason"),
+            "continuous_camera_enabled": getattr(smc_mod, "camera_enabled", False),
+            "microphone_enabled": getattr(voice_mod, "microphone_enabled", True),
+            "microphone_listening": bool(
+                getattr(voice_mod, "_mic_listening", False)
+                or getattr(voice_mod, "is_listening", False)
+            ),
+            "speaking_enabled": getattr(voice_mod, "speaking_enabled", True),
+        }
+
+        conversation_ready = bool(conversation_lane.get("conversation_ready", False))
+        lane_is_standby = _conversation_lane_is_standby_resilient(conversation_lane)
+        service_ok = bool(boot_snapshot.get("system_ready", False))
+        required_probes = boot_snapshot.get("required_probes", {})
+        probe_blockers = required_probe_blockers(required_probes)
+        required_probes_ok = required_probe_groups_pass(required_probes)
+        health_blockers = list(dict.fromkeys(
+            [str(item) for item in (boot_snapshot.get("blockers", []) or []) if str(item)]
+            + probe_blockers
+        ))
+        if not conversation_ready and "conversation_ready" not in health_blockers:
+            health_blockers.append("conversation_ready")
+        healthy_ready = bool(
+            service_ok
+            and required_probes_ok
+            and conversation_ready
+            and not health_blockers
+        )
+        diagnostics_data = {
+            "stability_guardian": _collect_stability_details(),
+            "recent_degraded_events": _collect_recent_degraded_events(),
+        }
+
+        health_status = (
+            "ok"
+            if healthy_ready else
+            "standby"
+            if service_ok and lane_is_standby else
+            "unavailable"
+            if service_ok and str(conversation_lane.get("state", "") or "").lower() == "failed" else
+            "recovering"
+            if service_ok and str(conversation_lane.get("state", "") or "").lower() == "recovering" else
+            "warming"
+            if service_ok and not conversation_ready else
+            "booting"
+        )
+
+        payload = {
+            "status":      health_status,
+            "healthy":     healthy_ready,
+            "version":     version_string("full"),
+            "connected":   connected,
+            "initialized": initialized,
+            "cycle_count": orch_status.get("cycle_count", getattr(status_obj, "cycle_count", 0)),
+            "uptime":      round(float(time.time() - (getattr(status_obj, "start_time", None) or getattr(orch, "start_time", None) or time.time())), 1),
+            "cpu_usage":   cpu,
+            "ram_usage":   ram,
+            "cortex":      cortex,
+            "liquid_state": liquid_state_payload,
+            "soma":        soma_data,
+            "moral":       moral_data,
+            "homeostasis": homeostasis_payload,
+            "social":      social_data,
+            "swarm":       swarm_data,
+            "resilience":  resilience_data,
+            "qualia":         qualia_data,
+            "mycelial":       mycelial_data,
+            "pneuma":         pneuma_data,
+            "mhaf":           mhaf_data,
+            "security":       security_data,
+            "circadian":      circadian_data,
+            "substrate":      substrate_data,
+            "morphogenesis":  morphogenesis_data,
+            "terminal":       terminal_data,
+            "desktop_access": desktop_access_data,
+            "imagination":    imagination_data,
+            "transcendence": transcendence_data,
+            "privacy":        privacy_data,
+            "executive_closure": executive_closure_data,
+            "consciousness_evidence": consciousness_evidence,
+            "executive_authority": executive_authority_data,
+            "interaction_signals": interaction_signals_data,
+            "conversation_lane": conversation_lane,
+            "diagnostics": diagnostics_data,
+            "readiness_contract": {
+                "healthy": healthy_ready,
+                "system_ready": service_ok,
+                "conversation_ready": conversation_ready,
+                "runtime_probe_healthy": required_probes_ok,
+                "required_probes": required_probes,
+                "blockers": health_blockers,
+            },
+            "runtime_probe_healthy": required_probes_ok,
+            "blockers": health_blockers,
+            "runtime":        rt,
+            "scheduler":      scheduler.get_health(),
+            "boot":           boot_snapshot,
+            "timestamp":      datetime.now(tz=UTC).isoformat(),
+        }
+    except _SYSTEM_RECOVERABLE_ERRORS as e:
+        record_degradation('system', e)
+        logger.error("Final health payload assembly failed: %s", e)
+        payload = {
+            "status": "degraded",
+            "error": str(e),
+            "version": version_string("full"),
+            "uptime": 0.0,
+            "cycle_count": 0,
+            "cpu_usage": 0,
+            "ram_usage": 0,
+            "timestamp": datetime.now(tz=UTC).isoformat()
+        }
+
+    return JSONResponse(_json_safe(payload))
+
+
+@router.get("/tools/catalog")
+async def api_tools_catalog():
+    catalog = _collect_tool_catalog()
+    return JSONResponse({"tools": catalog, "count": len(catalog)})
+
+
+@router.get("/ui/bootstrap")
+async def api_ui_bootstrap(request: Request = None):
+    _restore_owner_session_from_request(request)
+    orch = ServiceContainer.get("orchestrator", default=None)
+    rt = _get_runtime_state_safe()
+    constitutional_status = {}
+    executive_status = {}
+    state_summary = {
+        "current_objective": "",
+        "pending_initiatives": 0,
+        "active_goals": 0,
+        "policy_mode": "unknown",
+        "health": {},
+        "rolling_summary": "",
+        "coherence_score": 1.0,
+        "fragmentation_score": 0.0,
+        "contradiction_count": 0,
+        "phenomenal_state": "",
+        "thermal_guard": False,
+        "health_flags": [],
+        "epistemics": {},
+    }
+
+    try:
+        from core.constitution import get_constitutional_core
+
+        constitutional_core = get_constitutional_core(orch)
+        constitutional_status = constitutional_core.get_status()
+        state_summary = constitutional_core.snapshot()
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Bootstrap constitutional snapshot failed: %s", exc)
+
+    try:
+        executive_authority = ServiceContainer.get("executive_authority", default=None)
+        if executive_authority and hasattr(executive_authority, "get_status"):
+            executive_status = executive_authority.get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Bootstrap executive snapshot failed: %s", exc)
+
+    interaction_signals_data = {}
+    try:
+        interaction_signals = ServiceContainer.get("interaction_signals", default=None)
+        if interaction_signals and hasattr(interaction_signals, "get_status"):
+            interaction_signals_data = interaction_signals.get_status()
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.debug("Bootstrap interaction signal snapshot failed: %s", exc)
+
+    tool_catalog = _collect_tool_catalog()
+    conversation_lane = _collect_conversation_lane_status_resilient()
+    boot_snapshot, _status_code = build_boot_health_snapshot(
+        orch,
+        rt,
+        is_gui_proxy=os.environ.get("AURA_GUI_PROXY") == "1",
+        conversation_lane=conversation_lane,
+    )
+    status_obj = getattr(orch, "status", None)
+    recent_conversation: list[dict[str, Any]] = []
+    try:
+        from interface.routes.chat import _conversation_log, _conversation_log_lock
+
+        async with _conversation_log_lock:
+            recent_conversation = list(_conversation_log)[-40:]
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Bootstrap conversation log snapshot failed: %s", exc)
+
+    static_dir = config.paths.project_root / "interface" / "static"
+    shell_dist_dir = static_dir / "shell" / "dist"
+    legacy_ui_index = static_dir / "index.html"
+
+    legacy_ui_status = {
+        "shell": "legacy_shell" if legacy_ui_index.exists() else "react_shell",
+        "legacy_fallback_available": legacy_ui_index.exists(),
+        "experimental_shell_available": (shell_dist_dir / "index.html").exists(),
+        "experimental_shell_enabled": os.environ.get("AURA_ENABLE_REACT_SHELL", "").strip().lower()
+        in {"1", "true", "yes", "on"},
+    }
+    legacy_ui_status["canonical_shell"] = (
+        "legacy_shell"
+        if legacy_ui_index.exists() and not legacy_ui_status["experimental_shell_enabled"]
+        else "react_shell"
+    )
+    shell_status_helper = globals().get("_collect_legacy_shell_status")
+    if callable(shell_status_helper):
+        try:
+            helper_payload = shell_status_helper() or {}
+            if isinstance(helper_payload, dict):
+                legacy_ui_status.update(helper_payload)
+        except _SYSTEM_RECOVERABLE_ERRORS as exc:
+            record_degradation('system', exc)
+            logger.debug("Bootstrap legacy shell status sync failed: %s", exc)
+
+    try:
+        bootstrap_cpu = psutil.cpu_percent(interval=None)
+        bootstrap_ram = psutil.virtual_memory().percent
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Bootstrap telemetry resource sample failed: %s", exc)
+        bootstrap_cpu = 0.0
+        bootstrap_ram = 0.0
+
+    payload = {
+        "identity": {
+            "name": "Aura Luna",
+            "version": version_string("full"),
+            "build": VERSION,
+        },
+        "session": {
+            "connected": bool(boot_snapshot.get("system_ready", False)),
+            "initialized": bool(getattr(status_obj, "initialized", False)),
+            "websocket_clients": ws_manager.count(),
+            "is_gui_proxy": os.environ.get("AURA_GUI_PROXY") == "1",
+        },
+        "constitutional": constitutional_status,
+        "executive": executive_status,
+        "state": state_summary,
+        "commitments": _collect_commitment_summary(),
+        "tools": tool_catalog,
+        "capabilities": _collect_runtime_capabilities(conversation_lane),
+        "desktop_access": await _collect_desktop_access_summary(),
+        "conversation": {
+            "recent": recent_conversation,
+            "count": len(recent_conversation),
+            "lane": conversation_lane,
+        },
+        "voice": _collect_voice_summary(),
+        "interaction_signals": interaction_signals_data,
+        "telemetry": {
+            "cpu_usage": bootstrap_cpu,
+            "ram_usage": bootstrap_ram,
+            "runtime": rt,
+            "boot": boot_snapshot,
+        },
+        "diagnostics": {
+            "stability_guardian": _collect_stability_details(),
+            "recent_degraded_events": _collect_recent_degraded_events(),
+        },
+        "ui": {
+            "shell": legacy_ui_status.get("shell", "legacy_shell" if legacy_ui_index.exists() else "react_shell"),
+            "legacy_fallback_available": bool(legacy_ui_status.get("legacy_fallback_available", legacy_ui_index.exists())),
+            "experimental_shell_available": bool(legacy_ui_status.get("experimental_shell_available", (shell_dist_dir / "index.html").exists())),
+            "experimental_shell_enabled": bool(legacy_ui_status.get("experimental_shell_enabled", False)),
+            "canonical_shell": legacy_ui_status.get("canonical_shell", legacy_ui_status.get("shell", "legacy_shell")),
+            "status_flags": _derive_ui_status_flags(
+                state_summary=state_summary,
+                executive_status=executive_status,
+                boot_snapshot=boot_snapshot,
+                tool_catalog=tool_catalog,
+            ),
+        },
+        "timestamp": datetime.now(tz=UTC).isoformat(),
+    }
+    return JSONResponse(_json_safe(payload))
+
+
+@router.post("/ui/shell-error")
+async def api_ui_shell_error(payload: dict[str, Any] | None = Body(default=None)):
+    """Record desktop shell render faults without blocking UI recovery."""
+    safe_payload = _json_safe(payload if isinstance(payload, dict) else {})
+    message = str(safe_payload.get("error") or "unknown shell render fault")[:500]
+    logger.error("Aura desktop shell render fault: %s", message)
+    try:
+        await broadcast_bus.publish(
+            {
+                "kind": "log",
+                "level": "error",
+                "source": "Aura.Desktop.Shell",
+                "message": f"Desktop shell render fault recovered: {message}",
+                "payload": safe_payload,
+                "event_ts": datetime.now(tz=UTC).isoformat(),
+            },
+            priority=0,
+        )
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.debug("Shell error broadcast failed: %s", exc)
+    return JSONResponse({"ok": True})
+
+
+@router.get("/health/boot")
+async def api_boot_health():
+    payload, status_code = await _build_boot_health_payload_bounded(
+        is_gui_proxy=os.environ.get("AURA_GUI_PROXY") == "1",
+    )
+    return JSONResponse(payload, status_code=status_code)
+
+
+def _heartbeat_probe_blockers(required_probes: Any) -> list[str]:
+    """Return blockers that make a readiness heartbeat unhealthy.
+
+    A healthy heartbeat is a launch contract, not a process ping. It must have
+    every required probe group and every group must report ok.
+    """
+    return required_probe_blockers(required_probes)
+
+
+@router.get("/health/heartbeat")
+async def api_heartbeat():
+    """Readiness heartbeat for GUI/runtime watchdogs.
+
+    This is intentionally not a process-only ping. It may report healthy only
+    when the kernel, inference, memory, scheduler, and tool-governance probes
+    pass through the canonical boot health contract.
+    """
+    payload, status_code = await _build_boot_health_payload_bounded(
+        is_gui_proxy=False,
+    )
+    required_probes = payload.get("required_probes", {})
+    probe_blockers = _heartbeat_probe_blockers(required_probes)
+    blockers = list(payload.get("blockers", []) or [])
+    for blocker in probe_blockers:
+        if blocker not in blockers:
+            blockers.append(blocker)
+    if not bool(payload.get("conversation_ready", False)) and "conversation_ready" not in blockers:
+        blockers.append("conversation_ready")
+    runtime_probe_healthy = not probe_blockers
+    healthy = (
+        status_code == 200
+        and bool(payload.get("system_ready", payload.get("ready", False)))
+        and runtime_probe_healthy
+        and bool(payload.get("conversation_ready", False))
+        and not blockers
+    )
+    if not healthy:
+        status_code = 503
+    heartbeat_payload = {
+        "status": "healthy" if healthy else "unhealthy",
+        "healthy": healthy,
+        "runtime_probe_healthy": runtime_probe_healthy,
+        "time": time.time(),
+        "required_probes": required_probes,
+        "blockers": blockers,
+        "boot_phase": payload.get("boot_phase"),
+        "conversation_ready": payload.get("conversation_ready", False),
+    }
+    return JSONResponse(heartbeat_payload, status_code=status_code)
+
+
+# ── Hot Reload ────────────────────────────────────────────────
+
+@router.post("/system/hot-reload", tags=["system"])
+async def api_hot_reload(request: Request):
+    """Reload Aura's cognitive modules without restarting the process.
+
+    Query params:
+        scope  – reload scope (phases, skills, consciousness, llm, affect,
+                 memory, identity, resilience, orchestrator_mixins, learning,
+                 agency, all). Defaults to "all", which is a curated live-safe
+                 union rather than every loaded core module.
+        file   – reload a single file by path (relative to project root).
+
+    The kernel, ServiceContainer, event loop, loaded models, and
+    conversation history are preserved.
+    """
+    _require_internal(request)
+
+    try:
+        from core.ops.hot_reload import get_hot_reloader
+
+        reloader = get_hot_reloader()
+        if ServiceContainer.get("hot_reloader", default=None) is None:
+            ServiceContainer.register_instance("hot_reloader", reloader)
+
+        filepath = request.query_params.get("file")
+        scope = request.query_params.get("scope", "all")
+        if filepath:
+            result = await asyncio.to_thread(reloader.reload_file, filepath)
+        else:
+            result = await asyncio.to_thread(reloader.reload_scope, scope)
+
+        status_code = 200 if result.ok else 207  # 207 Multi-Status for partial failure
+        return JSONResponse(result.to_dict(), status_code=status_code)
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation('system', exc)
+        logger.error("Hot reload failed: %s", exc, exc_info=True)
+        return JSONResponse(
+            {"ok": False, "error": str(exc)},
+            status_code=500,
+        )
+
+
+@router.get("/system/hot-reload/status", tags=["system"])
+async def api_hot_reload_status(request: Request):
+    """Return the current state of the hot-reload engine."""
+    _require_internal(request)
+
+    try:
+        from core.ops.hot_reload import get_hot_reloader
+
+        reloader = get_hot_reloader()
+        return JSONResponse(reloader.get_status())
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.error("Hot reload status failed: %s", exc, exc_info=True)
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@router.get("/system/hot-reload/scopes", tags=["system"])
+async def api_hot_reload_scopes(request: Request):
+    """List all available reload scopes and their module prefixes."""
+    _require_internal(request)
+
+    try:
+        from core.ops.hot_reload import PROTECTED_MODULES, PROTECTED_PREFIXES, RELOAD_SCOPES
+
+        return JSONResponse({
+            "scopes": {
+                name: {"prefixes": prefixes}
+                for name, prefixes in RELOAD_SCOPES.items()
+            },
+            "special_scopes": ["all"],
+            "special_scope_details": {
+                "all": "Curated live-safe union of reload scopes; excludes runtime-owned infrastructure that requires reboot."
+            },
+            "protected_modules": sorted(PROTECTED_MODULES),
+            "protected_prefixes": sorted(PROTECTED_PREFIXES),
+        })
+    except _SYSTEM_RECOVERABLE_ERRORS as exc:
+        record_degradation("system", exc)
+        logger.error("Hot reload scope listing failed: %s", exc, exc_info=True)
+        return JSONResponse({"ok": False, "error": str(exc), "scopes": {}}, status_code=500)

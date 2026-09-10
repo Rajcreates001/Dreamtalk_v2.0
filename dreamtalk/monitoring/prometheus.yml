@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════════════
+# DreamTalk Prometheus Configuration
+# Scrapes the backend /metrics endpoint + cAdvisor for container metrics
+# ═══════════════════════════════════════════════════════════════════════
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+
+  # ── DreamTalk Backend ──────────────────────────────────────────────
+  - job_name: 'dreamtalk-backend'
+    metrics_path: '/metrics'
+    scheme: http
+    static_configs:
+      - targets: ['backend:5000']
+        labels:
+          service: 'dreamtalk'
+          component: 'backend'
+
+  # ── cAdvisor (Container Metrics) ──────────────────────────────────
+  - job_name: 'cadvisor'
+    metrics_path: '/metrics'
+    scheme: http
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'dreamtalk'
+          component: 'infrastructure'
+
+  # ── Postgres Exporter (optional, requires separate exporter) ──────
+  # - job_name: 'postgres-exporter'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # ── Redis Exporter (optional, requires separate exporter) ──────────
+  # - job_name: 'redis-exporter'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

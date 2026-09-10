@@ -1,0 +1,9 @@
+# Extracted from Brain-Cog (MIT License)
+__all__ = ['NOmniglot', 'nomniglot_full', 'nomniglot_nw_ks','nomniglot_pair','utils']
+from . import (
+    NOmniglot,
+    nomniglot_full,
+    nomniglot_nw_ks,
+    nomniglot_pair,
+    utils
+)

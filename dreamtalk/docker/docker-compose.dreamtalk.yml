@@ -1,0 +1,229 @@
+# ──────────────────────────────────────────────────────────────────────
+# DreamTalk Docker Compose — Production Configuration
+# ──────────────────────────────────────────────────────────────────────
+# Architecture:
+#   postgres    (PostgreSQL 16)  → persistent volume
+#   redis       (Redis 7)        → persistent volume
+#   weaviate    (Vector DB)      → persistent volume
+#   backend     (FastAPI + GPU)  → depends on postgres, redis, weaviate
+#   frontend    (Next.js 16)     → depends on backend
+#   indicf5     (TTS microservice)→ IndicF5 voice cloning (CPU)
+#
+# Port Mapping (avoids LifeLink conflicts on 5432/6379/8080/3001/5000):
+#   DreamTalk Backend:  5001 → 5000 (internal)
+#   DreamTalk Frontend: 3000 → 3000 (internal)
+#   DreamTalk Postgres: 5433 → 5432 (internal)
+#   DreamTalk Redis:    6380 → 6379 (internal)
+#   DreamTalk Weaviate: 8081 → 8080 (internal)
+#   DreamTalk Weaviate gRPC: 50052 → 50051 (internal)
+#
+# Usage:
+#   docker compose -f docker-compose.dreamtalk.yml --env-file .env.docker up -d
+#   docker compose -f docker-compose.dreamtalk.yml --env-file .env.docker down
+#   docker compose -f docker-compose.dreamtalk.yml --env-file .env.docker logs -f
+# ──────────────────────────────────────────────────────────────────────
+
+x-shared-env: &shared-env
+  PYTHONPATH: /app
+  TF_ENABLE_ONEDNN_OPTS: "0"
+  KMP_DUPLICATE_LIB_OK: "TRUE"
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: postgres
+  DB_PASSWORD: ${DB_PASSWORD:-change_me}
+  DB_NAME: dream_talk_db
+  REDIS_URL: redis://redis:6379/1
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+  WEAVIATE_URL: http://weaviate:8080
+  WEAVIATE_HOST: weaviate
+  WEAVIATE_PORT: "8080"
+  WEAVIATE_GRPC_PORT: "50051"
+  GPU_SERVER_BASE_URL: ${GPU_SERVER_BASE_URL:-http://144.79.62.242:8002/v1}
+  LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-oss-120b-coding}
+  LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-512}
+  LLM_TIMEOUT: ${LLM_TIMEOUT:-60.0}
+  LLM_BACKEND: ${LLM_BACKEND:-openai}
+  INDICF5_BASE_URL: ${INDICF5_BASE_URL:-http://host.docker.internal:8003}
+  JWT_SECRET: ${JWT_SECRET:-dreamtalk-dev-jwt-secret-2026-change-in-production}
+  TTS_OUTPUT_DIR: /app/pipeline_outputs/tts
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dreamtalk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      POSTGRES_DB: dream_talk_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - dreamtalk-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dream_talk_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - dreamtalk
+
+  # ── Redis ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dreamtalk-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - dreamtalk-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dreamtalk
+
+  # ── Weaviate (Vector DB) ───────────────────────────────────────────
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    container_name: dreamtalk-weaviate
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+      - "50052:50051"
+    environment:
+      CLUSTER_HOSTNAME: "node1"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+    volumes:
+      - dreamtalk-weaviate:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dreamtalk
+
+  # ── Backend (FastAPI + GPU) ─────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: dreamtalk-backend:latest
+    container_name: dreamtalk-backend
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    environment:
+      <<: *shared-env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../:/app/dreamtalk/
+      - ../weights:/app/weights:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    command:
+      - uvicorn
+      - dreamtalk.backend.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --workers
+      - "1"
+      - --log-level
+      - info
+      - --timeout-graceful-shutdown
+      - "600"
+    networks:
+      - dreamtalk
+
+  # ── Frontend (Next.js 16) ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    image: dreamtalk-frontend:latest
+    container_name: dreamtalk-frontend
+    restart: unless-stopped
+    ports:
+      - "4000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:5001
+      NEXT_PUBLIC_WS_URL: ws://localhost:5001/ws
+    depends_on:
+      - backend
+    networks:
+      - dreamtalk
+
+  # ── IndicF5 Voice Cloning Microservice ──────────────────────────────
+  indicf5:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.indicf5
+    image: dreamtalk-indicf5:latest
+    container_name: dreamtalk-indicf5
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      INDICF5_WEIGHTS_DIR: /app/weights/voice/indic_tts/IndicF5
+      INDICF5_PORT: "8003"
+    volumes:
+      - ../:/app/dreamtalk/:ro
+      - ../weights:/app/weights:ro
+    command:
+      - python
+      - -m
+      - uvicorn
+      - dreamtalk.voice.core.vc.indicf5_microservice:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8003"
+      - --log-level
+      - info
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - dreamtalk
+
+# ── Named Volumes ─────────────────────────────────────────────────────
+# Docker Desktop manages these. If Docker is configured to use D: drive,
+# all volume data automatically lives on D:.
+# To verify: docker volume inspect dreamtalk-postgres → check Mountpoint
+volumes:
+  dreamtalk-postgres:
+  dreamtalk-redis:
+  dreamtalk-weaviate:
+  dreamtalk-pipeline:
+  dreamtalk-avatar-static:
+  dreamtalk-weights:
+
+# ── Network ───────────────────────────────────────────────────────────
+# Isolated network — DreamTalk containers only.
+# No cross-project contamination with LifeLink.
+networks:
+  dreamtalk:
+    name: dreamtalk-network
+    driver: bridge

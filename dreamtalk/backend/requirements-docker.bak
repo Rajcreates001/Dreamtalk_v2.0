@@ -1,0 +1,67 @@
+# ── Dep version pins for voice module compat ──────────────────────────
+numpy<2.0
+torchmetrics<=1.5
+pydantic<=2.10.6
+transformers<=4.50.0
+
+# ── Core Backend ──────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+python-dotenv>=1.0.0
+httpx>=0.28.0
+pydantic-settings>=2.7.0
+python-multipart>=0.0.18
+aiofiles>=24.1.0
+websockets>=14.1
+asyncpg>=0.30.0
+pyjwt>=2.9.0
+pydantic[email]>=2.10.0
+
+# ── ML / Data ─────────────────────────────────────────────────────────
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+numpy<2.0
+scipy>=1.10
+opencv-python>=4.8.0
+Pillow>=10.0
+matplotlib>=3.7
+sentencepiece>=0.1.99
+transformers>=4.36.0,<=4.50.0
+accelerate>=0.25.0
+peft>=0.7.0
+einops
+tf-keras>=2.12.0    # required by deepface/retinaface for tensorflow 2.21
+
+# ── Audio / TTS ───────────────────────────────────────────────────────
+edge-tts>=7.0.0
+soundfile>=0.12
+librosa>=0.10.0
+ffmpeg-python>=0.2.0
+
+# ── Kokoro TTS (Python 3.11) ──────────────────────────────────────────
+loguru
+misaki[en]>=0.9.4
+rotary_embedding_torch
+
+# ── Face / Media ──────────────────────────────────────────────────────
+mediapipe>=0.10.0
+deepface>=0.0.79
+
+# ── Celery + Redis ────────────────────────────────────────────────────
+celery>=5.3.0
+redis>=5.0.0
+redis[hiredis]>=5.0.0
+
+# ── Weaviate ──────────────────────────────────────────────────────────
+weaviate-client>=4.0.0
+
+# ── Utils ─────────────────────────────────────────────────────────────
+tqdm
+requests
+python-dateutil
+packaging
+psutil
+pyyaml
+chardet
+aiohttp

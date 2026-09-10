@@ -1,0 +1,212 @@
+# ──────────────────────────────────────────────────────────────────────
+# Dreamtalk Podman Compose (Local Development)
+#
+# This is a Podman-adapted version of docker-compose.yml for local dev.
+# The original docker-compose.yml is kept for production/CI use.
+#
+# Architecture:
+#   backend   (FastAPI)     → postgres, redis, weaviate
+#   celery-worker           → redis (broker), postgres, weaviate
+#   redis     (broker/cache)
+#   postgres  (main DB)
+#   weaviate  (vector DB)
+#   frontend  (Next.js)
+#
+# GPU Support:
+#   Uses NVIDIA CDI (Container Device Interface) for GPU passthrough.
+#   CDI spec generated via `nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`
+#   Requires NVIDIA Container Toolkit installed in the Podman machine/WSL.
+#
+# Usage:
+#   podman-compose up -d          # Start all services (Linux/WSL2)
+#   podman-compose down           # Stop all services
+#   podman-compose logs -f        # Follow logs
+#   podman-compose ps             # Status
+#
+# ⚠️ WSL2 note: Podman's netavark networking has nftables issues on WSL2.
+#   On WSL2, services use `network_mode: host` to bypass this.
+#   When using host networking, `ports:` are ignored — access via WSL2 IP.
+#   See: https://github.com/containers/podman/issues/21613
+#
+#   For Windows localhost access, run PowerShell as Admin:
+#     netsh interface portproxy add v4tov4 listenport=PORT listenaddress=0.0.0.0 connectport=PORT connectaddress=$(wsl hostname -I)
+#
+#   On native Linux, remove `network_mode: host` and uncomment `ports:`.
+# ──────────────────────────────────────────────────────────────────────
+
+x-shared-env: &shared-env
+  PYTHONPATH: /app
+  TF_ENABLE_ONEDNN_OPTS: "0"
+  KMP_DUPLICATE_LIB_OK: "TRUE"
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: postgres
+  DB_PASSWORD: ${DB_PASSWORD:-change_me}
+  DB_NAME: dream_talk_db
+  REDIS_URL: redis://redis:6379/1
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+  WEAVIATE_URL: http://weaviate:8080
+  WEAVIATE_HOST: weaviate
+  WEAVIATE_PORT: "8080"
+  WEAVIATE_GRPC_PORT: "50051"
+  GPU_SERVER_BASE_URL: http://144.79.62.242:8000/v1
+  LLM_MODEL_NAME: Qwen3.6-27B
+  JWT_SECRET: change-this-to-a-secure-random-secret-in-production
+  TTS_OUTPUT_DIR: /app/pipeline_outputs/tts
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dreamtalk-postgres
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      POSTGRES_DB: dream_talk_db
+    # ports:  (unused with host networking — access via WSL2 IP)
+    #   - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "dream_talk_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dreamtalk-redis
+    restart: unless-stopped
+    network_mode: host
+    # ports:  (unused with host networking)
+    #   - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Weaviate ────────────────────────────────────────────────────────
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    container_name: dreamtalk-weaviate
+    restart: unless-stopped
+    network_mode: host
+    # ports:  (unused with host networking)
+    #   - "8080:8080"
+    #   - "50051:50051"
+    environment:
+      CLUSTER_HOSTNAME: "node1"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (FastAPI) ──────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dreamtalk-backend
+    restart: unless-stopped
+    network_mode: host
+    # ports:  (unused with host networking)
+    #   - "5000:5000"
+    devices:
+      - "nvidia.com/gpu=all"
+    environment:
+      <<: *shared-env
+    volumes:
+      - pipeline-data:/app/pipeline_outputs
+      - avatar-static:/app/dreamtalk/avatar/static
+      - ./dreamtalk/pipeline/brain_pipeline.py:/app/dreamtalk/pipeline/brain_pipeline.py
+      - ./dreamtalk/backend/main.py:/app/dreamtalk/backend/main.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    command:
+      - uvicorn
+      - dreamtalk.backend.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --workers
+      - "1"
+      - --log-level
+      - info
+
+  # ── Frontend (Next.js) ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: dreamtalk-frontend
+    restart: unless-stopped
+    network_mode: host
+    # ports:  (unused with host networking)
+    #   - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      NEXT_PUBLIC_WS_URL: ws://localhost:5000/ws
+    depends_on:
+      - backend
+
+  # ── Celery Worker ────────────────────────────────────────────────────
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dreamtalk-celery
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - "nvidia.com/gpu=all"
+    environment:
+      <<: *shared-env
+    volumes:
+      - pipeline-data:/app/pipeline_outputs
+      - avatar-static:/app/dreamtalk/avatar/static
+      - ./dreamtalk/pipeline/brain_pipeline.py:/app/dreamtalk/pipeline/brain_pipeline.py
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    command:
+      - celery
+      - -A
+      - dreamtalk.backend.celery_app
+      - worker
+      - --loglevel=info
+      - --concurrency=2
+      - --max-tasks-per-child=10
+
+volumes:
+  postgres-data:
+  redis-data:
+  weaviate-data:
+  pipeline-data:
+  avatar-static:

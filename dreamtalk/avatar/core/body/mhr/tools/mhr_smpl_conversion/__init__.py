@@ -1,0 +1,1 @@
+# Extracted from MHR (MIT License)

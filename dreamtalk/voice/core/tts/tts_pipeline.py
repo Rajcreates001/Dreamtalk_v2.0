@@ -1,0 +1,1150 @@
+# Dreamtalk - Voice Engine
+# Extracted from GPT-SoVITS (MIT License)
+# Source: GPT_SoVITS/TTS_infer_pack/TTS.py
+
+import gc
+import math
+import os
+import random
+import sys
+import time
+import traceback
+from copy import deepcopy
+from typing import List, Tuple, Union
+
+import torchaudio
+import ffmpeg
+import librosa
+import numpy as np
+import torch
+import torch.nn.functional as F
+import yaml
+
+from .ar_model import Text2SemanticDecoder
+from .bigvgan import BigVGAN
+from .feature_extract import CNHubert
+from .mel_processing import mel_spectrogram_torch, spectrogram_torch
+from .sovits_model import SynthesizerTrn, SynthesizerTrnV3, Generator
+from .process_ckpt import get_sovits_version_from_path_fast, load_sovits_new
+from .text_segmentation_method import splits
+from .text_preprocessor import TextPreprocessor
+from .i18n import I18nAuto, scan_language_list
+
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+from peft import LoraConfig, get_peft_model
+
+# ── GPT-SoVITS TTS Pipeline ──────────────────────────────────────────
+# NOTE: This is a vendored module from GPT-SoVITS. The pretrained weights
+# required for inference (BERT, HuBERT, T2S, VITS) do NOT exist in the
+# project's weights/ directory. All classes in this module will fail
+# at initialization with FileNotFoundError if instantiated without weights.
+#
+# To use this module, download the required pretrained models:
+#   - s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt (~800MB)
+#   - s2G488k.pth (~300MB)
+#   - chinese-hubert-base/ (from HuggingFace)
+#   - chinese-roberta-wwm-ext-large/ (from HuggingFace)
+#
+# This module is kept as a vendored reference but should NOT be imported
+# directly. Use Kokoro, Edge-TTS, or gTTS instead.
+
+resample_transform_dict = {}
+
+
+def resample(audio_tensor, sr0, sr1, device):
+    global resample_transform_dict
+    key = "%s-%s-%s" % (sr0, sr1, str(device))
+    if key not in resample_transform_dict:
+        resample_transform_dict[key] = torchaudio.transforms.Resample(sr0, sr1).to(device)
+    return resample_transform_dict[key](audio_tensor)
+
+
+i18n = I18nAuto()
+
+spec_min = -12
+spec_max = 2
+
+
+def norm_spec(x):
+    return (x - spec_min) / (spec_max - spec_min) * 2 - 1
+
+
+def denorm_spec(x):
+    return (x + 1) / 2 * (spec_max - spec_min) + spec_min
+
+
+mel_fn = lambda x: mel_spectrogram_torch(
+    x, n_fft=1024, win_size=1024, hop_size=256, num_mels=100,
+    sampling_rate=24000, fmin=0, fmax=None, center=False,
+)
+
+mel_fn_v4 = lambda x: mel_spectrogram_torch(
+    x, n_fft=1280, win_size=1280, hop_size=320, num_mels=100,
+    sampling_rate=32000, fmin=0, fmax=None, center=False,
+)
+
+
+def speed_change(input_audio: np.ndarray, speed: float, sr: int):
+    raw_audio = input_audio.astype(np.int16).tobytes()
+    input_stream = ffmpeg.input("pipe:", format="s16le", acodec="pcm_s16le", ar=str(sr), ac=1)
+    output_stream = input_stream.filter("atempo", speed)
+    out, _ = output_stream.output("pipe:", format="s16le", acodec="pcm_s16le").run(
+        input=raw_audio, capture_stdout=True, capture_stderr=True
+    )
+    return np.frombuffer(out, np.int16)
+
+
+class DictToAttrRecursive(dict):
+    def __init__(self, input_dict):
+        super().__init__(input_dict)
+        for key, value in input_dict.items():
+            if isinstance(value, dict):
+                value = DictToAttrRecursive(value)
+            self[key] = value
+            setattr(self, key, value)
+
+    def __getattr__(self, item):
+        try:
+            return self[item]
+        except KeyError:
+            raise AttributeError(f"Attribute {item} not found")
+
+    def __setattr__(self, key, value):
+        if isinstance(value, dict):
+            value = DictToAttrRecursive(value)
+        super(DictToAttrRecursive, self).__setitem__(key, value)
+        super().__setattr__(key, value)
+
+    def __delattr__(self, item):
+        try:
+            del self[item]
+        except KeyError:
+            raise AttributeError(f"Attribute {item} not found")
+
+
+class NO_PROMPT_ERROR(Exception):
+    pass
+
+
+def set_seed(seed: int):
+    seed = int(seed)
+    seed = seed if seed != -1 else random.randint(0, 2**32 - 1)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
+    except:
+        pass
+    return seed
+
+
+pretrained_models_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "models", "pretrained")
+
+
+class TTS_Config:
+    default_configs = {
+        "v1": {
+            "device": "cpu", "is_half": False, "version": "v1",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "s2G488k.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+        "v2": {
+            "device": "cpu", "is_half": False, "version": "v2",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "gsv-v2final-pretrained", "s1bert25hz-5kh-longer-epoch=12-step=369668.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "gsv-v2final-pretrained", "s2G2333k.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+        "v3": {
+            "device": "cpu", "is_half": False, "version": "v3",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "s1v3.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "s2Gv3.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+        "v4": {
+            "device": "cpu", "is_half": False, "version": "v4",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "s1v3.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "gsv-v4-pretrained", "s2Gv4.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+        "v2Pro": {
+            "device": "cpu", "is_half": False, "version": "v2Pro",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "s1v3.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "v2Pro", "s2Gv2Pro.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+        "v2ProPlus": {
+            "device": "cpu", "is_half": False, "version": "v2ProPlus",
+            "t2s_weights_path": os.path.join(pretrained_models_base, "s1v3.ckpt"),
+            "vits_weights_path": os.path.join(pretrained_models_base, "v2Pro", "s2Gv2ProPlus.pth"),
+            "cnhuhbert_base_path": os.path.join(pretrained_models_base, "chinese-hubert-base"),
+            "bert_base_path": os.path.join(pretrained_models_base, "chinese-roberta-wwm-ext-large"),
+        },
+    }
+    configs: dict = None
+    v1_languages: list = ["auto", "en", "zh", "ja", "all_zh", "all_ja"]
+    v2_languages: list = ["auto", "auto_yue", "en", "zh", "ja", "yue", "ko", "all_zh", "all_ja", "all_yue", "all_ko"]
+    languages: list = v2_languages
+    mute_tokens: dict = {"v1": 486, "v2": 486, "v2Pro": 486, "v2ProPlus": 486, "v3": 486, "v4": 486}
+    mute_emb_sim_matrix: torch.Tensor = None
+
+    def __init__(self, configs: Union[dict, str] = None):
+        configs_base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "configs")
+        os.makedirs(configs_base_path, exist_ok=True)
+        self.configs_path = os.path.join(configs_base_path, "tts_infer.yaml")
+
+        if configs in ("", None):
+            if not os.path.exists(self.configs_path):
+                self.save_configs()
+            configs = deepcopy(self.default_configs)
+
+        if isinstance(configs, str):
+            self.configs_path = configs
+            configs = self._load_configs(self.configs_path)
+
+        assert isinstance(configs, dict)
+        configs_ = deepcopy(self.default_configs)
+        configs_.update(configs)
+        self.configs = configs_.get("custom", configs_["v2"])
+        self.default_configs = deepcopy(configs_)
+
+        self.device = self.configs.get("device", torch.device("cpu"))
+        if "cuda" in str(self.device) and not torch.cuda.is_available():
+            self.device = torch.device("cpu")
+
+        self.is_half = self.configs.get("is_half", False)
+        if str(self.device) == "cpu" and self.is_half:
+            self.is_half = False
+
+        version = self.configs.get("version", None)
+        self.version = version
+        assert self.version in ["v1", "v2", "v3", "v4", "v2Pro", "v2ProPlus"], "Invalid version!"
+        self.t2s_weights_path = self.configs.get("t2s_weights_path", None)
+        self.vits_weights_path = self.configs.get("vits_weights_path", None)
+        self.bert_base_path = self.configs.get("bert_base_path", None)
+        self.cnhuhbert_base_path = self.configs.get("cnhuhbert_base_path", None)
+        self.languages = self.v1_languages if self.version == "v1" else self.v2_languages
+        self.use_vocoder: bool = False
+        self._resolve_paths(version)
+
+        self.max_sec = None
+        self.hz: int = 50
+        self.semantic_frame_rate: str = "25hz"
+        self.segment_size: int = 20480
+        self.filter_length: int = 2048
+        self.sampling_rate: int = 32000
+        self.hop_length: int = 640
+        self.win_length: int = 2048
+        self.n_speakers: int = 300
+
+    def _resolve_paths(self, version):
+        default_paths = [
+            ("t2s_weights_path", self.t2s_weights_path),
+            ("vits_weights_path", self.vits_weights_path),
+            ("bert_base_path", self.bert_base_path),
+            ("cnhuhbert_base_path", self.cnhuhbert_base_path),
+        ]
+        for attr, path in default_paths:
+            if path in (None, "") or not os.path.exists(path):
+                default = self.default_configs.get(version, {}).get(attr, "")
+                setattr(self, attr, default)
+
+    def _load_configs(self, configs_path: str) -> dict:
+        if not os.path.exists(configs_path):
+            self.save_configs(configs_path)
+        with open(configs_path, "r", encoding="utf-8") as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
+
+    def save_configs(self, configs_path: str = None) -> None:
+        configs = deepcopy(self.default_configs)
+        if self.configs is not None:
+            configs["custom"] = self.update_configs()
+        with open(configs_path or self.configs_path, "w") as f:
+            yaml.dump(configs, f)
+
+    def update_configs(self):
+        self.config = {
+            "device": str(self.device), "is_half": self.is_half, "version": self.version,
+            "t2s_weights_path": self.t2s_weights_path, "vits_weights_path": self.vits_weights_path,
+            "bert_base_path": self.bert_base_path, "cnhuhbert_base_path": self.cnhuhbert_base_path,
+        }
+        return self.config
+
+    def update_version(self, version: str) -> None:
+        self.version = version
+        self.languages = self.v1_languages if self.version == "v1" else self.v2_languages
+
+
+class TTS:
+    def __init__(self, configs: Union[dict, str, TTS_Config]):
+        if isinstance(configs, TTS_Config):
+            self.configs = configs
+        else:
+            self.configs = TTS_Config(configs)
+
+        self.t2s_model = None
+        self.vits_model = None
+        self.bert_tokenizer = None
+        self.bert_model = None
+        self.cnhuhbert_model = None
+        self.vocoder = None
+        self.sv_model = None
+        self.is_v2pro = False
+
+        self.vocoder_configs = {"sr": None, "T_ref": None, "T_chunk": None, "upsample_rate": None, "overlapped_len": None}
+        self._init_models()
+
+        self.text_preprocessor = TextPreprocessor(self.bert_model, self.bert_tokenizer, self.configs.device)
+        self.prompt_cache = {
+            "ref_audio_path": None, "prompt_semantic": None, "refer_spec": [],
+            "prompt_text": None, "prompt_lang": None, "phones": None,
+            "bert_features": None, "norm_text": None, "aux_ref_audio_paths": [],
+        }
+        self.stop_flag = False
+        self.precision = torch.float16 if self.configs.is_half else torch.float32
+
+    def _init_models(self):
+        self.init_t2s_weights(self.configs.t2s_weights_path)
+        self.init_vits_weights(self.configs.vits_weights_path)
+        self.init_bert_weights(self.configs.bert_base_path)
+        self.init_cnhuhbert_weights(self.configs.cnhuhbert_base_path)
+
+    def init_cnhuhbert_weights(self, base_path: str):
+        self.cnhuhbert_model = CNHubert(base_path)
+        self.cnhuhbert_model = self.cnhuhbert_model.eval().to(self.configs.device)
+        if self.configs.is_half and str(self.configs.device) != "cpu":
+            self.cnhuhbert_model = self.cnhuhbert_model.half()
+
+    def init_bert_weights(self, base_path: str):
+        self.bert_tokenizer = AutoTokenizer.from_pretrained(base_path)
+        self.bert_model = AutoModelForMaskedLM.from_pretrained(base_path)
+        self.bert_model = self.bert_model.eval().to(self.configs.device)
+        if self.configs.is_half and str(self.configs.device) != "cpu":
+            self.bert_model = self.bert_model.half()
+
+    def init_vits_weights(self, weights_path: str):
+        self.configs.vits_weights_path = weights_path
+        version, model_version, if_lora_v3 = get_sovits_version_from_path_fast(weights_path)
+        if "Pro" in model_version:
+            self.init_sv_model()
+        path_sovits = self.configs.default_configs.get(model_version, {}).get("vits_weights_path", "")
+
+        if if_lora_v3 and not os.path.exists(path_sovits):
+            raise FileNotFoundError(f"SoVITS {model_version} base model not found for LoRA")
+
+        dict_s2 = load_sovits_new(weights_path)
+        hps = dict_s2["config"]
+        hps["model"]["semantic_frame_rate"] = "25hz"
+        if "enc_p.text_embedding.weight" not in dict_s2["weight"]:
+            hps["model"]["version"] = "v2"
+        elif dict_s2["weight"]["enc_p.text_embedding.weight"].shape[0] == 322:
+            hps["model"]["version"] = "v1"
+        else:
+            hps["model"]["version"] = "v2"
+
+        v3v4set = {"v3", "v4"}
+        if model_version not in v3v4set:
+            if "Pro" not in model_version:
+                model_version = hps["model"]["version"]
+            else:
+                hps["model"]["version"] = model_version
+        else:
+            hps["model"]["version"] = model_version
+
+        self.configs.filter_length = hps["data"]["filter_length"]
+        self.configs.segment_size = hps["train"]["segment_size"]
+        self.configs.sampling_rate = hps["data"]["sampling_rate"]
+        self.configs.hop_length = hps["data"]["hop_length"]
+        self.configs.win_length = hps["data"]["win_length"]
+        self.configs.n_speakers = hps["data"]["n_speakers"]
+        self.configs.semantic_frame_rate = hps["model"]["semantic_frame_rate"]
+        kwargs = hps["model"]
+        self.configs.update_version(model_version)
+
+        if model_version not in v3v4set:
+            vits_model = SynthesizerTrn(
+                self.configs.filter_length // 2 + 1,
+                self.configs.segment_size // self.configs.hop_length,
+                n_speakers=self.configs.n_speakers,
+                **kwargs,
+            )
+            self.configs.use_vocoder = False
+        else:
+            kwargs["version"] = model_version
+            vits_model = SynthesizerTrnV3(
+                self.configs.filter_length // 2 + 1,
+                self.configs.segment_size // self.configs.hop_length,
+                n_speakers=self.configs.n_speakers,
+                **kwargs,
+            )
+            self.configs.use_vocoder = True
+            self.init_vocoder(model_version)
+            if "pretrained" not in weights_path and hasattr(vits_model, "enc_q"):
+                del vits_model.enc_q
+
+        self.is_v2pro = model_version in {"v2Pro", "v2ProPlus"}
+
+        if not if_lora_v3:
+            vits_model.load_state_dict(dict_s2["weight"], strict=False)
+        else:
+            vits_model.load_state_dict(load_sovits_new(path_sovits)["weight"], strict=False)
+            lora_rank = dict_s2["lora_rank"]
+            lora_config = LoraConfig(
+                target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+                r=lora_rank, lora_alpha=lora_rank, init_lora_weights=True,
+            )
+            vits_model.cfm = get_peft_model(vits_model.cfm, lora_config)
+            vits_model.load_state_dict(dict_s2["weight"], strict=False)
+            vits_model.cfm = vits_model.cfm.merge_and_unload()
+
+        vits_model = vits_model.to(self.configs.device).eval()
+        self.vits_model = vits_model
+        if self.configs.is_half and str(self.configs.device) != "cpu":
+            self.vits_model = self.vits_model.half()
+        self.configs.save_configs()
+
+    def init_t2s_weights(self, weights_path: str):
+        self.configs.t2s_weights_path = weights_path
+        self.configs.save_configs()
+        self.configs.hz = 50
+        dict_s1 = torch.load(weights_path, map_location=self.configs.device, weights_only=False)
+        config = dict_s1["config"]
+        self.configs.max_sec = config["data"]["max_sec"]
+        decoder = Text2SemanticDecoder(config, top_k=3)
+        decoder.load_state_dict(dict_s1["weight"])
+        decoder = decoder.to(self.configs.device).eval()
+        # Wrap in a namespace so self.t2s_model.model works
+        from types import SimpleNamespace
+        self.t2s_model = SimpleNamespace(model=decoder)
+        if self.configs.is_half and str(self.configs.device) != "cpu":
+            self.t2s_model.model = self.t2s_model.model.half()
+
+        codebook = decoder.ar_audio_embedding.weight.clone()
+        mute_emb = codebook[self.configs.mute_tokens[self.configs.version]].unsqueeze(0)
+        sim_matrix = F.cosine_similarity(mute_emb.float(), codebook.float(), dim=-1)
+        self.configs.mute_emb_sim_matrix = sim_matrix
+
+    def init_vocoder(self, version: str):
+        if version == "v3":
+            if self.vocoder is not None and self.vocoder.__class__.__name__ == "BigVGAN":
+                return
+            if self.vocoder is not None:
+                self.vocoder.cpu()
+                del self.vocoder
+                self.empty_cache()
+            bigvgan_path = os.path.join(pretrained_models_base, "models--nvidia--bigvgan_v2_24khz_100band_256x")
+            self.vocoder = BigVGAN.from_pretrained(bigvgan_path, use_cuda_kernel=False)
+            self.vocoder.remove_weight_norm()
+            self.vocoder_configs.update({"sr": 24000, "T_ref": 468, "T_chunk": 934, "upsample_rate": 256, "overlapped_len": 12})
+        elif version == "v4":
+            if self.vocoder is not None and self.vocoder.__class__.__name__ == "Generator":
+                return
+            if self.vocoder is not None:
+                self.vocoder.cpu()
+                del self.vocoder
+                self.empty_cache()
+            self.vocoder = Generator(
+                initial_channel=100, resblock="1",
+                resblock_kernel_sizes=[3, 7, 11],
+                resblock_dilation_sizes=[[1, 3, 5], [1, 3, 5], [1, 3, 5]],
+                upsample_rates=[10, 6, 2, 2, 2],
+                upsample_initial_channel=512,
+                upsample_kernel_sizes=[20, 12, 4, 4, 4],
+                gin_channels=0, is_bias=True,
+            )
+            self.vocoder.remove_weight_norm()
+            vocoder_path = os.path.join(pretrained_models_base, "gsv-v4-pretrained", "vocoder.pth")
+            state_dict_g = torch.load(vocoder_path, map_location="cpu", weights_only=False)
+            self.vocoder.load_state_dict(state_dict_g)
+            self.vocoder_configs.update({"sr": 48000, "T_ref": 500, "T_chunk": 1000, "upsample_rate": 480, "overlapped_len": 12})
+
+        self.vocoder = self.vocoder.eval()
+        if self.configs.is_half:
+            self.vocoder = self.vocoder.half().to(self.configs.device)
+        else:
+            self.vocoder = self.vocoder.to(self.configs.device)
+
+    def init_sv_model(self):
+        if self.sv_model is not None:
+            return
+        from .sv import SV
+        self.sv_model = SV(self.configs.device, self.configs.is_half)
+
+    def set_device(self, device: torch.device, save: bool = True):
+        self.configs.device = device
+        if save:
+            self.configs.save_configs()
+        for model_attr in ["t2s_model", "vits_model", "bert_model", "cnhuhbert_model", "vocoder", "sv_model"]:
+            model = getattr(self, model_attr, None)
+            if model is not None:
+                model.to(device)
+
+    def set_ref_audio(self, ref_audio_path: str):
+        self._set_prompt_semantic(ref_audio_path)
+        self._set_ref_spec(ref_audio_path)
+        self.prompt_cache["ref_audio_path"] = ref_audio_path
+
+    def _set_ref_spec(self, ref_audio_path):
+        spec_audio = self._get_ref_spec(ref_audio_path)
+        if not self.prompt_cache["refer_spec"]:
+            self.prompt_cache["refer_spec"] = [spec_audio]
+        else:
+            self.prompt_cache["refer_spec"][0] = spec_audio
+
+    def _get_ref_spec(self, ref_audio_path):
+        raw_audio, raw_sr = torchaudio.load(ref_audio_path)
+        raw_audio = raw_audio.to(self.configs.device).float()
+        self.prompt_cache["raw_audio"] = raw_audio
+        self.prompt_cache["raw_sr"] = raw_sr
+
+        if raw_sr != self.configs.sampling_rate:
+            audio = raw_audio.to(self.configs.device)
+            if audio.shape[0] == 2:
+                audio = audio.mean(0).unsqueeze(0)
+            audio = resample(audio, raw_sr, self.configs.sampling_rate, self.configs.device)
+        else:
+            audio = raw_audio.to(self.configs.device)
+            if audio.shape[0] == 2:
+                audio = audio.mean(0).unsqueeze(0)
+
+        maxx = audio.abs().max()
+        if maxx > 1:
+            audio /= min(2, maxx)
+        spec = spectrogram_torch(audio, self.configs.filter_length, self.configs.sampling_rate, self.configs.hop_length, self.configs.win_length, center=False)
+        if self.configs.is_half:
+            spec = spec.half()
+
+        if self.is_v2pro:
+            audio = resample(audio, self.configs.sampling_rate, 16000, self.configs.device)
+            if self.configs.is_half:
+                audio = audio.half()
+        else:
+            audio = None
+        return spec, audio
+
+    def _set_prompt_semantic(self, ref_wav_path: str):
+        zero_wav = np.zeros(int(self.configs.sampling_rate * 0.3), dtype=np.float16 if self.configs.is_half else np.float32)
+        with torch.no_grad():
+            wav16k, sr = librosa.load(ref_wav_path, sr=16000)
+            if wav16k.shape[0] > 160000 or wav16k.shape[0] < 48000:
+                raise OSError(i18n("参考音频在3~10秒范围外，请更换！"))
+            wav16k = torch.from_numpy(wav16k)
+            zero_wav_torch = torch.from_numpy(zero_wav)
+            wav16k = wav16k.to(self.configs.device)
+            zero_wav_torch = zero_wav_torch.to(self.configs.device)
+            if self.configs.is_half:
+                wav16k = wav16k.half()
+                zero_wav_torch = zero_wav_torch.half()
+            wav16k = torch.cat([wav16k, zero_wav_torch])
+            hubert_feature = self.cnhuhbert_model.model(wav16k.unsqueeze(0))["last_hidden_state"].transpose(1, 2)
+            codes = self.vits_model.extract_latent(hubert_feature)
+            self.prompt_cache["prompt_semantic"] = codes[0, 0].to(self.configs.device)
+
+    def batch_sequences(self, sequences, axis=0, pad_value=0, max_length=None):
+        seq = sequences[0]
+        ndim = seq.dim()
+        if axis < 0:
+            axis += ndim
+        dtype = seq.dtype
+        pad_value = torch.tensor(pad_value, dtype=dtype)
+        seq_lengths = [seq.shape[axis] for seq in sequences]
+        if max_length is None:
+            max_length = max(seq_lengths)
+        else:
+            max_length = max(seq_lengths) if max_length < max(seq_lengths) else max_length
+
+        padded_sequences = []
+        for seq, length in zip(sequences, seq_lengths):
+            padding = [0] * axis + [0, max_length - length] + [0] * (ndim - axis - 1)
+            padded_seq = torch.nn.functional.pad(seq, padding, value=pad_value)
+            padded_sequences.append(padded_seq)
+        return torch.stack(padded_sequences)
+
+    def to_batch(self, data, prompt_data=None, batch_size=5, threshold=0.75, split_bucket=True, device=None, precision=None):
+        if device is None:
+            device = torch.device("cpu")
+        if precision is None:
+            precision = torch.float32
+
+        _data = []
+        index_and_len_list = []
+        for idx, item in enumerate(data):
+            index_and_len_list.append([idx, len(item["norm_text"])])
+
+        batch_index_list = []
+        if split_bucket:
+            index_and_len_list.sort(key=lambda x: x[1])
+            index_and_len_list = np.array(index_and_len_list, dtype=np.int64)
+            pos = 0
+            while pos < index_and_len_list.shape[0]:
+                pos_end = min(pos + batch_size, index_and_len_list.shape[0])
+                while pos < pos_end:
+                    batch_lens = index_and_len_list[pos:pos_end, 1].astype(np.float32)
+                    score = batch_lens[(pos_end - pos) // 2] / (batch_lens.mean() + 1e-8)
+                    if score >= threshold or pos_end - pos == 1:
+                        batch_index_list.append(index_and_len_list[pos:pos_end, 0].tolist())
+                        pos = pos_end
+                        break
+                    pos_end -= 1
+        else:
+            for i in range(len(data)):
+                if i % batch_size == 0:
+                    batch_index_list.append([])
+                batch_index_list[-1].append(i)
+
+        for batch_idx, index_list in enumerate(batch_index_list):
+            item_list = [data[idx] for idx in index_list]
+            phones_list, phones_len_list = [], []
+            all_phones_list, all_phones_len_list = [], []
+            all_bert_features_list = []
+            norm_text_batch = []
+            all_bert_max_len = 0
+            all_phones_max_len = 0
+
+            for item in item_list:
+                if prompt_data is not None:
+                    all_bert_features = torch.cat([prompt_data["bert_features"], item["bert_features"]], 1).to(dtype=precision, device=device)
+                    all_phones = torch.LongTensor(prompt_data["phones"] + item["phones"]).to(device)
+                    phones = torch.LongTensor(item["phones"]).to(device)
+                else:
+                    all_bert_features = item["bert_features"].to(dtype=precision, device=device)
+                    phones = torch.LongTensor(item["phones"]).to(device)
+                    all_phones = phones
+
+                all_bert_max_len = max(all_bert_max_len, all_bert_features.shape[-1])
+                all_phones_max_len = max(all_phones_max_len, all_phones.shape[-1])
+
+                phones_list.append(phones)
+                phones_len_list.append(phones.shape[-1])
+                all_phones_list.append(all_phones)
+                all_phones_len_list.append(all_phones.shape[-1])
+                all_bert_features_list.append(all_bert_features)
+                norm_text_batch.append(item["norm_text"])
+
+            max_len = max(all_bert_max_len, all_phones_max_len)
+            batch = {
+                "phones": phones_list, "phones_len": torch.LongTensor(phones_len_list).to(device),
+                "all_phones": all_phones_list, "all_phones_len": torch.LongTensor(all_phones_len_list).to(device),
+                "all_bert_features": all_bert_features_list, "norm_text": norm_text_batch, "max_len": max_len,
+            }
+            _data.append(batch)
+
+        return _data, batch_index_list
+
+    def recovery_order(self, data, batch_index_list):
+        length = len(sum(batch_index_list, []))
+        _data = [None] * length
+        for i, index_list in enumerate(batch_index_list):
+            for j, index in enumerate(index_list):
+                _data[index] = data[i][j]
+        return _data
+
+    def stop(self):
+        self.stop_flag = True
+
+    @torch.no_grad()
+    def run(self, inputs: dict):
+        self.stop_flag = False
+        text = inputs.get("text", "")
+        text_lang = inputs.get("text_lang", "")
+        ref_audio_path = inputs.get("ref_audio_path", "")
+        aux_ref_audio_paths = inputs.get("aux_ref_audio_paths", [])
+        prompt_text = inputs.get("prompt_text", "")
+        prompt_lang = inputs.get("prompt_lang", "")
+        top_k = inputs.get("top_k", 15)
+        top_p = inputs.get("top_p", 1)
+        temperature = inputs.get("temperature", 1)
+        text_split_method = inputs.get("text_split_method", "cut1")
+        batch_size = inputs.get("batch_size", 1)
+        batch_threshold = inputs.get("batch_threshold", 0.75)
+        speed_factor = inputs.get("speed_factor", 1.0)
+        split_bucket = inputs.get("split_bucket", True)
+        return_fragment = inputs.get("return_fragment", False)
+        fragment_interval = inputs.get("fragment_interval", 0.3)
+        seed = inputs.get("seed", -1)
+        seed = -1 if seed in ("", None) else seed
+        set_seed(seed)
+        parallel_infer = inputs.get("parallel_infer", True)
+        repetition_penalty = inputs.get("repetition_penalty", 1.35)
+        sample_steps = inputs.get("sample_steps", 32)
+        super_sampling = inputs.get("super_sampling", False)
+        streaming_mode = inputs.get("streaming_mode", False)
+        overlap_length = inputs.get("overlap_length", 2)
+        min_chunk_length = inputs.get("min_chunk_length", 16)
+        fixed_length_chunk = inputs.get("fixed_length_chunk", False)
+        chunk_split_thershold = 0.0
+
+        # Mode selection
+        if parallel_infer and not streaming_mode:
+            self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_batch_infer
+        elif not parallel_infer and streaming_mode and not self.configs.use_vocoder:
+            self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_naive
+        elif streaming_mode and self.configs.use_vocoder:
+            streaming_mode = False
+            return_fragment = True
+            if parallel_infer:
+                self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_batch_infer
+            else:
+                self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_naive_batched
+        elif parallel_infer and streaming_mode:
+            parallel_infer = False
+            self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_naive
+        else:
+            self.t2s_model.model.infer_panel = self.t2s_model.model.infer_panel_naive_batched
+
+        if return_fragment and streaming_mode:
+            return_fragment = False
+        if (return_fragment or streaming_mode) and split_bucket:
+            split_bucket = False
+        if split_bucket and speed_factor == 1.0 and not (self.configs.use_vocoder and parallel_infer):
+            pass
+        elif speed_factor != 1.0 or (self.configs.use_vocoder and parallel_infer):
+            split_bucket = False
+
+        no_prompt_text = prompt_text in (None, "")
+        assert text_lang in self.configs.languages
+        if not no_prompt_text:
+            assert prompt_lang in self.configs.languages
+        if no_prompt_text and self.configs.use_vocoder:
+            raise NO_PROMPT_ERROR("prompt_text cannot be empty when using SoVITS_V3")
+        if ref_audio_path in (None, "") and (self.prompt_cache["prompt_semantic"] is None or not self.prompt_cache["refer_spec"]):
+            raise ValueError("ref_audio_path is required when reference audio is not pre-set")
+
+        # Reference audio setup
+        t0 = time.perf_counter()
+        if ref_audio_path is not None and (ref_audio_path != self.prompt_cache["ref_audio_path"] or (self.is_v2pro and self.prompt_cache["refer_spec"][0][1] is None)):
+            if not os.path.exists(ref_audio_path):
+                raise ValueError(f"{ref_audio_path} not found")
+            self.set_ref_audio(ref_audio_path)
+
+        aux_ref_audio_paths = aux_ref_audio_paths or []
+        existing_paths = set(aux_ref_audio_paths) & set(self.prompt_cache["aux_ref_audio_paths"])
+        if not (len(existing_paths) == len(aux_ref_audio_paths) == len(self.prompt_cache["aux_ref_audio_paths"])):
+            self.prompt_cache["aux_ref_audio_paths"] = aux_ref_audio_paths
+            self.prompt_cache["refer_spec"] = [self.prompt_cache["refer_spec"][0]]
+            for path in aux_ref_audio_paths:
+                if path and os.path.exists(path):
+                    self.prompt_cache["refer_spec"].append(self._get_ref_spec(path))
+
+        if not no_prompt_text:
+            prompt_text = prompt_text.strip("\n")
+            if prompt_text[-1] not in splits:
+                prompt_text += "。" if prompt_lang != "en" else "."
+            if self.prompt_cache["prompt_text"] != prompt_text:
+                phones, bert_features, norm_text = self.text_preprocessor.segment_and_extract_feature_for_text(prompt_text, prompt_lang, self.configs.version)
+                self.prompt_cache.update({"prompt_text": prompt_text, "prompt_lang": prompt_lang, "phones": phones, "bert_features": bert_features, "norm_text": norm_text})
+
+        # Text preprocessing
+        t1 = time.perf_counter()
+        if not (return_fragment or streaming_mode):
+            data = self.text_preprocessor.preprocess(text, text_lang, text_split_method, self.configs.version)
+            if not data:
+                yield 16000, np.zeros(16000, dtype=np.int16)
+                return
+            data, batch_index_list = self.to_batch(data, prompt_data=self.prompt_cache if not no_prompt_text else None, batch_size=batch_size, threshold=batch_threshold, split_bucket=split_bucket, device=self.configs.device, precision=self.precision)
+        else:
+            texts = self.text_preprocessor.pre_seg_text(text, text_lang, text_split_method)
+            data = []
+            for i in range(len(texts)):
+                if i % batch_size == 0:
+                    data.append([])
+                data[-1].append(texts[i])
+
+            def make_batch(batch_texts):
+                batch_data = []
+                for text in batch_texts:
+                    phones, bert_features, norm_text = self.text_preprocessor.segment_and_extract_feature_for_text(text, text_lang, self.configs.version)
+                    if phones is None:
+                        continue
+                    batch_data.append({"phones": phones, "bert_features": bert_features, "norm_text": norm_text})
+                if not batch_data:
+                    return None
+                batch, _ = self.to_batch(batch_data, prompt_data=self.prompt_cache if not no_prompt_text else None, batch_size=batch_size, threshold=batch_threshold, split_bucket=False, device=self.configs.device, precision=self.precision)
+                return batch[0]
+
+        # Inference
+        t2 = time.perf_counter()
+        try:
+            audio = []
+            is_first_package = True
+            output_sr = self.configs.sampling_rate if not self.configs.use_vocoder else self.vocoder_configs["sr"]
+
+            for item in data:
+                t3 = time.perf_counter()
+                if return_fragment or streaming_mode:
+                    item = make_batch(item)
+                    if item is None:
+                        continue
+
+                batch_phones = item["phones"]
+                batch_phones_len = item["phones_len"]
+                all_phoneme_ids = item["all_phones"]
+                all_phoneme_lens = item["all_phones_len"]
+                all_bert_features = item["all_bert_features"]
+                norm_text = item["norm_text"]
+                max_len = item["max_len"]
+
+                if no_prompt_text:
+                    prompt = None
+                else:
+                    prompt = self.prompt_cache["prompt_semantic"].expand(len(all_phoneme_ids), -1).to(self.configs.device)
+
+                refer_audio_spec = []
+                sv_emb = [] if self.is_v2pro else None
+                for spec, audio_tensor in self.prompt_cache["refer_spec"]:
+                    spec = spec.to(dtype=self.precision, device=self.configs.device)
+                    refer_audio_spec.append(spec)
+                    if self.is_v2pro:
+                        sv_emb.append(self.sv_model.compute_embedding3(audio_tensor))
+
+                if not streaming_mode:
+                    pred_semantic_list, idx_list = self.t2s_model.model.infer_panel(
+                        all_phoneme_ids, all_phoneme_lens, prompt, all_bert_features,
+                        top_k=top_k, top_p=top_p, temperature=temperature,
+                        early_stop_num=self.configs.hz * self.configs.max_sec,
+                        max_len=max_len, repetition_penalty=repetition_penalty,
+                    )
+                    t4 = time.perf_counter()
+                    batch_audio_fragment = []
+
+                    if not self.configs.use_vocoder:
+                        if speed_factor == 1.0:
+                            pred_semantic_list = [item[-idx:] for item, idx in zip(pred_semantic_list, idx_list)]
+                            upsample_rate = math.prod(self.vits_model.upsample_rates)
+                            audio_frag_idx = [pred_semantic_list[i].shape[0] * 2 * upsample_rate for i in range(len(pred_semantic_list))]
+                            audio_frag_end_idx = [sum(audio_frag_idx[:i + 1]) for i in range(len(audio_frag_idx))]
+                            all_pred_semantic = torch.cat(pred_semantic_list).unsqueeze(0).unsqueeze(0).to(self.configs.device)
+                            _batch_phones = torch.cat(batch_phones).unsqueeze(0).to(self.configs.device)
+                            _batch_audio = self.vits_model.decode(all_pred_semantic, _batch_phones, refer_audio_spec, speed=speed_factor, sv_emb=sv_emb).detach()[0, 0, :]
+                            audio_frag_end_idx.insert(0, 0)
+                            batch_audio_fragment = [_batch_audio[audio_frag_end_idx[i - 1]:audio_frag_end_idx[i]] for i in range(1, len(audio_frag_end_idx))]
+                        else:
+                            for i, idx in enumerate(idx_list):
+                                phones = batch_phones[i].unsqueeze(0).to(self.configs.device)
+                                _pred_semantic = pred_semantic_list[i][-idx:].unsqueeze(0).unsqueeze(0)
+                                audio_fragment = self.vits_model.decode(_pred_semantic, phones, refer_audio_spec, speed=speed_factor, sv_emb=sv_emb).detach()[0, 0, :]
+                                batch_audio_fragment.append(audio_fragment)
+                    else:
+                        if parallel_infer:
+                            audio_fragments = self.using_vocoder_synthesis_batched_infer(idx_list, pred_semantic_list, batch_phones, speed=speed_factor, sample_steps=sample_steps)
+                            batch_audio_fragment.extend(audio_fragments)
+                        else:
+                            for i, idx in enumerate(idx_list):
+                                phones = batch_phones[i].unsqueeze(0).to(self.configs.device)
+                                _pred_semantic = pred_semantic_list[i][-idx:].unsqueeze(0).unsqueeze(0)
+                                audio_fragment = self.using_vocoder_synthesis(_pred_semantic, phones, speed=speed_factor, sample_steps=sample_steps)
+                                batch_audio_fragment.append(audio_fragment)
+                else:
+                    semantic_token_generator = self.t2s_model.model.infer_panel(
+                        all_phoneme_ids[0].unsqueeze(0), all_phoneme_lens, prompt,
+                        all_bert_features[0].unsqueeze(0), top_k=top_k, top_p=top_p,
+                        temperature=temperature, early_stop_num=self.configs.hz * self.configs.max_sec,
+                        max_len=max_len, repetition_penalty=repetition_penalty,
+                        streaming_mode=True, chunk_length=min_chunk_length,
+                        mute_emb_sim_matrix=self.configs.mute_emb_sim_matrix if not fixed_length_chunk else None,
+                        chunk_split_thershold=chunk_split_thershold,
+                    )
+                    t4 = time.perf_counter()
+                    phones = batch_phones[0].unsqueeze(0).to(self.configs.device)
+                    is_first_chunk = True
+                    upsample_rate = math.prod(self.vits_model.upsample_rates) * (2 if self.vits_model.semantic_frame_rate == "25hz" else 1) / speed_factor if not self.configs.use_vocoder else self.vocoder_configs["upsample_rate"] * (3.875 if self.configs.version == "v3" else 4) / speed_factor
+
+                    last_audio_chunk = None
+                    last_latent = None
+                    previous_tokens = []
+                    overlap_size = math.ceil(overlap_length * upsample_rate)
+
+                    for semantic_tokens, is_final in semantic_token_generator:
+                        if semantic_tokens is None and last_audio_chunk is not None:
+                            yield self.audio_postprocess([[last_audio_chunk[-overlap_size:]]], output_sr, None, speed_factor, False, 0.0, super_sampling if self.configs.use_vocoder and self.configs.version == "v3" else False)
+                            break
+
+                        previous_tokens.append(semantic_tokens)
+                        _semantic_tokens = torch.cat(previous_tokens, dim=-1)
+
+                        if not self.configs.use_vocoder:
+                            audio_chunk, latent, _ = self.vits_model.decode_streaming(
+                                _semantic_tokens.unsqueeze(0), phones, refer_audio_spec,
+                                speed=speed_factor, sv_emb=sv_emb,
+                                result_length=semantic_tokens.shape[-1] + overlap_length if not is_first_chunk else None,
+                                overlap_frames=last_latent[:, :, -overlap_length * (2 if self.vits_model.semantic_frame_rate == "25hz" else 1):] if last_latent is not None else None,
+                            )
+                            audio_chunk = audio_chunk.detach()[0, 0, :]
+                        else:
+                            raise RuntimeError(i18n("SoVits V3/4 model does not support streaming mode"))
+
+                        audio_chunk_ = audio_chunk
+                        if is_first_chunk and not is_final:
+                            is_first_chunk = False
+                            audio_chunk_ = audio_chunk_[:-overlap_size]
+                        elif is_first_chunk and is_final:
+                            is_first_chunk = False
+                        elif not is_first_chunk and not is_final:
+                            audio_chunk_ = self.sola_algorithm([last_audio_chunk, audio_chunk_], overlap_size)
+                            audio_chunk_ = audio_chunk_[last_audio_chunk.shape[0] - overlap_size:-overlap_size] if not is_final else audio_chunk_[last_audio_chunk.shape[0] - overlap_size:]
+
+                        last_latent = latent
+                        last_audio_chunk = audio_chunk
+                        yield self.audio_postprocess([[audio_chunk_]], output_sr, None, speed_factor, False, 0.0, super_sampling if self.configs.use_vocoder and self.configs.version == "v3" else False)
+
+                        if is_first_package:
+                            is_first_package = False
+
+                    yield output_sr, np.zeros(int(output_sr * fragment_interval), dtype=np.int16)
+
+                t5 = time.perf_counter()
+                if return_fragment:
+                    yield self.audio_postprocess([batch_audio_fragment], output_sr, None, speed_factor, False, fragment_interval, super_sampling if self.configs.use_vocoder and self.configs.version == "v3" else False)
+                elif streaming_mode:
+                    pass
+                else:
+                    audio.append(batch_audio_fragment)
+
+                if self.stop_flag:
+                    yield output_sr, np.zeros(int(output_sr), dtype=np.int16)
+                    return
+
+            if not (return_fragment or streaming_mode):
+                if not audio:
+                    yield output_sr, np.zeros(int(output_sr), dtype=np.int16)
+                    return
+                yield self.audio_postprocess(audio, output_sr, batch_index_list, speed_factor, split_bucket, fragment_interval, super_sampling if self.configs.use_vocoder and self.configs.version == "v3" else False)
+
+        except Exception as e:
+            traceback.print_exc()
+            yield 16000, np.zeros(16000, dtype=np.int16)
+            del self.t2s_model
+            del self.vits_model
+            self.t2s_model = None
+            self.vits_model = None
+            self.init_t2s_weights(self.configs.t2s_weights_path)
+            self.init_vits_weights(self.configs.vits_weights_path)
+            raise e
+        finally:
+            self.empty_cache()
+
+    def empty_cache(self):
+        try:
+            gc.collect()
+            if "cuda" in str(self.configs.device):
+                torch.cuda.empty_cache()
+            elif str(self.configs.device) == "mps":
+                torch.mps.empty_cache()
+        except:
+            pass
+
+    def audio_postprocess(self, audio, sr, batch_index_list=None, speed_factor=1.0, split_bucket=True, fragment_interval=0.3, super_sampling=False):
+        if fragment_interval > 0:
+            zero_wav = torch.zeros(int(self.configs.sampling_rate * fragment_interval), dtype=self.precision, device=self.configs.device)
+
+        for i, batch in enumerate(audio):
+            for j, audio_fragment in enumerate(batch):
+                max_audio = torch.abs(audio_fragment).max()
+                if max_audio > 1:
+                    audio_fragment /= max_audio
+                audio_fragment = torch.cat([audio_fragment, zero_wav], dim=0) if fragment_interval > 0 else audio_fragment
+                audio[i][j] = audio_fragment
+
+        if split_bucket and batch_index_list is not None:
+            audio = self.recovery_order(audio, batch_index_list)
+        else:
+            audio = sum(audio, [])
+
+        audio = torch.cat(audio, dim=0)
+
+        if super_sampling:
+            try:
+                from .audio_sr import AP_BWE
+                sr_model = AP_BWE(self.configs.device, DictToAttrRecursive)
+                audio, sr = sr_model(audio.unsqueeze(0), sr)
+                max_audio = np.abs(audio).max()
+                if max_audio > 1:
+                    audio /= max_audio
+                audio = (audio * 32768).astype(np.int16)
+            except Exception:
+                audio = audio.cpu().numpy()
+                audio = (audio * 32768).astype(np.int16)
+        else:
+            audio = audio.cpu().numpy()
+            audio = (audio * 32768).astype(np.int16)
+
+        return sr, audio
+
+    def using_vocoder_synthesis(self, semantic_tokens, phones, speed=1.0, sample_steps=32):
+        prompt_semantic_tokens = self.prompt_cache["prompt_semantic"].unsqueeze(0).unsqueeze(0).to(self.configs.device)
+        prompt_phones = torch.LongTensor(self.prompt_cache["phones"]).unsqueeze(0).to(self.configs.device)
+        raw_entry = self.prompt_cache["refer_spec"][0]
+        if isinstance(raw_entry, tuple):
+            raw_entry = raw_entry[0]
+        refer_audio_spec = raw_entry.to(dtype=self.precision, device=self.configs.device)
+
+        fea_ref, ge = self.vits_model.decode_encp(prompt_semantic_tokens, prompt_phones, refer_audio_spec)
+
+        tgt_sr = 24000 if self.configs.version == "v3" else 32000
+        ref_audio = self.prompt_cache.get("raw_audio", torch.zeros(1, 24000)).to(self.configs.device).float()
+        ref_sr = self.prompt_cache.get("raw_sr", 24000)
+        if ref_audio.shape[0] == 2:
+            ref_audio = ref_audio.mean(0).unsqueeze(0)
+        if ref_sr != tgt_sr:
+            ref_audio = resample(ref_audio, ref_sr, tgt_sr, self.configs.device)
+
+        mel2 = mel_fn(ref_audio) if self.configs.version == "v3" else mel_fn_v4(ref_audio)
+        mel2 = norm_spec(mel2)
+        T_min = min(mel2.shape[2], fea_ref.shape[2])
+        mel2 = mel2[:, :, :T_min]
+        fea_ref = fea_ref[:, :, :T_min]
+        T_ref = self.vocoder_configs["T_ref"]
+        T_chunk = self.vocoder_configs["T_chunk"]
+        if T_min > T_ref:
+            mel2 = mel2[:, :, -T_ref:]
+            fea_ref = fea_ref[:, :, -T_ref:]
+            T_min = T_ref
+        chunk_len = T_chunk - T_min
+
+        mel2 = mel2.to(self.precision)
+        fea_todo, ge = self.vits_model.decode_encp(semantic_tokens, phones, refer_audio_spec, ge, speed)
+
+        cfm_resss = []
+        idx = 0
+        while True:
+            fea_todo_chunk = fea_todo[:, :, idx: idx + chunk_len]
+            if fea_todo_chunk.shape[-1] == 0:
+                break
+            idx += chunk_len
+            fea = torch.cat([fea_ref, fea_todo_chunk], 2).transpose(2, 1)
+            cfm_res = self.vits_model.cfm.inference(fea, torch.LongTensor([fea.size(1)]).to(fea.device), mel2, sample_steps, inference_cfg_rate=0)
+            cfm_res = cfm_res[:, :, mel2.shape[2]:]
+            mel2 = cfm_res[:, :, -T_min:]
+            fea_ref = fea_todo_chunk[:, :, -T_min:]
+            cfm_resss.append(cfm_res)
+        cfm_res = torch.cat(cfm_resss, 2)
+        cfm_res = denorm_spec(cfm_res)
+
+        with torch.inference_mode():
+            wav_gen = self.vocoder(cfm_res)
+            audio = wav_gen[0][0]
+        return audio
+
+    def using_vocoder_synthesis_batched_infer(self, idx_list, semantic_tokens_list, batch_phones, speed=1.0, sample_steps=32):
+        prompt_semantic_tokens = self.prompt_cache["prompt_semantic"].unsqueeze(0).unsqueeze(0).to(self.configs.device)
+        prompt_phones = torch.LongTensor(self.prompt_cache["phones"]).unsqueeze(0).to(self.configs.device)
+        raw_entry = self.prompt_cache["refer_spec"][0]
+        if isinstance(raw_entry, tuple):
+            raw_entry = raw_entry[0]
+        refer_audio_spec = raw_entry.to(dtype=self.precision, device=self.configs.device)
+
+        fea_ref, ge = self.vits_model.decode_encp(prompt_semantic_tokens, prompt_phones, refer_audio_spec)
+
+        tgt_sr = 24000 if self.configs.version == "v3" else 32000
+        ref_audio = self.prompt_cache.get("raw_audio", torch.zeros(1, 24000)).to(self.configs.device).float()
+        ref_sr = self.prompt_cache.get("raw_sr", 24000)
+        if ref_audio.shape[0] == 2:
+            ref_audio = ref_audio.mean(0).unsqueeze(0)
+        if ref_sr != tgt_sr:
+            ref_audio = resample(ref_audio, ref_sr, tgt_sr, self.configs.device)
+
+        mel2 = mel_fn(ref_audio) if self.configs.version == "v3" else mel_fn_v4(ref_audio)
+        mel2 = norm_spec(mel2)
+        T_min = min(mel2.shape[2], fea_ref.shape[2])
+        mel2 = mel2[:, :, :T_min]
+        fea_ref = fea_ref[:, :, :T_min]
+        T_ref = self.vocoder_configs["T_ref"]
+        T_chunk = self.vocoder_configs["T_chunk"]
+        if T_min > T_ref:
+            mel2 = mel2[:, :, -T_ref:]
+            fea_ref = fea_ref[:, :, -T_ref:]
+            T_min = T_ref
+        chunk_len = T_chunk - T_min
+        mel2 = mel2.to(self.precision)
+
+        overlapped_len = self.vocoder_configs["overlapped_len"]
+        feat_lens = []
+        feat_list = []
+        for i, idx in enumerate(idx_list):
+            phones = batch_phones[i].unsqueeze(0).to(self.configs.device)
+            semantic_tokens = semantic_tokens_list[i][-idx:].unsqueeze(0).unsqueeze(0)
+            feat, _ = self.vits_model.decode_encp(semantic_tokens, phones, refer_audio_spec, ge, speed)
+            feat_list.append(feat)
+            feat_lens.append(feat.shape[2])
+
+        feats = torch.cat(feat_list, 2)
+        feats_padded = F.pad(feats, (overlapped_len, 0), "constant", 0)
+        pos = 0
+        padding_len = 0
+        feat_chunks = []
+        while True:
+            if pos == 0:
+                chunk = feats_padded[:, :, pos: pos + chunk_len]
+            else:
+                pos = pos - overlapped_len
+                chunk = feats_padded[:, :, pos: pos + chunk_len]
+            pos += chunk_len
+            if chunk.shape[-1] == 0:
+                break
+            padding_len = chunk_len - chunk.shape[2]
+            if padding_len != 0:
+                chunk = F.pad(chunk, (0, padding_len), "constant", 0)
+            feat_chunks.append(chunk)
+
+        feat_chunks = torch.cat(feat_chunks, 0)
+        bs = feat_chunks.shape[0]
+        fea_ref = fea_ref.repeat(bs, 1, 1)
+        fea = torch.cat([fea_ref, feat_chunks], 2).transpose(2, 1)
+        pred_spec = self.vits_model.cfm.inference(fea, torch.LongTensor([fea.size(1)]).to(fea.device), mel2, sample_steps, inference_cfg_rate=0)
+        pred_spec = pred_spec[:, :, -chunk_len:]
+        dd = pred_spec.shape[1]
+        pred_spec = pred_spec.permute(1, 0, 2).contiguous().view(dd, -1).unsqueeze(0)
+        pred_spec = denorm_spec(pred_spec)
+
+        with torch.no_grad():
+            wav_gen = self.vocoder(pred_spec)
+            audio = wav_gen[0][0]
+
+        audio_fragments = []
+        upsample_rate = self.vocoder_configs["upsample_rate"]
+        pos = 0
+        while pos < audio.shape[-1]:
+            audio_fragments.append(audio[pos: pos + chunk_len * upsample_rate])
+            pos += chunk_len * upsample_rate
+
+        audio = self.sola_algorithm(audio_fragments, overlapped_len * upsample_rate)
+        if padding_len > 0:
+            audio = audio[overlapped_len * upsample_rate:-padding_len * upsample_rate]
+        else:
+            audio = audio[overlapped_len * upsample_rate:]
+
+        audio_fragments = []
+        for feat_len in feat_lens:
+            audio_fragments.append(audio[:feat_len * upsample_rate])
+            audio = audio[feat_len * upsample_rate:]
+        return audio_fragments
+
+    @staticmethod
+    def sola_algorithm(audio_fragments, overlap_len, search_len=320):
+        dtype = audio_fragments[0].dtype
+        for i in range(len(audio_fragments) - 1):
+            f1 = audio_fragments[i].float()
+            f2 = audio_fragments[i + 1].float()
+            w1 = f1[-overlap_len:]
+            w2 = f2[:overlap_len + search_len]
+            corr_norm = F.conv1d(w2.view(1, 1, -1), w1.view(1, 1, -1)).view(-1)
+            corr_den = F.conv1d(w2.view(1, 1, -1) ** 2, torch.ones_like(w1).view(1, 1, -1)).view(-1) + 1e-8
+            idx = (corr_norm / corr_den.sqrt()).argmax()
+            f1_ = f1[:-overlap_len]
+            audio_fragments[i] = f1_
+            f2_ = f2[idx:]
+            window = torch.hann_window(overlap_len * 2, device=f1.device, dtype=f1.dtype)
+            f2_[:overlap_len] = window[:overlap_len] * f2_[:overlap_len] + window[overlap_len:] * f1[-overlap_len:]
+            audio_fragments[i + 1] = f2_
+        return torch.cat(audio_fragments, 0).to(dtype)

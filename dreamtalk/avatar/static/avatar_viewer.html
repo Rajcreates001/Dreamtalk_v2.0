@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamTalk 3D Avatar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;background:#0a0a1a;color:#fff}
+#canvas-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#ui-overlay{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:20px;background:linear-gradient(transparent,rgba(0,0,0,0.85))}
+#chat-panel{position:fixed;right:20px;top:20px;bottom:120px;width:380px;z-index:10;display:flex;flex-direction:column;background:rgba(15,15,35,0.92);border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px)}
+#chat-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.06);font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block}
+.status-dot.processing{background:#f59e0b;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+#chat-messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+#chat-messages::-webkit-scrollbar{width:4px}
+#chat-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+.msg{max-width:90%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;animation:fadeIn 0.3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{background:rgba(59,130,246,0.3);align-self:flex-end;border-bottom-right-radius:4px}
+.msg.avatar{background:rgba(255,255,255,0.06);align-self:flex-start;border-bottom-left-radius:4px}
+.msg .emotion-badge{font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.1);margin-top:4px;display:inline-block}
+#chat-input-wrap{display:flex;padding:12px 16px 16px;gap:8px}
+#chat-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;outline:none;transition:border-color 0.2s}
+#chat-input:focus{border-color:rgba(59,130,246,0.5)}
+#chat-input::placeholder{color:rgba(255,255,255,0.3)}
+#chat-send{background:#3b82f6;border:none;border-radius:10px;padding:10px 18px;color:#fff;cursor:pointer;font-weight:600;transition:background 0.2s}
+#chat-send:hover{background:#2563eb}
+#chat-send:disabled{opacity:0.4;cursor:not-allowed}
+
+#controls{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:12px}
+.ctrl-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 18px;color:#fff;cursor:pointer;font-size:13px;transition:all 0.2s;display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px)}
+.ctrl-btn:hover{background:rgba(255,255,255,0.15)}
+.ctrl-btn.primary{background:#3b82f6;border-color:#3b82f6}
+.ctrl-btn.primary:hover{background:#2563eb}
+.ctrl-btn.danger{background:#ef4444;border-color:#ef4444}
+.ctrl-btn.danger:hover{background:#dc2626}
+
+#status-bar{position:fixed;top:20px;left:20px;z-index:5;background:rgba(0,0,0,0.6);border-radius:10px;padding:8px 14px;font-size:12px;border:1px solid rgba(255,255,255,0.06)}
+#status-bar .label{color:rgba(255,255,255,0.5)}
+#status-bar .value{color:#22c55e}
+
+#upload-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+#upload-modal.hidden{display:none}
+.modal-box{background:rgba(20,20,50,0.95);border-radius:20px;padding:40px;max-width:480px;width:90%;border:1px solid rgba(255,255,255,0.08);text-align:center}
+.modal-box h2{font-size:22px;margin-bottom:8px}
+.modal-box p{color:rgba(255,255,255,0.6);margin-bottom:24px;font-size:14px}
+.modal-box label{display:block;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.15);border-radius:12px;padding:30px;margin-bottom:16px;cursor:pointer;transition:all 0.3s}
+.modal-box label:hover{border-color:#3b82f6;background:rgba(59,130,246,0.05)}
+.modal-box label span{display:block;font-size:13px;color:rgba(255,255,255,0.4);margin-top:8px}
+.modal-box input[type=file]{display:none}
+.modal-box textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;resize:vertical;min-height:60px;margin-bottom:16px;outline:none}
+.modal-box .btn-start{background:#3b82f6;border:none;border-radius:10px;padding:12px 32px;color:#fff;cursor:pointer;font-weight:600;font-size:15px;transition:all 0.3s}
+.modal-box .btn-start:hover{background:#2563eb;transform:translateY(-1px)}
+.modal-box .btn-start:disabled{opacity:0.5;cursor:not-allowed}
+.modal-box .files-info{margin:12px 0;font-size:13px;color:rgba(255,255,255,0.5)}
+.modal-box .files-info strong{color:#fff}
+
+#emotion-indicator{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(0,0,0,0.6);border-radius:20px;padding:6px 16px 6px 12px;font-size:13px;border:1px solid rgba(255,255,255,0.06);display:none;align-items:center;gap:8px}
+#emotion-indicator .emoji{font-size:18px}
+#emotion-indicator .label{color:rgba(255,255,255,0.5)}
+#emotion-indicator .val{color:#fff;text-transform:capitalize}
+
+/* Emotion Control Panel */
+#emotion-panel-btn{position:fixed;top:60px;right:20px;z-index:15;background:rgba(15,15,35,0.9);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;color:#fff;cursor:pointer;font-size:13px;backdrop-filter:blur(8px);transition:all 0.2s;display:flex;align-items:center;gap:6px}
+#emotion-panel-btn:hover{background:rgba(30,30,60,0.95);border-color:#3b82f6}
+#emotion-panel{position:fixed;right:20px;top:120px;width:280px;z-index:15;background:rgba(15,15,35,0.95);border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);padding:16px;display:none;flex-direction:column;gap:12px}
+#emotion-panel.visible{display:flex}
+#emotion-panel h3{font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);margin:0}
+.emoji-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.emoji-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:8px 4px;color:#fff;cursor:pointer;font-size:18px;text-align:center;transition:all 0.2s}
+.emoji-btn:hover{background:rgba(59,130,246,0.2);border-color:#3b82f6;transform:scale(1.1)}
+.emoji-btn.active{background:rgba(59,130,246,0.3);border-color:#3b82f6}
+.emoji-btn .label{display:block;font-size:8px;color:rgba(255,255,255,0.5);margin-top:2px;text-transform:capitalize}
+.slider-group{margin:0}
+.slider-group label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:2px}
+.slider-group input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:rgba(255,255,255,0.1);border-radius:2px;outline:none;accent-color:#3b82f6}
+.slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#3b82f6;cursor:pointer}
+.emotion-preset{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:6px 10px;color:rgba(255,255,255,0.7);cursor:pointer;font-size:11px;transition:all 0.2s}
+.emotion-preset:hover{background:rgba(59,130,246,0.15);border-color:#3b82f6}
+.emotion-preset.active{background:rgba(59,130,246,0.25);border-color:#3b82f6;color:#fff}
+
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:#3b82f6;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- Upload Modal -->
+<div id="upload-modal">
+  <div class="modal-box">
+    <h2>Welcome to DreamTalk</h2>
+    <p>Upload your photo and voice sample to create your 3D avatar</p>
+    <label id="file-drop">
+      📸 <strong>Choose files</strong>
+      <span>Upload image (JPG/PNG) + voice (WAV/MP3)</span>
+    </label>
+    <input type="file" id="file-input" accept="image/*,audio/*" multiple>
+    <div class="files-info" id="files-info"></div>
+    <textarea id="script-input" placeholder="Enter a script for the avatar to speak (or leave default)...">Hello! I'm your Digital Twin, created with DreamTalk AI. I can see you, hear you, and interact with you in real-time. How can I assist you today?</textarea>
+    <button class="btn-start" id="btn-start">✨ Create My Avatar</button>
+    <p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,0.3)">Or use <a href="#" id="demo-link" style="color:#3b82f6">default demo files</a></p>
+  </div>
+</div>
+
+<!-- Status -->
+<div id="status-bar">
+  <span class="label">Status: </span>
+  <span class="value" id="status-text">Waiting for files</span>
+</div>
+
+<!-- Emotion -->
+<div id="emotion-indicator">
+  <span class="emoji">😐</span>
+  <span class="label">Mood: </span>
+  <span class="val" id="emotion-text">neutral</span>
+</div>
+
+<!-- 3D Canvas -->
+<div id="canvas-container"></div>
+
+<!-- Chat -->
+<div id="chat-panel" style="display:none">
+  <div id="chat-header">
+    <span class="status-dot" id="chat-dot"></span>
+    DreamTalk Avatar
+    <span style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.3)" id="voice-indicator">🔇</span>
+  </div>
+  <div id="chat-messages">
+    <div class="msg avatar">Hello! I'm your Digital Twin avatar. Ask me anything!</div>
+  </div>
+  <div id="chat-input-wrap">
+    <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off">
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <button class="ctrl-btn" id="btn-upload">📤 Upload</button>
+  <button class="ctrl-btn primary" id="btn-speak">🔊 Speak</button>
+  <button class="ctrl-btn" id="btn-reset">🔄 Reset</button>
+  <button class="ctrl-btn" id="btn-toggle-chat">💬 Chat</button>
+  <div class="ctrl-btn" style="padding:4px 10px;gap:4px">
+    <select id="lang-select" style="background:transparent;color:#fff;border:none;font-size:13px;outline:none;cursor:pointer">
+      <option value="en">🇬🇧 English</option>
+      <option value="kn">🇮🇳 ಕನ್ನಡ</option>
+      <option value="ta">🇮🇳 தமிழ்</option>
+      <option value="hi">🇮🇳 हिन्दी</option>
+    </select>
+  </div>
+  <button class="ctrl-btn" id="btn-kb-info">📚 About Me</button>
+  <button class="ctrl-btn" id="btn-emotion-panel">🎭 Mood</button>
+</div>
+
+<!-- Emotion Control Panel -->
+<button id="emotion-panel-btn">🎭 Expression Controls</button>
+<div id="emotion-panel">
+  <h3>😊 Quick Emotions</h3>
+  <div class="emoji-grid" id="quick-emotions"></div>
+  
+  <h3>🎛️ Fine-Tune Mood</h3>
+  <div class="slider-group">
+    <label>Valence (Pleasure) <span id="val-label">0.5</span></label>
+    <input type="range" id="val-slider" min="-1" max="1" step="0.05" value="0">
+  </div>
+  <div class="slider-group">
+    <label>Arousal (Energy) <span id="ar-label">0.5</span></label>
+    <input type="range" id="ar-slider" min="-1" max="1" step="0.05" value="0">
+  </div>
+  <div class="slider-group">
+    <label>Dominance <span id="dom-label">0.5</span></label>
+    <input type="range" id="dom-slider" min="-1" max="1" step="0.05" value="0">
+  </div>
+  
+  <h3>🎭 Expression Presets</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:4px" id="preset-btns"></div>
+  
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button id="apply-emotion" style="flex:1;background:#3b82f6;border:none;border-radius:8px;padding:8px;color:#fff;cursor:pointer;font-size:12px;font-weight:600">Apply Expression</button>
+    <button id="reset-emotion" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px">Reset</button>
+  </div>
+</div>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+const state = {
+  meshLoaded: false,
+  wsConnected: false,
+  isSpeaking: false,
+  ttsData: null,
+  currentAudio: null,
+  emotion: 'neutral',
+  pipelineId: null,
+};
+
+let currentLang = 'en';
+
+let scene, camera, renderer, controls, avatarGroup;
+let ws;
+
+// ── Three.js Setup ─────────────────────────────────────────────────
+function initThree() {
+  const container = document.getElementById('canvas-container');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 0, 4);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  container.appendChild(renderer.domElement);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.5;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 10;
+  controls.target.set(0, 0, 0);
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0x404060, 0.5);
+  scene.add(ambient);
+
+  const main = new THREE.DirectionalLight(0xffffff, 1.0);
+  main.position.set(2, 3, 4);
+  scene.add(main);
+
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+  fill.position.set(-2, 1, -2);
+  scene.add(fill);
+
+  const rim = new THREE.DirectionalLight(0xffffff, 0.2);
+  rim.position.set(0, -1, -2);
+  scene.add(rim);
+
+  const bg = new THREE.HemisphereLight(0x1a1a3a, 0x0a0a1a, 0.6);
+  scene.add(bg);
+
+  // Environment sphere
+  const envGeo = new THREE.SphereGeometry(20, 32, 32);
+  const envMat = new THREE.MeshBasicMaterial({
+    color: 0x0a0a1a,
+    side: THREE.BackSide,
+  });
+  new THREE.Mesh(envGeo, envMat);
+
+  // Grid
+  const gridHelper = new THREE.GridHelper(6, 12, 0x333366, 0x222244);
+  gridHelper.position.y = -1.0;
+  scene.add(gridHelper);
+
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(8, 8);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x111133,
+    transparent: true,
+    opacity: 0.5,
+    roughness: 0.8,
+    metalness: 0.2,
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -1.0;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Particles
+  addStarfield();
+
+  avatarGroup = new THREE.Group();
+  scene.add(avatarGroup);
+
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function addStarfield() {
+  const vertices = [];
+  for (let i = 0; i < 2000; i++) {
+    vertices.push(
+      (Math.random() - 0.5) * 200,
+      (Math.random() - 0.5) * 200,
+      (Math.random() - 0.5) * 200
+    );
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  const mat = new THREE.PointsMaterial({ color: 0x4444aa, size: 0.1, transparent: true, opacity: 0.6 });
+  const stars = new THREE.Points(geo, mat);
+  scene.add(stars);
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ── Load 3D Mesh ───────────────────────────────────────────────────
+async function loadAvatarMesh() {
+  try {
+    // Try MTL + OBJ first
+    const mtlLoader = new THREE.MTLLoader();
+    mtlLoader.setPath('/api/static/');
+    const mtl = await new Promise((resolve, reject) => {
+      mtlLoader.load('face_texture.mtl', resolve, undefined, reject);
+    });
+    mtl.preload();
+
+    const objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(mtl);
+    const obj = await new Promise((resolve, reject) => {
+      objLoader.load('/api/static/current_mesh.obj', resolve, undefined, reject);
+    });
+    return obj;
+  } catch (mtlErr) {
+    // Fallback: OBJ without MTL
+    try {
+      const objLoader = new THREE.OBJLoader();
+      const obj = await new Promise((resolve, reject) => {
+        objLoader.load('/api/static/current_mesh.obj', resolve, undefined, reject);
+      });
+      // Try to apply texture manually
+      try {
+        const tex = new THREE.TextureLoader().load('/api/static/current_texture.jpg');
+        obj.traverse(child => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              map: tex,
+              roughness: 0.4,
+              metalness: 0.1,
+            });
+          }
+        });
+      } catch (e) {}
+      return obj;
+    } catch (e) {
+      // Placeholder: create a geometric head
+      return createPlaceholderHead();
+    }
+  }
+}
+
+function createPlaceholderHead() {
+  const group = new THREE.Group();
+
+  // Head (sphere)
+  const headGeo = new THREE.SphereGeometry(0.6, 32, 32);
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0xf0d0b0,
+    roughness: 0.6,
+    metalness: 0.0,
+  });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 0.15;
+  group.add(head);
+
+  // Eyes
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
+  [-0.2, 0.2].forEach(x => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), eyeMat);
+    eye.position.set(x, 0.35, 0.55);
+    group.add(eye);
+
+    const white = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 })
+    );
+    white.position.set(x, 0.35, 0.54);
+    group.add(white);
+  });
+
+  // Nose
+  const noseMat = new THREE.MeshStandardMaterial({ color: 0xe0b090 });
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 8), noseMat);
+  nose.position.set(0, 0.2, 0.58);
+  nose.rotation.x = 0.2;
+  group.add(nose);
+
+  // Mouth
+  const mouthMat = new THREE.MeshStandardMaterial({ color: 0xcc6666 });
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.02, 8, 16, Math.PI), mouthMat);
+  mouth.position.set(0, 0.05, 0.56);
+  mouth.rotation.x = -0.2;
+  group.add(mouth);
+
+  // Ears
+  [-0.56, 0.56].forEach((x, i) => {
+    const ear = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xe0b090 })
+    );
+    ear.position.set(x, 0.15, 0);
+    ear.scale.set(1, 1.3, 0.6);
+    group.add(ear);
+  });
+
+  // Hair (simple cap)
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0x443322 });
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.65, 24, 24, 0, Math.PI * 2, 0, Math.PI / 3), hairMat);
+  hair.position.y = 0.45;
+  group.add(hair);
+
+  return group;
+}
+
+async function refreshAvatar() {
+  // Clear existing
+  while (avatarGroup.children.length) {
+    const child = avatarGroup.children[0];
+    avatarGroup.remove(child);
+  }
+
+  const obj = await loadAvatarMesh();
+  obj.scale.set(0.8, 0.8, 0.8);
+  avatarGroup.add(obj);
+  state.meshLoaded = true;
+
+  // Auto-rotate
+  controls.autoRotate = true;
+}
+
+// ── WebSocket Chat ──────────────────────────────────────────────────
+function connectWebSocket() {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  ws = new WebSocket(`${proto}//${host}/api/avatar/ws/chat`);
+
+  ws.onopen = () => {
+    state.wsConnected = true;
+    document.getElementById('chat-dot').className = 'status-dot';
+  };
+
+  ws.onclose = () => {
+    state.wsConnected = false;
+    document.getElementById('chat-dot').className = 'status-dot processing';
+    setTimeout(connectWebSocket, 2000);
+  };
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'response') {
+      addChatMessage(msg.text, 'avatar', msg.emotion);
+      updateEmotion(msg.emotion, msg.valence, msg.arousal);
+
+      if (msg.tts_data) {
+        playTTS(msg.tts_data);
+      }
+    }
+  };
+}
+
+function sendChatMessage(text) {
+  if (!state.wsConnected) {
+    addChatMessage('Connecting...', 'avatar', 'neutral');
+    return;
+  }
+  addChatMessage(text, 'user');
+  ws.send(JSON.stringify({ text, language: currentLang }));
+}
+
+function addChatMessage(text, role, emotion) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  if (emotion && role === 'avatar') {
+    const badge = document.createElement('div');
+    badge.className = 'emotion-badge';
+    badge.textContent = getEmoji(emotion) + ' ' + emotion;
+    div.appendChild(badge);
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function getEmoji(mood) {
+  const map = {
+    happy: '😊', excited: '😃', calm: '😌', content: '🙂',
+    loving: '❤️', grateful: '🙏', hopeful: '🌟', trusting: '🤝',
+    playful: '😜', sarcastic: '😏', surprised: '😮',
+    neutral: '😐', confused: '🤔', anticipatory: '🤗',
+    sad: '😢', anxious: '😰', fearful: '😨', embarrassed: '😳',
+    angry: '😠', frustrated: '😤', annoyed: '😒', furious: '🤬',
+    defensive: '🛡️', disgusted: '🤢',
+  };
+  return map[mood] || '😐';
+}
+
+function updateEmotion(mood, valence, arousal) {
+  state.emotion = mood || 'neutral';
+  const indicator = document.getElementById('emotion-indicator');
+  indicator.style.display = 'flex';
+  document.querySelector('#emotion-indicator .emoji').textContent = getEmoji(state.emotion);
+  document.querySelector('#emotion-indicator .val').textContent = state.emotion;
+}
+
+// ── TTS Audio Playback ─────────────────────────────────────────────
+function playTTS(base64Data) {
+  try {
+    if (state.currentAudio) {
+      state.currentAudio.pause();
+      state.currentAudio = null;
+    }
+
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const blob = new Blob([bytes], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    state.currentAudio = audio;
+    state.isSpeaking = true;
+    document.getElementById('voice-indicator').textContent = '🔊 Speaking...';
+    audio.onended = () => {
+      state.isSpeaking = false;
+      document.getElementById('voice-indicator').textContent = '🔇';
+      URL.revokeObjectURL(url);
+    };
+    audio.play();
+  } catch (e) {
+    console.error('TTS playback error:', e);
+  }
+}
+
+// ── Pipeline API Calls ─────────────────────────────────────────────
+async function runPipeline(imageFile, voiceFile, script) {
+  setStatus('Processing...', '#f59e0b');
+
+  const formData = new FormData();
+  if (imageFile) formData.append('image', imageFile);
+  if (voiceFile) formData.append('voice', voiceFile);
+  formData.append('text', script || 'Hello! I am your Digital Twin.');
+
+  try {
+    const res = await fetch('/api/avatar/pipeline/run', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.status === 'completed' || data.status === 'partial') {
+      state.pipelineId = data.pipeline_id;
+      setStatus('Avatar ready!', '#22c55e');
+
+      if (data.face_detected || data.mesh_path) {
+        await refreshAvatar();
+        addChatMessage('✅ 3D face model loaded from your photo!', 'avatar', 'neutral');
+      } else {
+        addChatMessage('Using default 3D head model', 'avatar', 'neutral');
+        await refreshAvatar();
+      }
+
+      if (data.brain_response) {
+        addChatMessage(data.brain_response, 'avatar', data.emotion || 'neutral');
+      }
+
+      if (data.emotion) {
+        updateEmotion(data.emotion, 0, 0);
+      }
+
+      if (data.cloned_voice) {
+        addChatMessage('🎤 Voice cloned from your sample!', 'avatar', 'happy');
+      }
+
+      // Show chat
+      document.getElementById('chat-panel').style.display = 'flex';
+      connectWebSocket();
+    } else {
+      setStatus('Pipeline issue', '#ef4444');
+      addChatMessage(`Pipeline status: ${data.status}`, 'avatar', 'neutral');
+    }
+  } catch (e) {
+    setStatus('Connection error', '#ef4444');
+    addChatMessage(`Error: ${e.message}`, 'avatar', 'neutral');
+  }
+}
+
+async function speakScript() {
+  if (state.isSpeaking) {
+    if (state.currentAudio) state.currentAudio.pause();
+    state.isSpeaking = false;
+    document.getElementById('voice-indicator').textContent = '🔇';
+    return;
+  }
+
+  const scriptInput = document.getElementById('script-input');
+  const script = scriptInput ? scriptInput.value : "Hello! I'm your Digital Twin.";
+
+  setStatus('Generating speech...', '#3b82f6');
+
+  try {
+    const formData = new FormData();
+    formData.append('text', script);
+    formData.append('language', currentLang);
+    const res = await fetch('/api/avatar/tts/generate', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.tts_path) {
+      const audioPath = data.tts_path;
+      const audioRes = await fetch('/api/avatar/tts/audio?' + new URLSearchParams({ path: audioPath, language: currentLang }));
+      const audioData = await audioRes.json();
+      if (audioData.base64) {
+        playTTS(audioData.base64);
+        addChatMessage('🔊 Speaking your script...', 'avatar', 'neutral');
+      }
+    }
+  } catch (e) {
+    console.error('Script generation error:', e);
+  }
+
+  setStatus('Avatar ready!', '#22c55e');
+}
+
+// We need a TTS audio endpoint
+async function fetchTTSAudio() {
+  const existingEndpoint = '/api/avatar/tts/audio';
+  const scriptInput = document.getElementById('script-input');
+  const script = scriptInput ? scriptInput.value : "Hello!";
+
+  const formData = new FormData();
+  formData.append('text', script);
+  formData.append('language', currentLang);
+  const res = await fetch('/api/avatar/tts/generate', { method: 'POST', body: formData });
+  const data = await res.json();
+
+  if (data.tts_path) {
+    const audioPath = data.tts_path;
+    const audioResp = await fetch('/api/avatar/tts/audio?' + new URLSearchParams({ path: audioPath, language: currentLang }));
+    const blob = await audioResp.blob();
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      playTTS(base64);
+    };
+    reader.readAsDataURL(blob);
+  }
+}
+
+function setStatus(text, color) {
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('status-text').style.color = color || '#22c55e';
+}
+
+// ── UI Events ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initThree();
+  refreshAvatar(); // Show placeholder
+
+  // Check if session has pre-loaded data
+  fetch('/api/avatar/session').then(r=>r.json()).then(s=>{
+    if (s.knowledge_base_ready) {
+      addChatMessage('📚 Student knowledge base loaded (Sahyadri CSE)', 'avatar', 'neutral');
+    }
+    if (s.has_face || s.mesh_url) {
+      document.getElementById('upload-modal').classList.add('hidden');
+      setStatus('Avatar loaded from files!', '#22c55e');
+      refreshAvatar().then(()=>{
+        addChatMessage('✅ 3D face model loaded from your photo!', 'avatar', 'neutral');
+        document.getElementById('chat-panel').style.display = 'flex';
+        connectWebSocket();
+        updateEmotion('neutral', 0, 0);
+        setStatus('Ready! Ask me anything.', '#22c55e');
+      });
+    }
+    if (currentLang && s.current_language) {
+      currentLang = s.current_language;
+      document.getElementById('lang-select').value = currentLang;
+    }
+  }).catch(()=>{});
+
+  // Upload modal
+  const uploadBtn = document.getElementById('btn-upload');
+  const modal = document.getElementById('upload-modal');
+  const fileInput = document.getElementById('file-input');
+  const startBtn = document.getElementById('btn-start');
+  const filesInfo = document.getElementById('files-info');
+  const demoLink = document.getElementById('demo-link');
+
+  let selectedImage = null;
+  let selectedVoice = null;
+
+  uploadBtn.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+  });
+
+  document.getElementById('file-drop').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    selectedImage = null;
+    selectedVoice = null;
+
+    for (const file of fileInput.files) {
+      const type = file.type;
+      if (type.startsWith('image/') && !selectedImage) selectedImage = file;
+      else if (type.startsWith('audio/') && !selectedVoice) selectedVoice = file;
+    }
+
+    let info = '';
+    if (selectedImage) info += `📸 ${selectedImage.name} `;
+    if (selectedVoice) info += `🎤 ${selectedVoice.name}`;
+    if (!info) info = 'No valid files selected';
+
+    filesInfo.innerHTML = info ? `<strong>${info}</strong>` : '';
+    startBtn.disabled = false;
+  });
+
+  // Language selector
+  document.getElementById('lang-select').addEventListener('change', async (e) => {
+    currentLang = e.target.value;
+    const fd = new FormData();
+    fd.append('language', currentLang);
+    await fetch('/api/avatar/language', { method: 'POST', body: fd });
+    addChatMessage(`🌐 Language: ${e.target.options[e.target.selectedIndex].text}`, 'avatar', 'neutral');
+  });
+
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    startBtn.textContent = '⏳ Processing...';
+    modal.classList.add('hidden');
+
+    const script = document.getElementById('script-input').value;
+    await runPipeline(selectedImage, selectedVoice, script);
+
+    startBtn.disabled = false;
+    startBtn.textContent = '✨ Create My Avatar';
+  });
+
+  demoLink.addEventListener('click', async (e) => {
+    e.preventDefault();
+    modal.classList.add('hidden');
+    document.getElementById('script-input').value = 'Hello! I am your Digital Twin, created with DreamTalk AI. I can see you, hear you, and interact with you in real time. How can I assist you today?';
+    startBtn.disabled = true;
+    startBtn.textContent = '⏳ Loading demo...';
+    await refreshAvatar();
+    setStatus('Demo mode - upload files to customize', '#f59e0b');
+    // Show knowledge base intro
+    try {
+      const r = await fetch('/api/avatar/knowledge');
+      const d = await r.json();
+      if (d.intro) addChatMessage(d.intro, 'avatar', 'happy');
+    } catch (e) {
+      addChatMessage('👋 Upload your photo and voice to create a personalized avatar!', 'avatar', 'neutral');
+    }
+    document.getElementById('chat-panel').style.display = 'flex';
+    connectWebSocket();
+    updateEmotion('happy', 0.5, 0.5);
+    startBtn.disabled = false;
+    startBtn.textContent = '✨ Create My Avatar';
+  });
+
+  // Chat
+  const chatInput = document.getElementById('chat-input');
+  const chatSend = document.getElementById('chat-send');
+  const toggleChat = document.getElementById('btn-toggle-chat');
+  const chatPanel = document.getElementById('chat-panel');
+
+  chatSend.addEventListener('click', () => {
+    const text = chatInput.value.trim();
+    if (text) {
+      sendChatMessage(text);
+      chatInput.value = '';
+    }
+  });
+
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      chatSend.click();
+    }
+  });
+
+  toggleChat.addEventListener('click', () => {
+    chatPanel.style.display = chatPanel.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  // Speak script
+  document.getElementById('btn-speak').addEventListener('click', speakScript);
+
+  // Knowledge base
+  document.getElementById('btn-kb-info').addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/avatar/knowledge', { method: 'GET' });
+      const data = await r.json();
+      if (data.intro) {
+        addChatMessage(data.intro, 'avatar', 'happy');
+        updateEmotion('happy', 0.5, 0.5);
+      }
+    } catch (e) {
+      addChatMessage('Knowledge base unavailable', 'avatar', 'neutral');
+    }
+  });
+
+  // Reset view
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    camera.position.set(0, 0, 4);
+    controls.target.set(0, 0, 0);
+    controls.autoRotate = !controls.autoRotate;
+  });
+
+  // ── Emotion Control Panel ────────────────────────────────────────
+  const emotions = [
+    { mood: 'happy', emoji: '😊', valence: 0.7, arousal: 0.5 },
+    { mood: 'excited', emoji: '😃', valence: 0.8, arousal: 0.8 },
+    { mood: 'calm', emoji: '😌', valence: 0.4, arousal: -0.4 },
+    { mood: 'loving', emoji: '❤️', valence: 0.6, arousal: 0.2 },
+    { mood: 'playful', emoji: '😜', valence: 0.5, arousal: 0.6 },
+    { mood: 'surprised', emoji: '😮', valence: 0.1, arousal: 0.7 },
+    { mood: 'neutral', emoji: '😐', valence: 0, arousal: 0 },
+    { mood: 'confused', emoji: '🤔', valence: -0.1, arousal: 0.3 },
+    { mood: 'sad', emoji: '😢', valence: -0.6, arousal: -0.3 },
+    { mood: 'anxious', emoji: '😰', valence: -0.4, arousal: 0.6 },
+    { mood: 'angry', emoji: '😠', valence: -0.7, arousal: 0.7 },
+    { mood: 'frustrated', emoji: '😤', valence: -0.5, arousal: 0.5 },
+  ];
+
+  const presetEmotions = [
+    { name: 'Happy', mood: 'happy' },
+    { name: 'Calm', mood: 'calm' },
+    { name: 'Sad', mood: 'sad' },
+    { name: 'Angry', mood: 'angry' },
+    { name: 'Surprised', mood: 'surprised' },
+    { name: 'Neutral', mood: 'neutral' },
+  ];
+
+  const emotionPanel = document.getElementById('emotion-panel');
+  const emotionPanelBtn = document.getElementById('emotion-panel-btn');
+  const quickEmotions = document.getElementById('quick-emotions');
+  const valSlider = document.getElementById('val-slider');
+  const arSlider = document.getElementById('ar-slider');
+  const domSlider = document.getElementById('dom-slider');
+  const valLabel = document.getElementById('val-label');
+  const arLabel = document.getElementById('ar-label');
+  const domLabel = document.getElementById('dom-label');
+  const presetBtns = document.getElementById('preset-btns');
+
+  // Populate quick emotions grid
+  emotions.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.innerHTML = `${e.emoji}<span class="label">${e.mood}</span>`;
+    btn.dataset.mood = e.mood;
+    btn.dataset.valence = e.valence;
+    btn.dataset.arousal = e.arousal;
+    btn.addEventListener('click', () => {
+      valSlider.value = e.valence;
+      arSlider.value = e.arousal;
+      valLabel.textContent = e.valence;
+      arLabel.textContent = e.arousal;
+      applyEmotionToAvatar(e.mood, parseFloat(e.valence), parseFloat(e.arousal));
+      document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    quickEmotions.appendChild(btn);
+  });
+
+  // Populate presets
+  presetEmotions.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'emotion-preset';
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => {
+      const em = emotions.find(e => e.mood === p.mood);
+      if (em) {
+        valSlider.value = em.valence;
+        arSlider.value = em.arousal;
+        valLabel.textContent = em.valence;
+        arLabel.textContent = em.arousal;
+        applyEmotionToAvatar(em.mood, em.valence, em.arousal);
+        document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+        const target = quickEmotions.querySelector(`[data-mood="${p.mood}"]`);
+        if (target) target.classList.add('active');
+      }
+    });
+    presetBtns.appendChild(btn);
+  });
+
+  // Slider updates
+  valSlider.addEventListener('input', () => {
+    valLabel.textContent = valSlider.value;
+  });
+  arSlider.addEventListener('input', () => {
+    arLabel.textContent = arSlider.value;
+  });
+  domSlider.addEventListener('input', () => {
+    domLabel.textContent = domSlider.value;
+  });
+
+  function applyEmotionToAvatar(mood, valence, arousal) {
+    state.emotion = mood;
+    updateEmotion(mood, valence, arousal);
+
+    // Animate placeholder head based on emotion
+    if (avatarGroup && avatarGroup.children.length > 0) {
+      const head = avatarGroup.children[0];
+      if (head) {
+        // Subtle rotation for different emotions
+        const rotX = arousal * 0.05;
+        const rotY = valence * 0.03;
+        head.rotation.x = rotX;
+        head.rotation.y = rotY;
+        // Scale for arousal (energy)
+        const scale = 0.8 + arousal * 0.02;
+        head.scale.set(Math.max(0.6, scale), Math.max(0.6, scale), Math.max(0.6, scale));
+      }
+    }
+  }
+
+  document.getElementById('apply-emotion').addEventListener('click', () => {
+    const v = parseFloat(valSlider.value);
+    const a = parseFloat(arSlider.value);
+    // Map PAD to closest emotion
+    let closest = emotions[0];
+    let minDist = Infinity;
+    emotions.forEach(e => {
+      const dist = Math.abs(e.valence - v) + Math.abs(e.arousal - a);
+      if (dist < minDist) { minDist = dist; closest = e; }
+    });
+    applyEmotionToAvatar(closest.mood, v, a);
+    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+    const target = quickEmotions.querySelector(`[data-mood="${closest.mood}"]`);
+    if (target) target.classList.add('active');
+  });
+
+  document.getElementById('reset-emotion').addEventListener('click', () => {
+    valSlider.value = 0; arSlider.value = 0; domSlider.value = 0;
+    valLabel.textContent = '0'; arLabel.textContent = '0'; domLabel.textContent = '0';
+    applyEmotionToAvatar('neutral', 0, 0);
+    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+  });
+
+  emotionPanelBtn.addEventListener('click', () => {
+    emotionPanel.classList.toggle('visible');
+  });
+
+  // Button in bottom controls to toggle emotion panel
+  document.getElementById('btn-emotion-panel').addEventListener('click', () => {
+    emotionPanel.classList.toggle('visible');
+  });
+});
+</script>
+</body>
+</html>

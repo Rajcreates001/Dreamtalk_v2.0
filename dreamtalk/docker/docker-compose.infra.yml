@@ -1,0 +1,80 @@
+# ──────────────────────────────────────────────────────────────────────
+# Dreamtalk Docker Compose — Infrastructure Only (Local Dev)
+#
+# Runs ONLY the infrastructure services (PostgreSQL, Redis, Weaviate).
+# The backend runs directly in Python (python run_server.py).
+# All persistent storage is on D: drive to avoid filling C: drive.
+#
+# Prerequisites:
+#   Docker Desktop for Windows with WSL2 backend
+#   Run docker/setup_drive.ps1 first to create the directories
+#
+# Storage Note:
+#   Paths use /mnt/d/... format (WSL2/Linux path to D: drive).
+#   Docker Desktop's WSL2 integration mounts D: at /mnt/d/ automatically.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.infra.yml up -d
+#   docker compose -f docker/docker-compose.infra.yml down
+#   docker compose -f docker/docker-compose.infra.yml logs -f
+# ──────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dreamtalk-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      POSTGRES_DB: dream_talk_db
+    volumes:
+      # D: drive bind mount — uses WSL2/Linux path to access D:\docker-data\postgres
+      - /mnt/d/docker-data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dream_talk_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dreamtalk-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - /mnt/d/docker-data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Weaviate ────────────────────────────────────────────────────────
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    container_name: dreamtalk-weaviate
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      CLUSTER_HOSTNAME: "node1"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+    volumes:
+      - /mnt/d/docker-data/weaviate:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

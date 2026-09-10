@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DreamTalk Live — 3D Engineering Student Avatar</title>
+<style>
+  :root {
+    --bg1: #070b1e; --bg2: #101736; --accent: #5eead4; --accent2: #818cf8;
+    --panel: rgba(13, 20, 45, .78); --border: rgba(148,163,184,.16);
+    --text: #e2e8f0; --dim: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', 'Nirmala UI', 'Latha', system-ui, sans-serif;
+    background: radial-gradient(1200px 700px at 70% -10%, #1e2a5e 0%, var(--bg2) 45%, var(--bg1) 100%);
+    color: var(--text); overflow: hidden;
+  }
+  #stage { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  /* ── Top bar ─────────────────────────────── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+    background: linear-gradient(180deg, rgba(7,11,30,.85), transparent);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .3px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #0b1026; font-size: 18px;
+  }
+  .brand small { display: block; font-weight: 400; color: var(--dim); font-size: 11px; }
+  #statusPill {
+    margin-left: auto; display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 14px; font-size: 12.5px; backdrop-filter: blur(8px);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px currentColor; }
+  .dot.ok { background: #34d399; } .dot.bad { background: #f87171; }
+  #providerTag { color: var(--dim); }
+
+  select, .btn {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px; font-size: 13px; outline: none; cursor: pointer;
+    backdrop-filter: blur(8px); transition: border-color .15s;
+  }
+  select:hover, .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: linear-gradient(135deg, #14b8a6, #0ea5e9); color: #04121f; font-weight: 600; border: none; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── Transcript panel ────────────────────── */
+  #transcript {
+    position: fixed; top: 66px; right: 14px; bottom: 118px; width: 340px; z-index: 9;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    backdrop-filter: blur(10px); display: flex; flex-direction: column; overflow: hidden;
+  }
+  #transcript header {
+    padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;
+  }
+  #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 88%; padding: 9px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; }
+  .msg.user { align-self: flex-end; background: #27346b; border-bottom-right-radius: 4px; }
+  .msg.ava { align-self: flex-start; background: rgba(94,234,212,.09); border: 1px solid rgba(94,234,212,.18); border-bottom-left-radius: 4px; }
+  .msg .meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .chip { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--dim); }
+  .chip.emo-happy, .chip.emo-excited { background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.4); }
+  .chip.emo-sad { background: rgba(96,165,250,.14); border-color: rgba(96,165,250,.4); }
+  .chip.emo-angry { background: rgba(248,113,113,.14); border-color: rgba(248,113,113,.4); }
+  .chip.emo-curious, .chip.emo-confused { background: rgba(129,140,248,.14); border-color: rgba(129,140,248,.4); }
+  .thinking { align-self: flex-start; color: var(--dim); font-size: 13px; padding: 6px 10px; }
+  .thinking span { animation: blink 1.2s infinite; }
+  .thinking span:nth-child(2) { animation-delay: .2s; } .thinking span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,100% { opacity: .2; } 50% { opacity: 1; } }
+
+  /* ── Bottom controls ─────────────────────── */
+  #controls {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px;
+    background: linear-gradient(0deg, rgba(7,11,30,.9), transparent);
+  }
+  #micBtn {
+    width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent2), #6366f1); color: white; font-size: 30px;
+    display: grid; place-items: center; box-shadow: 0 6px 30px rgba(99,102,241,.45);
+    transition: transform .12s, box-shadow .2s; position: relative;
+  }
+  #micBtn:hover { transform: scale(1.05); }
+  #micBtn.rec { background: linear-gradient(135deg, #f87171, #ef4444); box-shadow: 0 0 0 12px rgba(248,113,113,.15), 0 6px 30px rgba(239,68,68,.5); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(248,113,113,.35); } 70% { box-shadow: 0 0 0 22px rgba(248,113,113,0); } 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); } }
+  #micHint { position: fixed; bottom: 104px; left: 50%; transform: translateX(-50%); font-size: 12.5px; color: var(--dim); background: var(--panel); padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); display: none; }
+  #micHint.show { display: block; }
+
+  #textRow { display: flex; gap: 8px; }
+  #textInput {
+    width: min(420px, 52vw); background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 12px; padding: 11px 15px; font-size: 14px; outline: none; backdrop-filter: blur(8px);
+  }
+  #textInput:focus { border-color: var(--accent); }
+
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--dim); cursor: pointer; user-select: none; }
+  .toggle input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+  /* ── Toast ───────────────────────────────── */
+  #toast {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 30;
+    background: #7f1d1d; color: #fecaca; padding: 10px 20px; border-radius: 12px; font-size: 13.5px;
+    display: none; border: 1px solid #ef4444; max-width: 80vw;
+  }
+  #toast.show { display: block; animation: fadein .2s; }
+  #toast.info { background: #1e3a5f; color: #bfdbfe; border-color: #3b82f6; }
+  @keyframes fadein { from { opacity: 0; transform: translateX(-50%) translateY(-6px); } }
+
+  #infoChip {
+    position: fixed; left: 14px; bottom: 118px; z-index: 9; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 11.5px;
+    color: var(--dim); backdrop-filter: blur(8px); line-height: 1.7;
+  }
+  #infoChip b { color: var(--text); font-weight: 600; }
+  @media (max-width: 900px) { #transcript { display: none; } #infoChip { display: none; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="topbar">
+  <div class="brand">
+    <div class="logo">🎓</div>
+    <div>DreamTalk Live<small>3D Engineering Student Avatar</small></div>
+  </div>
+  <select id="personaSel" title="Persona">
+    <option value="engg_student">🎓 Engineering Student</option>
+    <option value="doctor">🩺 Doctor</option>
+  </select>
+  <select id="langSel" title="Response language">
+    <option value="auto">🌐 Auto detect</option>
+    <option value="tamil" selected>தமிழ் Tamil</option>
+    <option value="english">English</option>
+    <option value="hindi">हिन्दी Hindi</option>
+    <option value="telugu">తెలుగు Telugu</option>
+    <option value="malayalam">മലയാളം Malayalam</option>
+    <option value="kannada">ಕನ್ನಡ Kannada</option>
+  </select>
+  <button class="btn" id="scriptBtn" title="Play the Tamil intro script">🎬 Tamil Intro</button>
+  <div id="statusPill"><div class="dot" id="statusDot"></div><span id="statusText">connecting…</span><span id="providerTag"></span></div>
+</div>
+
+<div id="transcript">
+  <header><span>Conversation</span><span id="latency"></span></header>
+  <div id="messages"></div>
+</div>
+
+<div id="infoChip">
+  <b id="vpGender">—</b> voice profile · <span id="vpPitch">—</span><br/>
+  drag to rotate · scroll to zoom · Space = talk
+</div>
+
+<div id="controls">
+  <label class="toggle"><input type="checkbox" id="autoMode" /> 🔄 Auto converse</label>
+  <button id="micBtn" title="Hold Space or click to talk">🎙️</button>
+  <div id="textRow">
+    <input id="textInput" placeholder="Type in any language… (Tamil உதாரணம்)" />
+    <button class="btn primary" id="sendBtn">Send</button>
+  </div>
+</div>
+<div id="micHint">Listening… speak now</div>
+<div id="toast"></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ════════════════════════ 3D SCENE ════════════════════════ */
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0.25, 5.4);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+stage.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x1a1f3a, 1.6));
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(1.5, 2, 4.5); scene.add(key);
+const fill = new THREE.DirectionalLight(0x818cf8, 0.5); fill.position.set(-3, 0.5, 2); scene.add(fill);
+const rim = new THREE.DirectionalLight(0x5eead4, 0.9); rim.position.set(-1, 2, -4); scene.add(rim);
+
+const avatar = new THREE.Group(); scene.add(avatar);
+const head = new THREE.Group(); avatar.add(head);
+
+/* glow ring under avatar */
+const ringMat = new THREE.MeshBasicMaterial({ color: 0x5eead4, transparent: true, opacity: 0.35 });
+const ring = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.035, 16, 80), ringMat);
+ring.rotation.x = Math.PI / 2; ring.position.y = -3.02; avatar.add(ring);
+
+/* ── head: head-shaped (ellipsoid + jaw taper), photo texture, yaw baked in ── */
+const texLoader = new THREE.TextureLoader();
+let faceMat = null;
+const FACE_YAW = -Math.PI / 2;
+
+/* shared deform: unit direction → head surface point (keeps sphere UV alignment,
+   so overlays placed through it land exactly on the photo's features) */
+function headDeform(v) {
+  const p = new THREE.Vector3(v.x * 0.80, v.y * 1.04, v.z * 0.86);
+  if (v.y < 0.10) {                       /* jaw taper below the eye line */
+    const t = Math.min(1, (0.10 - v.y) / 1.05);
+    const k = Math.pow(t, 1.25);
+    p.x *= 1 - 0.40 * k;                  /* narrow toward the chin */
+    p.z *= (v.z < 0) ? (1 - 0.32 * k)     /* shallower behind      */
+                     : (1 - 0.12 * k);    /* keep the face profile */
+  }
+  if (v.z > 0) p.z *= 0.97;               /* slightly flatter face plane */
+  return p;
+}
+/* face-canvas fracs (fx 0..1 left→right, fy 0..1 top→down) → head-local direction */
+function texDir(fx, fy) {
+  const th = Math.PI * fy;
+  return new THREE.Vector3(
+    -Math.cos(Math.PI * fx) * Math.sin(th),
+     Math.cos(th),
+     Math.sin(Math.PI * fx) * Math.sin(th)
+  );
+}
+
+const headGeo = new THREE.SphereGeometry(1, 128, 96);
+headGeo.rotateY(FACE_YAW);                 /* photo center → +z (camera) */
+{
+  const pos = headGeo.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    const p = headDeform(v);
+    pos.setXYZ(i, p.x, p.y, p.z);
+  }
+  pos.needsUpdate = true;
+  headGeo.computeVertexNormals();
+}
+faceMat = new THREE.MeshStandardMaterial({ color: 0xc8956a, roughness: 0.55, metalness: 0.02 });
+const headMesh = new THREE.Mesh(headGeo, faceMat);
+head.add(headMesh);
+
+/* 3D feature anchors from the server's canonical FACE_LAYOUT (the same fracs the
+   server used when pasting the crop): eyes (0.5±sep/2, 0.45), brows, nose, mouth */
+const L = { eyeY: 0.45, eyeSep: 0.26, browY: 0.38, browSep: 0.22, noseY: 0.565, mouthY: 0.68 };
+const P = {
+  eyeL: headDeform(texDir(0.5 + L.eyeSep / 2, L.eyeY)),
+  eyeR: headDeform(texDir(0.5 - L.eyeSep / 2, L.eyeY)),
+  browL: headDeform(texDir(0.5 + L.browSep / 2, L.browY)),
+  browR: headDeform(texDir(0.5 - L.browSep / 2, L.browY)),
+  nose: headDeform(texDir(0.5, L.noseY)),
+  mouth: headDeform(texDir(0.5, L.mouthY)),
+};
+
+/* skin / hair tones are sampled from the photo once it loads */
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xd9a679, roughness: 0.65 });
+const lidMat  = new THREE.MeshStandardMaterial({ color: 0xc8956a, roughness: 0.7, transparent: true, opacity: 0, side: THREE.DoubleSide });
+const noseMat = new THREE.MeshStandardMaterial({ color: 0xb9835c, roughness: 0.6 }); // reserved (nose comes from photo)
+const browMat = new THREE.MeshStandardMaterial({ color: 0x241a12, roughness: 0.9, transparent: true, opacity: 0.18 });
+const hairMat = new THREE.MeshStandardMaterial({ color: 0x1c1410, roughness: 0.92, side: THREE.DoubleSide });
+
+texLoader.load('/api/avatar/image?t=' + Date.now(), (t) => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  faceMat.map = t;
+  faceMat.bumpMap = t; faceMat.bumpScale = 0.008;
+  faceMat.color.set(0xffffff);
+  faceMat.needsUpdate = true;
+  samplePhotoColors(t);
+});
+
+function samplePhotoColors(tex) {
+  try {
+    const img = tex.image, w = img.width, h = img.height;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(img, 0, 0);
+    const px = (fx, fy) => {
+      const d = cx.getImageData(Math.round(w * (0.25 + fx * 0.5)), Math.round(h * fy), 1, 1).data;
+      return [d[0] / 255, d[1] / 255, d[2] / 255];
+    };
+    const avg = pts => [0, 1, 2].map(i => pts.reduce((s, p) => s + px(p[0], p[1])[i], 0) / pts.length);
+    const skin = avg([[0.36, 0.58], [0.64, 0.58], [0.5, 0.80], [0.42, 0.50], [0.58, 0.50]]);
+    // hair lives on the sides above the ears / mustache — the top rows are
+    // often photo background (gray), so pick the darkest candidate region
+    const lum = c => c[0] + c[1] + c[2];
+    const hairCandidates = [
+      avg([[0.30, 0.30], [0.70, 0.30]]),   // sides above the ears
+      avg([[0.44, 0.20], [0.56, 0.20]]),   // top of head
+      avg([[0.47, 0.76], [0.53, 0.76]]),   // mustache
+    ];
+    const hair = hairCandidates.reduce((a, b) => (lum(b) < lum(a) ? b : a));
+    // sampled values are sRGB photo pixels — pass SRGBColorSpace so three.js
+    // (r152+) doesn't interpret them as linear and render them washed-out
+    const SR = THREE.SRGBColorSpace;
+    skinMat.color.setRGB(skin[0] * 1.04, skin[1] * 1.04, skin[2] * 1.04, SR);
+    lidMat.color.setRGB(skin[0], skin[1], skin[2], SR);
+    noseMat.color.setRGB(skin[0] * 0.94, skin[1] * 0.92, skin[2] * 0.90, SR);
+    browMat.color.setRGB(hair[0] * 0.5, hair[1] * 0.5, hair[2] * 0.5, SR);
+    hairMat.color.setRGB(hair[0] * 0.55, hair[1] * 0.55, hair[2] * 0.55, SR);
+  } catch (e) { /* texture unavailable — keep fallback tones */ }
+}
+
+window.__dbg = () => ({ hair, head, skinMat, hairMat, faceMat });  // dev handle
+
+/* ── hair: shell that hugs the head shape, hairline higher at the front ── */
+const hairGeo = new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2, 0, Math.PI * 0.52);
+hairGeo.rotateY(FACE_YAW);
+{
+  const pos = hairGeo.attributes.position;
+  const v = new THREE.Vector3(), d = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    const theta = Math.acos(THREE.MathUtils.clamp(v.y, -1, 1));
+    const front = THREE.MathUtils.smoothstep(v.z, -0.15, 0.55);
+    const tEff = theta * (1 - 0.45 * front);   /* keep the forehead clear */
+    const az = Math.atan2(v.x, v.z);
+    d.set(Math.sin(tEff) * Math.sin(az), Math.cos(tEff), Math.sin(tEff) * Math.cos(az));
+    const p = headDeform(d).multiplyScalar(1.03);
+    pos.setXYZ(i, p.x, p.y, p.z);
+  }
+  pos.needsUpdate = true;
+  hairGeo.computeVertexNormals();
+}
+const hair = new THREE.Mesh(hairGeo, hairMat);
+head.add(hair);
+
+/* blinking: skin-colored lids close over the photo's eyes */
+function makeLid(pos) {
+  const lid = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.08), lidMat);
+  lid.position.copy(pos);
+  lid.lookAt(0, 0, 0);
+  lid.translateZ(-0.012);
+  return lid;
+}
+const lidL = makeLid(P.eyeL), lidR = makeLid(P.eyeR);
+head.add(lidL, lidR);
+
+/* ── nose: the photo texture already carries the nose, so no 3D bump here
+   (an added ellipsoid rendered as a pale blob over the photo's nose) ── */
+
+/* ── eyebrows: subtle 3D brows over the photo brows (for expression motion) ── */
+const browL = new THREE.Mesh(new THREE.CapsuleGeometry(0.016, 0.13, 6, 12), browMat);
+const browR = browL.clone();
+browL.position.copy(P.browL); browR.position.copy(P.browR);
+browL.lookAt(0, 0, 0); browR.lookAt(0, 0, 0);
+browR.rotation.copy(browL.rotation);
+browL.rotateZ(Math.PI / 2 + 0.1); browR.rotateZ(Math.PI / 2 - 0.1);
+browL.translateZ(-0.012); browR.translateZ(-0.012);
+head.add(browL, browR);
+
+/* ── mouth: dark opening, visible only while talking (photo has the lips) ── */
+const mouthGroup = new THREE.Group();
+const mouthMat = new THREE.MeshStandardMaterial({ color: 0x3a1414, roughness: 0.6, transparent: true, opacity: 0 });
+const mouth = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 24), mouthMat);
+mouth.scale.set(0.13, 0.008, 0.02);
+mouthGroup.add(mouth);
+mouthGroup.position.copy(P.mouth);
+mouthGroup.lookAt(0, 0, 0);
+mouthGroup.translateZ(-0.015);
+head.add(mouthGroup);
+
+/* ── neck + torso: shoulders and arms instead of a ball ── */
+const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.33, 0.62, 28), skinMat);
+neck.position.y = -1.16; avatar.add(neck);
+
+const shirtMat = new THREE.MeshStandardMaterial({ color: 0x312e81, roughness: 0.85 });
+const collarMat = new THREE.MeshStandardMaterial({ color: 0xdbe3f0, roughness: 0.8 });
+const torsoPts = [
+  [0.40, 0.00], [0.62, -0.12], [0.86, -0.30], [1.00, -0.52], [1.05, -0.80],
+  [1.01, -1.12], [0.94, -1.42], [0.88, -1.62],
+].map(p => new THREE.Vector2(p[0], p[1]));
+const torsoGeo = new THREE.LatheGeometry(torsoPts, 48);
+torsoGeo.scale(1, 1, 0.62);
+const body = new THREE.Mesh(torsoGeo, shirtMat);
+body.position.y = -1.42; avatar.add(body);
+const hips = new THREE.Mesh(new THREE.CircleGeometry(0.88, 40), shirtMat);
+hips.scale.set(1, 0.62, 1); hips.rotation.x = -Math.PI / 2; hips.position.y = -3.04; avatar.add(hips);
+
+const shoulderGeo = new THREE.SphereGeometry(0.38, 24, 18);
+const shL = new THREE.Mesh(shoulderGeo, shirtMat); shL.position.set(-1.00, -1.94, 0); shL.scale.set(1.15, 0.9, 0.9);
+const shR = shL.clone(); shR.position.x = 1.00;
+const armGeo = new THREE.CapsuleGeometry(0.21, 0.72, 6, 16);
+const armL = new THREE.Mesh(armGeo, shirtMat); armL.position.set(-1.24, -2.42, 0); armL.rotation.z = -0.10;
+const armR = armL.clone(); armR.position.x = 1.24; armR.rotation.z = 0.10;
+const handGeo = new THREE.SphereGeometry(0.20, 20, 14);
+const handL = new THREE.Mesh(handGeo, skinMat); handL.position.set(-1.31, -2.95, 0.02); handL.scale.set(0.9, 1.15, 0.75);
+const handR = handL.clone(); handR.position.x = 1.31;
+avatar.add(shL, shR, armL, armR, handL, handR);
+
+const collar = new THREE.Mesh(new THREE.TorusGeometry(0.40, 0.06, 12, 40), collarMat);
+collar.rotation.x = Math.PI / 2; collar.position.y = -1.44; avatar.add(collar);
+
+/* ════════════════════════ ANIMATION STATE ════════════════════════ */
+const S = {
+  jaw: 0, jawTarget: 0,
+  browY: 0, browInner: 0, browDown: 0,
+  eyeWide: 0, squint: 0,
+  smile: 0, frown: 0,
+  blink: 0, nextBlink: performance.now() + 2000,
+  headTilt: 0, headTiltTarget: 0,
+  talking: false, mouthTrack: null, playStart: 0,
+};
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function applyExpression(expr) {
+  S.smile = expr.mouthSmile || 0; S.frown = expr.mouthFrown || 0;
+  S.browY = Math.max(expr.browRaise || 0, expr.browInnerUp ? expr.browInnerUp * 0.6 : 0);
+  S.browDown = expr.browDown || 0; S.browInner = expr.browInnerUp || 0;
+  S.eyeWide = expr.eyeWide || 0; S.squint = expr.eyeSquint || 0;
+  S.headTiltTarget = (expr.headTilt || 0) * 0.25;
+}
+
+function setEmotionGlow(emotion) {
+  const colors = { happy: 0xfbbf24, excited: 0xfb923c, sad: 0x60a5fa, angry: 0xf87171, curious: 0x818cf8, confused: 0xa78bfa, surprised: 0xf472b6, neutral: 0x5eead4 };
+  ringMat.color.setHex(colors[emotion] ?? 0x5eead4);
+}
+
+/* ════════════════════════ RENDER LOOP ════════════════════════ */
+let mouseX = 0, mouseY = 0, dragging = false, lastX = 0, lastY = 0, yaw = 0, pitch = 0;
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  /* mouth from track */
+  let open = 0;
+  if (S.talking && S.mouthTrack && audioEl && !audioEl.paused) {
+    const idx = Math.min(S.mouthTrack.length - 1, Math.floor(audioEl.currentTime * 30));
+    if (idx >= 0) open = S.mouthTrack[idx].v;
+  }
+  S.jaw = lerp(S.jaw, open, 0.55);
+
+  mouth.scale.y = 0.006 + S.jaw * 0.10;
+  mouth.scale.x = 0.13 * (1 + S.smile * 0.30 - S.frown * 0.15) + S.jaw * 0.02;
+  mouthMat.opacity = Math.min(1, S.jaw * 5 + S.smile * 0.25);
+  const mp = P.mouth;
+  mouthGroup.position.set(mp.x, mp.y - S.jaw * 0.02, mp.z);
+
+  /* brows */
+  const by = P.browL.y + 0.01 + S.browY * 0.07 - S.browDown * 0.06;
+  browL.position.y = browR.position.y = by;
+  browL.rotation.z = Math.PI / 2 + 0.12 + S.browInner * 0.35 - S.browDown * 0.2;
+  browR.rotation.z = Math.PI / 2 - 0.12 - S.browInner * 0.35 + S.browDown * 0.2;
+
+  /* eyes: lid opacity for blink, ring scale for wide/squint */
+  const lidOp = Math.min(1, Math.max(0, S.blink - S.eyeWide * 0.4 + S.squint * 0.4));
+  lidL.material.opacity = lidR.material.opacity = lidOp * 0.96;
+  lidL.position.y = lidR.position.y = P.eyeL.y - 0.01 + lidOp * 0.012;
+
+  /* blink cycle */
+  const now = performance.now();
+  if (now > S.nextBlink) { S.blink = Math.min(1, S.blink + 0.3); if (S.blink >= 1) { S.blink = 0; S.nextBlink = now + 2200 + Math.random() * 2600; } }
+
+  /* head idle motion + tilt + look */
+  S.headTilt = lerp(S.headTilt, S.headTiltTarget, 0.04);
+  head.rotation.z = S.headTilt + Math.sin(t * 0.6) * 0.02;
+  head.rotation.y = Math.sin(t * 0.35) * 0.06 + mouseX * 0.3;
+  head.rotation.x = Math.cos(t * 0.45) * 0.03 + mouseY * 0.15;
+  head.position.y = Math.sin(t * 1.1) * 0.015;
+
+  /* breathing */
+  body.scale.x = 1 + Math.sin(t * 1.4) * 0.006;
+  ring.rotation.z = t * 0.2;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+/* mouse parallax + drag rotate */
+addEventListener('mousemove', e => { mouseX = (e.clientX / innerWidth - 0.5) * 2; mouseY = (e.clientY / innerHeight - 0.5) * 2; });
+renderer.domElement.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+addEventListener('pointerup', () => dragging = false);
+addEventListener('pointermove', e => {
+  if (!dragging) return;
+  yaw += (e.clientX - lastX) * 0.005; pitch += (e.clientY - lastY) * 0.003;
+  pitch = Math.max(-0.5, Math.min(0.5, pitch)); lastX = e.clientX; lastY = e.clientY;
+  avatar.rotation.y = yaw; avatar.rotation.x = pitch;
+});
+addEventListener('wheel', e => { camera.position.z = Math.max(3, Math.min(9, camera.position.z + e.deltaY * 0.003)); });
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+/* ════════════════════════ BACKEND API ════════════════════════ */
+const $ = id => document.getElementById(id);
+const messagesEl = $('messages'), toastEl = $('toast');
+let audioEl = null, sessionId = null;
+
+function toast(msg, info = false, ms = 3800) {
+  toastEl.textContent = msg; toastEl.className = 'show' + (info ? ' info' : '');
+  clearTimeout(toast._t); toast._t = setTimeout(() => toastEl.className = '', ms);
+}
+function addMsg(cls, text, chips = []) {
+  const div = document.createElement('div'); div.className = 'msg ' + cls;
+  div.textContent = text;
+  if (chips.length) { const m = document.createElement('div'); m.className = 'meta'; chips.forEach(c => { const s = document.createElement('span'); s.className = 'chip' + (c.emo ? ' emo-' + c.emo : ''); s.textContent = c.label; m.appendChild(s); }); div.appendChild(m); }
+  messagesEl.appendChild(div); messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
+}
+function thinking() { const d = document.createElement('div'); d.className = 'thinking'; d.innerHTML = 'Arun is thinking<span>.</span><span>.</span><span>.</span>'; messagesEl.appendChild(d); messagesEl.scrollTop = messagesEl.scrollHeight; return d; }
+
+async function checkHealth() {
+  try {
+    const r = await fetch('/api/health'); const h = await r.json();
+    $('statusDot').className = 'dot ok'; $('statusText').textContent = 'online';
+    $('providerTag').textContent = h.llm_provider === 'seekai' ? '· claude-fable-5' : h.llm_provider === 'gptoss' ? '· gpt-oss-120b' : h.llm_provider === 'ollama' ? `· ${'llama3.1:8b'} local` : '';
+    if (h.voice_profile && h.voice_profile.available) {
+      $('vpGender').textContent = h.voice_profile.gender === 'male' ? '♂ Male' : '♀ Female';
+      $('vpPitch').textContent = Math.round(h.voice_profile.pitch_mean) + ' Hz cloned profile';
+    }
+  } catch { $('statusDot').className = 'dot bad'; $('statusText').textContent = 'backend offline'; }
+}
+
+function playReply(data) {
+  S.mouthTrack = data.mouth_track;
+  setEmotionGlow(data.emotion?.emotion);
+  applyExpression(data.emotion?.expression || {});
+  if (audioEl) { audioEl.pause(); }
+  audioEl = new Audio(data.audio_url + '?t=' + Date.now());
+  window.__audio = audioEl; window.__avatarState = S;
+  audioEl.onended = () => { S.talking = false; S.jaw = 0; if ($('autoMode').checked) setTimeout(startListening, 500); };
+  audioEl.play().catch(e => toast('Click anywhere first to enable audio', true));
+  S.talking = true;
+}
+
+async function sendText(text) {
+  if (!text.trim()) return;
+  addMsg('user', text);
+  const th = thinking();
+  try {
+    const r = await fetch('/api/chat/text', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, session_id: sessionId, language: $('langSel').value, persona: $('personaSel').value })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'failed');
+    th.remove(); sessionId = d.session_id;
+    const emo = d.emotion?.emotion || 'neutral';
+    addMsg('ava', d.reply_text, [
+      { emo, label: '😊 ' + emo }, { label: d.provider === 'seekai' ? 'claude-fable-5' : d.provider === 'gptoss' ? 'gpt-oss-120b' : 'llama3.1 local' }, { label: d.latency_ms + ' ms' }
+    ]);
+    $('latency').textContent = d.latency_ms + ' ms';
+    playReply(d);
+  } catch (e) { th.remove(); toast('❌ ' + e.message); }
+}
+
+/* ════════════════════════ VOICE RECORDING ════════════════════════ */
+let mediaRecorder = null, audioChunks = [], micStream = null, analyser = null, audioCtx = null, silenceTimer = null, heardSpeech = false, recStart = 0;
+const micBtn = $('micBtn'), micHint = $('micHint');
+
+async function startListening() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    audioCtx = audioCtx || new AudioContext();
+    const src = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(micStream, { mimeType: mime });
+    audioChunks = []; heardSpeech = false; recStart = Date.now();
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = onRecordStop;
+    mediaRecorder.start(120);
+    micBtn.classList.add('rec'); micBtn.textContent = '⏹'; micHint.classList.add('show');
+    monitorSilence();
+  } catch (e) { toast('🎤 Mic permission denied'); }
+}
+
+function monitorSilence() {
+  const buf = new Float32Array(analyser.fftSize);
+  let silentFrames = 0;
+  const tick = () => {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+    analyser.getFloatTimeDomainData(buf);
+    const rms = Math.sqrt(buf.reduce((s, v) => s + v * v, 0) / buf.length);
+    if (rms > 0.025) { heardSpeech = true; silentFrames = 0; }
+    else if (heardSpeech) { silentFrames++; if (silentFrames > 55) { stopListening(); return; } }
+    if (Date.now() - recStart > 15000) { stopListening(); return; }
+    silenceTimer = requestAnimationFrame(tick);
+  };
+  silenceTimer = requestAnimationFrame(tick);
+}
+
+function stopListening() {
+  cancelAnimationFrame(silenceTimer);
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  micBtn.classList.remove('rec'); micBtn.textContent = '🎙️'; micHint.classList.remove('show');
+  micStream?.getTracks().forEach(t => t.stop());
+}
+
+async function onRecordStop() {
+  const blob = new Blob(audioChunks, { type: 'audio/webm' });
+  if (blob.size < 2000) { if ($('autoMode').checked) setTimeout(startListening, 400); return; }
+  if (!heardSpeech) { if ($('autoMode').checked) setTimeout(startListening, 400); return; }
+  const th = thinking();
+  try {
+    const fd = new FormData();
+    fd.append('audio', blob, 'speech.webm');
+    fd.append('session_id', sessionId || ''); fd.append('language', $('langSel').value); fd.append('persona', $('personaSel').value);
+    const r = await fetch('/api/chat/voice', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : 'failed');
+    th.remove(); sessionId = d.session_id;
+    const emo = d.emotion?.emotion || 'neutral';
+    addMsg('user', '🗣️ ' + d.user_text, [{ label: d.detected_language }]);
+    addMsg('ava', d.reply_text, [
+      { emo, label: '😊 ' + emo }, { label: d.provider === 'seekai' ? 'claude-fable-5' : d.provider === 'gptoss' ? 'gpt-oss-120b' : 'llama3.1 local' }, { label: d.latency_ms + ' ms' }
+    ]);
+    $('latency').textContent = d.latency_ms + ' ms';
+    playReply(d);
+  } catch (e) {
+    th.remove(); toast('❌ ' + e.message);
+    if ($('autoMode').checked) setTimeout(startListening, 800);
+  }
+}
+
+micBtn.onclick = () => (mediaRecorder && mediaRecorder.state === 'recording') ? stopListening() : startListening();
+
+/* Spacebar push-to-talk */
+addEventListener('keydown', e => {
+  if (e.code === 'Space' && !e.repeat && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); startListening(); }
+});
+addEventListener('keyup', e => { if (e.code === 'Space') stopListening(); });
+
+/* text send */
+$('sendBtn').onclick = () => { sendText($('textInput').value); $('textInput').value = ''; };
+$('textInput').addEventListener('keydown', e => { if (e.key === 'Enter') { sendText($('textInput').value); $('textInput').value = ''; } });
+
+/* Tamil intro script */
+$('scriptBtn').onclick = async () => {
+  try {
+    const r = await fetch('/api/script/tamil'); const d = await r.json();
+    addMsg('ava', d.script, [{ emo: 'happy', label: '🎬 Tamil intro' }]);
+    playReply(d);
+  } catch (e) { toast('❌ script failed'); }
+};
+
+/* persona switch → greet */
+$('personaSel').onchange = () => {
+  const p = $('personaSel').value;
+  const greet = p === 'doctor'
+    ? 'Hello! I am Dr. Meera. How are you feeling today?'
+    : 'Hi da! I am Arun, your engineering buddy. What shall we learn today?';
+  sendText(greet + ' (introduce yourself briefly)');
+};
+
+/* boot */
+checkHealth();
+setTimeout(() => {
+  addMsg('ava', '👋 Vanakkam! Click the mic and ask me anything about engineering — in Tamil, English, Hindi or any language. Or press 🎬 Tamil Intro.');
+}, 400);
+</script>
+</body>
+</html>

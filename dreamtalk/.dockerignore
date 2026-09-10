@@ -1,0 +1,135 @@
+# DreamTalk .dockerignore
+# Context is the dreamtalk/ directory
+# Used by backend, frontend, and indicf5 Dockerfiles
+
+# Note: frontend/ is NOT excluded because the frontend Dockerfile needs it
+.next/
+node_modules/
+
+# Git
+.git
+.gitignore
+.gitattributes
+.gitmodules
+.github/
+
+# Patent details
+patent details/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+dreamtalk.egg-info/
+
+# Virtual environments (CRITICAL: often 100MB+)
+dt_venv/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tests
+tests/
+**/tests/
+test_*.py
+
+# Model weights (downloaded at runtime)
+weights/
+**/weights/
+
+# Config / env (secrets)
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Documentation
+*.md
+docs/
+
+# Training artifacts
+checkpoints/
+runs/
+lightning_logs/
+wandb/
+
+# Data directories (not needed by backend)
+pipeline_test_data/
+local_upload_testing/
+pipeline_uploads/
+pipeline_outputs/
+results/
+
+
+# Ollama model caches
+D:OllamaModels/
+D:OllamaModelsblobs/
+D:OllamaModelsmanifests/
+
+# Docker internal
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker/
+
+# Jupyter
+*.ipynb
+
+# Repos
+repos-used/
+**/repos-used/
+
+# Large binary directories
+espeak-ng/
+espeak-extract/
+
+# Temp
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Voice data (keep voice module code, exclude data)
+voice_module/assets/
+voice_module/*.wav
+voice_module/*.mp3
+voice_module/*.ogg
+
+# Audio files
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.m4a
+
+# Large model/config files
+*.onnx
+*.vrm
+*.safetensors
+*.msgpack
+*.npz
+
+# BrainCog/SpikingJelly large data
+brain/benchmarks/
+brain/paper_results/
+
+

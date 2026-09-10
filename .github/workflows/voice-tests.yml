@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────────────
+# Voice Module Unit Tests
+# Runs IndicF5 preprocessing + Kokoro TTS engine tests (no model weights
+# needed) on every push to main and on pull requests.
+# ──────────────────────────────────────────────────────────────────────
+
+name: Voice Module Tests
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "dreamtalk/voice/**"
+      - "dreamtalk/pipeline/**"
+      - "dreamtalk/tests/unit/**"
+      - ".github/workflows/voice-tests.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "dreamtalk/voice/**"
+      - "dreamtalk/pipeline/**"
+      - "dreamtalk/tests/unit/**"
+      - ".github/workflows/voice-tests.yml"
+  workflow_dispatch: # manual trigger
+
+concurrency:
+  group: voice-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  voice-unit-tests:
+    name: Voice Module Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install CPU-only PyTorch
+        run: |
+          pip install --no-cache-dir \
+            torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install test dependencies
+        run: |
+          pip install --no-cache-dir \
+            pytest \
+            numpy \
+            soundfile \
+            matplotlib \
+            huggingface_hub \
+            pydub \
+            tqdm \
+            vocos
+
+      - name: Add project root to PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}/dreamtalk:${PYTHONPATH}" >> "$GITHUB_ENV"
+
+      - name: Run voice-module unit tests
+        run: |
+          python -m pytest dreamtalk/tests/unit/test_indicf5_preprocess.py dreamtalk/tests/unit/test_kokoro_engine.py dreamtalk/tests/unit/test_voice_modules.py -v --tb=short

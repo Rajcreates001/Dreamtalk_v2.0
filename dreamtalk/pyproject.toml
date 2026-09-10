@@ -1,0 +1,13 @@
+[project]
+name = "dreamtalk"
+version = "0.1.0"
+description = "AI Health Companion - Real-time digital twin application"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["dreamtalk*"]
+exclude = ["dreamtalk.repos-used.**", "dreamtalk.tests.**", "dreamtalk.media.personal.**"]

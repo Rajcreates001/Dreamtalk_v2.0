@@ -1,0 +1,86 @@
+{
+  "total_parts": 15,
+  "generated_parts": 15,
+  "total_chars": 2854,
+  "estimated_duration_minutes": 13.59047619047619,
+  "voice": "ta-IN-ValluvarNeural",
+  "language": "ta",
+  "combined_path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_full.wav",
+  "parts": [
+    {
+      "index": 0,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_00.wav",
+      "size": 49824
+    },
+    {
+      "index": 1,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_01.wav",
+      "size": 81504
+    },
+    {
+      "index": 2,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_02.wav",
+      "size": 122544
+    },
+    {
+      "index": 3,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_03.wav",
+      "size": 110592
+    },
+    {
+      "index": 4,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_04.wav",
+      "size": 101808
+    },
+    {
+      "index": 5,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_05.wav",
+      "size": 98064
+    },
+    {
+      "index": 6,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_06.wav",
+      "size": 89280
+    },
+    {
+      "index": 7,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_07.wav",
+      "size": 82224
+    },
+    {
+      "index": 8,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_08.wav",
+      "size": 61776
+    },
+    {
+      "index": 9,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_09.wav",
+      "size": 94608
+    },
+    {
+      "index": 10,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_10.wav",
+      "size": 69984
+    },
+    {
+      "index": 11,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_11.wav",
+      "size": 82656
+    },
+    {
+      "index": 12,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_12.wav",
+      "size": 85104
+    },
+    {
+      "index": 13,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_13.wav",
+      "size": 131616
+    },
+    {
+      "index": 14,
+      "path": "D:\\Black folder\\DreamTalk_Startup\\Dreamtalk-Integrated\\dreamtalk\\avatar\\static\\tamil_script_parts\\part_14.wav",
+      "size": 26928
+    }
+  ]
+}

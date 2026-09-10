@@ -1,0 +1,1 @@
+# dreamtalk - shared\\utils module\n\nfrom dreamtalk.shared.utils.device import get_device, get_torch_device, DEVICE, DEVICE_TORCH\n\n__all__ = ["get_device", "get_torch_device", "DEVICE", "DEVICE_TORCH"]\n

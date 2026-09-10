@@ -1,0 +1,16 @@
+# Dreamtalk - Face Engine
+# Extracted from MuseTalk
+import os
+import subprocess
+
+
+def ensure_wav(input_path: str, target_path: str | None = None) -> str:
+    if not isinstance(input_path, str) or not os.path.exists(input_path):
+        return input_path
+    base, ext = os.path.splitext(input_path)
+    ext = ext.lower()
+    if target_path is None:
+        target_path = base + "_16k.wav"
+    cmd = ["ffmpeg", "-y", "-i", input_path, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", target_path]
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return target_path

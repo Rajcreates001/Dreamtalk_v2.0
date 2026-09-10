@@ -1,0 +1,94 @@
+# syntax=docker/dockerfile:1
+# ============================================================================
+# IndicF5 Microservice — Standalone Docker image
+#
+# This image runs the IndicF5 voice cloning engine as a FastAPI
+# microservice. It uses CPU-only PyTorch (no CUDA) to keep the image
+# small and portable. Weights are mounted as a volume at runtime.
+#
+# Build:
+#   docker build -t dreamtalk-indicf5 -f docker/Dockerfile.indicf5 .
+#
+# Run:
+#   docker run -d --name indicf5 \
+#     -p 8002:8002 \
+#     -v D:/dreamtalk/weights:/app/weights \
+#     dreamtalk-indicf5
+# ============================================================================
+
+FROM python:3.11-slim
+
+# ---- Build args ----------------------------------------------------------
+ARG TORCH_VERSION=2.5.1
+ARG TORCH_VISION_VERSION=0.20.1
+ARG TORCH_AUDIO_VERSION=2.5.1
+
+# ---- Environment ---------------------------------------------------------
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    KMP_DUPLICATE_LIB_OK=TRUE \
+    DEBIAN_FRONTEND=noninteractive
+
+# ---- System deps ---------------------------------------------------------
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libsndfile1 \
+        libgl1 \
+        libglib2.0-0 \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Install PyTorch (CPU-only — no CUDA, much smaller) ------------------
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    pip install --no-cache-dir \
+        "torch==${TORCH_VERSION}" \
+        "torchvision==${TORCH_VISION_VERSION}" \
+        "torchaudio==${TORCH_AUDIO_VERSION}" \
+        --index-url https://download.pytorch.org/whl/cpu
+
+# ---- Install IndicF5 dependencies ----------------------------------------
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    pip install --no-cache-dir \
+        "fastapi>=0.110.0" \
+        "uvicorn[standard]>=0.29.0" \
+        "accelerate>=0.33.0" \
+        "cached_path" \
+        "librosa" \
+        "soundfile" \
+        "safetensors" \
+        "transformers>=4.40.0" \
+        "vocos" \
+        "x-transformers>=1.31.14" \
+        "torchdiffeq" \
+        "ema-pytorch>=0.5.2" \
+        "tqdm>=4.65.0" \
+        "jieba" \
+        "pydub" \
+        "pypinyin" \
+        "datasets" \
+        "numpy<2.0.0"
+
+# ---- Copy application code ------------------------------------------------
+# Copy the full voice module tree so the import chain resolves.
+# Weights are mounted as a Docker volume at runtime, NOT copied into the image.
+
+COPY voice/ /app/dreamtalk/voice/
+COPY __init__.py /app/dreamtalk/__init__.py
+
+RUN mkdir -p /app/dreamtalk/voice/core && touch /app/dreamtalk/voice/core/__init__.py
+
+WORKDIR /app
+
+EXPOSE 8002
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl --fail http://localhost:8002/health || exit 1
+
+CMD ["python", "-m", "uvicorn", \
+     "dreamtalk.voice.core.vc.indicf5_microservice:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8002", \
+     "--log-level", "info"]

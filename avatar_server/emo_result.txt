@@ -1,0 +1,3 @@
+emotion: sad
+reply: Are you here for the exams? I was also in the same class. How are you, do you know what we have to do?
+latency: 9461 ms

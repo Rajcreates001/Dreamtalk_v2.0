@@ -1,0 +1,45 @@
+# ── Dreamtalk Backend — Full Requirements ──────────────────────────────
+# Generated from actual module imports discovered during startup.
+# Install: pip install -r backend/requirements-full.txt
+# ───────────────────────────────────────────────────────────────────────
+
+# ── Core backend (from backend/requirements.txt) ──────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+python-dotenv>=1.0.0
+httpx>=0.28.0
+pydantic-settings>=2.7.0
+python-multipart>=0.0.18
+aiofiles>=24.1.0
+websockets>=14.1
+asyncpg>=0.30.0
+PyJWT>=2.9.0
+pydantic[email]>=2.10.0
+
+# ── Computer vision ───────────────────────────────────────────────────
+opencv-python>=4.9.0
+Pillow>=10.0.0
+
+# ── ML / AI ───────────────────────────────────────────────────────────
+sentence-transformers>=3.0.0
+faiss-cpu>=1.7.0
+scikit-learn>=1.3.0
+scipy>=1.11.0
+numpy>=1.24.0
+vaderSentiment>=3.3.0
+
+# ── LLM / TTS ─────────────────────────────────────────────────────────
+ollama>=0.2.0
+requests>=2.31.0
+
+# ── Audio ──────────────────────────────────────────────────────────────
+soundfile>=0.12.0
+
+# ── Optional TTS engines (install if needed) ──────────────────────────
+# edge-tts>=6.0.0       # Azure edge TTS
+# gtts>=2.5.0           # Google TTS
+# pyttsx3>=2.90         # Windows offline TTS
+# torchaudio>=2.0.0     # Required for Kokoro/IndicF5 TTS
+
+# ── Optional 3D face ──────────────────────────────────────────────────
+# chumpy>=0.70          # Required for FLAME 3D model

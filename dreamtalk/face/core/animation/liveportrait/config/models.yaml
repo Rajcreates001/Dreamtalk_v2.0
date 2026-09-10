@@ -1,0 +1,49 @@
+appearance_feature_extractor:
+  image_channel: 3
+  block_expansion: 64
+  num_down_blocks: 2
+  max_features: 512
+  reshape_channel: 32
+  reshape_depth: 16
+  num_resblocks: 6
+
+motion_extractor:
+  num_kp: 21
+  backbone: convnextv2_tiny
+  in_chans: 3
+  num_classes: 162
+
+warping_module:
+  num_kp: 21
+  block_expansion: 64
+  max_features: 512
+  num_down_blocks: 2
+  reshape_channel: 32
+  estimate_occlusion_map: true
+  dense_motion_params:
+    block_expansion: 64
+    num_blocks: 5
+    max_features: 1024
+    reshape_depth: 16
+    compress: 4
+
+spade_generator:
+  upscale: 2
+  max_features: 256
+  block_expansion: 64
+  out_channels: 64
+  num_down_blocks: 2
+
+stitching_retargeting_module:
+  stitching:
+    input_size: 126
+    hidden_sizes: [256, 128, 64, 64]
+    output_size: 65
+  eye:
+    input_size: 64
+    hidden_sizes: [512, 256, 128, 64]
+    output_size: 63
+  lip:
+    input_size: 64
+    hidden_sizes: [512, 256, 128, 64]
+    output_size: 63

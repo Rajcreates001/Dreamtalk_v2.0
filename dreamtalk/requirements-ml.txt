@@ -1,0 +1,13 @@
+# ── DreamTalk ML Framework Dependencies ─────────────────────────────
+# NOTE: Do NOT add torch here — it's pre-installed in the Dockerfile stage.
+# Adding torch here would overwrite the CUDA-enabled version.
+numpy>=1.24,<3.0
+scipy>=1.10
+Pillow>=10.0
+matplotlib>=3.7
+sentencepiece>=0.1.99
+transformers>=4.40.0,<5.0
+accelerate>=0.25.0
+peft>=0.7.0
+einops
+packaging

@@ -1,0 +1,410 @@
+-- Dreamtalk Database Schema Dump
+-- Generated: 2026-06-18 19:39:06.465393
+-- PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit
+
+-- ============================================
+-- Table: business_clients
+-- ============================================
+CREATE TABLE business_clients (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    company_name character varying(255) NOT NULL,
+    contact_name character varying(255) NULL,
+    contact_email character varying(255) NULL,
+    status character varying(50) NULL DEFAULT 'active'::character varying,
+    revenue numeric NULL DEFAULT 0,
+    last_interaction timestamp with time zone NULL,
+    notes text NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX business_clients_pkey ON public.business_clients USING btree (id)
+-- CREATE INDEX idx_biz_clients_user ON public.business_clients USING btree (user_id)
+
+-- ============================================
+-- Table: custom_digital_humans
+-- ============================================
+CREATE TABLE custom_digital_humans (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    description text NULL,
+    category USER-DEFINED NULL DEFAULT 'personal'::digital_human_category,
+    model_config jsonb NULL DEFAULT '{}'::jsonb,
+    voice_config jsonb NULL DEFAULT '{}'::jsonb,
+    personality text NULL,
+    style character varying(50) NULL DEFAULT 'realistic'::character varying,
+    color_scheme character varying(50) NULL DEFAULT 'emerald'::character varying,
+    outfit character varying(50) NULL DEFAULT 'default'::character varying,
+    hair_style character varying(50) NULL DEFAULT 'default'::character varying,
+    eye_glow character varying(7) NULL DEFAULT '#10b981'::character varying,
+    thumbnail_url character varying(1024) NULL,
+    is_active boolean NULL DEFAULT true,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX custom_digital_humans_pkey ON public.custom_digital_humans USING btree (id)
+-- CREATE INDEX idx_custom_dh_user ON public.custom_digital_humans USING btree (user_id)
+
+-- ============================================
+-- Table: digital_humans
+-- ============================================
+CREATE TABLE digital_humans (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    name character varying(255) NOT NULL,
+    description text NULL,
+    category USER-DEFINED NOT NULL,
+    accent_color character varying(7) NULL DEFAULT '#10b981'::character varying,
+    emoji character varying(10) NULL,
+    model_url character varying(1024) NULL,
+    thumbnail_url character varying(1024) NULL,
+    voice_id character varying(255) NULL,
+    personality text NULL,
+    is_prebuilt boolean NULL DEFAULT true,
+    is_active boolean NULL DEFAULT true,
+    popularity integer NULL DEFAULT 0,
+    created_by uuid NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX digital_humans_pkey ON public.digital_humans USING btree (id)
+-- CREATE INDEX idx_digital_humans_category ON public.digital_humans USING btree (category)
+-- CREATE INDEX idx_digital_humans_popular ON public.digital_humans USING btree (popularity DESC)
+-- CREATE INDEX idx_digital_humans_prebuilt ON public.digital_humans USING btree (is_prebuilt)
+
+-- ============================================
+-- Table: email_verifications
+-- ============================================
+CREATE TABLE email_verifications (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    token character varying(512) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    used_at timestamp with time zone NULL,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX email_verifications_pkey ON public.email_verifications USING btree (id)
+-- CREATE UNIQUE INDEX email_verifications_token_key ON public.email_verifications USING btree (token)
+
+-- ============================================
+-- Table: healthcare_patients
+-- ============================================
+CREATE TABLE healthcare_patients (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    patient_name character varying(255) NOT NULL,
+    patient_email character varying(255) NULL,
+    condition text NULL,
+    status character varying(50) NULL DEFAULT 'active'::character varying,
+    last_interaction timestamp with time zone NULL,
+    notes text NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX healthcare_patients_pkey ON public.healthcare_patients USING btree (id)
+-- CREATE INDEX idx_hc_patients_status ON public.healthcare_patients USING btree (status)
+-- CREATE INDEX idx_hc_patients_user ON public.healthcare_patients USING btree (user_id)
+
+-- ============================================
+-- Table: healthcare_schedules
+-- ============================================
+CREATE TABLE healthcare_schedules (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    patient_id uuid NULL,
+    digital_human_id uuid NULL,
+    scheduled_date date NOT NULL,
+    scheduled_time time without time zone NULL,
+    duration_minutes integer NULL DEFAULT 30,
+    status character varying(50) NULL DEFAULT 'scheduled'::character varying,
+    notes text NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX healthcare_schedules_pkey ON public.healthcare_schedules USING btree (id)
+-- CREATE INDEX idx_hc_schedule_date ON public.healthcare_schedules USING btree (scheduled_date)
+-- CREATE INDEX idx_hc_schedule_user ON public.healthcare_schedules USING btree (user_id)
+
+-- ============================================
+-- Table: interaction_messages
+-- ============================================
+CREATE TABLE interaction_messages (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    interaction_id uuid NOT NULL,
+    role character varying(20) NOT NULL,
+    content text NOT NULL,
+    emotion character varying(50) NULL,
+    audio_url character varying(1024) NULL,
+    tts_duration_ms integer NULL,
+    metadata jsonb NULL DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_messages_created ON public.interaction_messages USING btree (created_at)
+-- CREATE INDEX idx_messages_interaction ON public.interaction_messages USING btree (interaction_id)
+-- CREATE UNIQUE INDEX interaction_messages_pkey ON public.interaction_messages USING btree (id)
+
+-- ============================================
+-- Table: interactions
+-- ============================================
+CREATE TABLE interactions (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    digital_human_id uuid NULL,
+    custom_dh_id uuid NULL,
+    title character varying(255) NULL,
+    status USER-DEFINED NULL DEFAULT 'active'::interaction_status,
+    duration_seconds integer NULL DEFAULT 0,
+    message_count integer NULL DEFAULT 0,
+    rating smallint NULL,
+    notes text NULL,
+    started_at timestamp with time zone NULL DEFAULT now(),
+    ended_at timestamp with time zone NULL
+);
+
+-- CREATE INDEX idx_interactions_started ON public.interactions USING btree (started_at DESC)
+-- CREATE INDEX idx_interactions_status ON public.interactions USING btree (status)
+-- CREATE INDEX idx_interactions_user ON public.interactions USING btree (user_id)
+-- CREATE UNIQUE INDEX interactions_pkey ON public.interactions USING btree (id)
+
+-- ============================================
+-- Table: media
+-- ============================================
+CREATE TABLE media (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    media_type USER-DEFINED NOT NULL,
+    file_path character varying(1024) NOT NULL,
+    file_size bigint NULL,
+    mime_type character varying(127) NULL,
+    original_name character varying(512) NULL,
+    alt_text text NULL,
+    checksum character varying(64) NULL,
+    metadata jsonb NULL DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_media_type ON public.media USING btree (media_type)
+-- CREATE INDEX idx_media_user ON public.media USING btree (user_id)
+-- CREATE UNIQUE INDEX media_pkey ON public.media USING btree (id)
+
+-- ============================================
+-- Table: password_resets
+-- ============================================
+CREATE TABLE password_resets (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    token character varying(512) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    used_at timestamp with time zone NULL,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX password_resets_pkey ON public.password_resets USING btree (id)
+-- CREATE UNIQUE INDEX password_resets_token_key ON public.password_resets USING btree (token)
+
+-- ============================================
+-- Table: subscription_payments
+-- ============================================
+CREATE TABLE subscription_payments (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    subscription_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    amount numeric NOT NULL,
+    currency character varying(3) NULL DEFAULT 'INR'::character varying,
+    status character varying(50) NOT NULL,
+    provider USER-DEFINED NULL DEFAULT 'manual'::payment_provider,
+    provider_payment_id character varying(255) NULL,
+    paid_at timestamp with time zone NULL DEFAULT now(),
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_payments_subscription ON public.subscription_payments USING btree (subscription_id)
+-- CREATE INDEX idx_payments_user ON public.subscription_payments USING btree (user_id)
+-- CREATE UNIQUE INDEX subscription_payments_pkey ON public.subscription_payments USING btree (id)
+
+-- ============================================
+-- Table: subscriptions
+-- ============================================
+CREATE TABLE subscriptions (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    tier USER-DEFINED NOT NULL DEFAULT 'free'::subscription_tier,
+    status USER-DEFINED NOT NULL DEFAULT 'trialing'::subscription_status,
+    current_period_start timestamp with time zone NOT NULL DEFAULT now(),
+    current_period_end timestamp with time zone NULL,
+    canceled_at timestamp with time zone NULL,
+    trial_end timestamp with time zone NULL,
+    provider USER-DEFINED NULL DEFAULT 'manual'::payment_provider,
+    provider_subscription_id character varying(255) NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_subscriptions_status ON public.subscriptions USING btree (status)
+-- CREATE INDEX idx_subscriptions_user ON public.subscriptions USING btree (user_id)
+-- CREATE UNIQUE INDEX subscriptions_pkey ON public.subscriptions USING btree (id)
+
+-- ============================================
+-- Table: usage_logs
+-- ============================================
+CREATE TABLE usage_logs (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    action character varying(100) NOT NULL,
+    tokens_used integer NULL DEFAULT 0,
+    duration_ms integer NULL,
+    metadata jsonb NULL DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_usage_action ON public.usage_logs USING btree (action)
+-- CREATE INDEX idx_usage_created ON public.usage_logs USING btree (created_at)
+-- CREATE INDEX idx_usage_user ON public.usage_logs USING btree (user_id)
+-- CREATE UNIQUE INDEX usage_logs_pkey ON public.usage_logs USING btree (id)
+
+-- ============================================
+-- Table: user_digital_humans
+-- ============================================
+CREATE TABLE user_digital_humans (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    digital_human_id uuid NOT NULL,
+    is_favorite boolean NULL DEFAULT false,
+    nickname character varying(255) NULL,
+    custom_voice_id character varying(255) NULL,
+    custom_personality text NULL,
+    interaction_count integer NULL DEFAULT 0,
+    last_interaction timestamp with time zone NULL,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_user_dh_fav ON public.user_digital_humans USING btree (user_id, is_favorite)
+-- CREATE INDEX idx_user_dh_user ON public.user_digital_humans USING btree (user_id)
+-- CREATE UNIQUE INDEX user_digital_humans_pkey ON public.user_digital_humans USING btree (id)
+-- CREATE UNIQUE INDEX user_digital_humans_user_id_digital_human_id_key ON public.user_digital_humans USING btree (user_id, digital_human_id)
+
+-- ============================================
+-- Table: user_oauth
+-- ============================================
+CREATE TABLE user_oauth (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    provider USER-DEFINED NOT NULL,
+    provider_id character varying(255) NOT NULL,
+    provider_email character varying(255) NULL,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_user_oauth_user ON public.user_oauth USING btree (user_id)
+-- CREATE UNIQUE INDEX user_oauth_pkey ON public.user_oauth USING btree (id)
+-- CREATE UNIQUE INDEX user_oauth_provider_provider_id_key ON public.user_oauth USING btree (provider, provider_id)
+
+-- ============================================
+-- Table: user_sessions
+-- ============================================
+CREATE TABLE user_sessions (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    access_token character varying(1024) NOT NULL,
+    refresh_token character varying(1024) NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    refresh_expires_at timestamp with time zone NOT NULL,
+    ip_address character varying(45) NULL,
+    user_agent text NULL,
+    is_revoked boolean NULL DEFAULT false,
+    created_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_user_sessions_refresh ON public.user_sessions USING btree (refresh_token)
+-- CREATE INDEX idx_user_sessions_token ON public.user_sessions USING btree (access_token)
+-- CREATE INDEX idx_user_sessions_user ON public.user_sessions USING btree (user_id)
+-- CREATE UNIQUE INDEX user_sessions_pkey ON public.user_sessions USING btree (id)
+
+-- ============================================
+-- Table: user_settings
+-- ============================================
+CREATE TABLE user_settings (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    llm_provider character varying(50) NULL DEFAULT 'openai'::character varying,
+    llm_model character varying(100) NULL DEFAULT 'gpt-4o'::character varying,
+    tts_provider character varying(50) NULL DEFAULT 'elevenlabs'::character varying,
+    tts_voice character varying(100) NULL DEFAULT 'default'::character varying,
+    stt_provider character varying(50) NULL DEFAULT 'whisper'::character varying,
+    theme character varying(20) NULL DEFAULT 'dark'::character varying,
+    language character varying(10) NULL DEFAULT 'en'::character varying,
+    notification_enabled boolean NULL DEFAULT true,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE UNIQUE INDEX user_settings_pkey ON public.user_settings USING btree (id)
+-- CREATE UNIQUE INDEX user_settings_user_id_key ON public.user_settings USING btree (user_id)
+
+-- ============================================
+-- Table: users
+-- ============================================
+CREATE TABLE users (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    email character varying(255) NOT NULL,
+    password_hash character varying(255) NULL,
+    full_name character varying(255) NOT NULL,
+    role USER-DEFINED NOT NULL DEFAULT 'personal'::user_role,
+    avatar_url character varying(512) NULL,
+    is_verified boolean NULL DEFAULT false,
+    is_active boolean NULL DEFAULT true,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now(),
+    last_login_at timestamp with time zone NULL
+);
+
+-- CREATE INDEX idx_users_email ON public.users USING btree (email)
+-- CREATE INDEX idx_users_role ON public.users USING btree (role)
+-- CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)
+-- CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)
+
+-- ============================================
+-- Table: voice_profiles
+-- ============================================
+CREATE TABLE voice_profiles (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    provider_voice_id character varying(255) NULL,
+    provider character varying(50) NULL DEFAULT 'elevenlabs'::character varying,
+    voice_settings jsonb NULL DEFAULT '{}'::jsonb,
+    sample_url character varying(1024) NULL,
+    is_cloned boolean NULL DEFAULT false,
+    is_active boolean NULL DEFAULT true,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL DEFAULT now()
+);
+
+-- CREATE INDEX idx_voice_profiles_user ON public.voice_profiles USING btree (user_id)
+-- CREATE UNIQUE INDEX voice_profiles_pkey ON public.voice_profiles USING btree (id)
+
+-- ============================================
+-- Seed Data: digital_humans
+-- ============================================
+--   Dr. Aria                  | healthcare      | pop=100
+--   Mr. Carter                | business        | pop=95
+--   Luna                      | creative        | pop=92
+--   Prof. Sage                | education       | pop=90
+--   Atlas                     | personal        | pop=88
+--   Dr. Rivera                | healthcare      | pop=87
+--   Nova                      | tech            | pop=85
+--   Ella                      | education       | pop=84
+--   Serena                    | personal        | pop=83
+--   Coach Mike                | personal        | pop=82
+--   Dr. Chen                  | healthcare      | pop=80
+--   Captain Rex               | personal        | pop=78
+
+-- Total tables: 19
+-- Total seed rows: 12

@@ -1,0 +1,4 @@
+FROM dreamtalk-backend:latest
+# Fix: install ALL transitive deps for requirements-core (was installed with --no-deps)
+COPY requirements-core.txt /tmp/requirements-core.txt
+RUN pip install -r /tmp/requirements-core.txt

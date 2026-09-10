@@ -1,0 +1,14 @@
+edge-tts>=7.0.0
+soundfile>=0.12
+librosa>=0.10.0
+ffmpeg-python>=0.2.0
+loguru
+misaki[en]>=0.9.4
+rotary_embedding_torch
+
+# Lazy-loaded / optional stubs (no weights currently available):
+# gpt-sovits  # Dead code path — no pretrained weights exist, see tts_pipeline.py
+# openvoice   # Dead code path — no checkpoint files exist, see openvoice_api.py
+
+# fairseq is installed separately in Dockerfile with --no-deps
+# due to omegaconf dependency conflicts on Python 3.11
