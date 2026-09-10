@@ -1,176 +1,241 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  avatarService,
-  faceService,
-  jobService,
-  systemService,
-  voiceService,
-  type Avatar,
-  type FaceAnalysis,
-  type Job,
-  type Language,
-  type VoiceAnalysis,
-} from "@/services"
+import { avatarApi, digitalTwinApi, getAccessToken } from "@/lib/api"
 
+// ── View-model types (frontend-only; wire shapes live in lib/api.ts) ──
 export type Step = "consent" | "identity" | "voice" | "processing" | "preview"
 export const STEP_ORDER: Step[] = ["consent", "identity", "voice", "processing", "preview"]
 
+export interface Language { code: string; name: string; native: string }
+
+type PhaseStatus = "idle" | "uploading" | "analyzing" | "done" | "error"
+
+interface FaceResult { faceDetected: boolean; quality: number; previewUrl?: string; statusRaw: string }
+interface VoiceResult { isCloned: boolean; isSynthetic: boolean; quality: number; statusRaw: string }
+interface Pipeline { status: string; progress: number; stage: string }
+
+const TERMINAL_OK = new Set(["complete", "completed", "cloned", "ready", "appearance_complete", "voice_complete"])
+const TERMINAL_FAIL = new Set(["failed", "error"])
+
+const isOk = (s?: string) => !!s && TERMINAL_OK.has(String(s).toLowerCase())
+const isFail = (s?: string) => !!s && TERMINAL_FAIL.has(String(s).toLowerCase())
+
+async function pollUntil<T>(
+  fn: () => Promise<T>,
+  done: (v: T) => boolean,
+  { tries = 60, intervalMs = 1500 }: { tries?: number; intervalMs?: number } = {},
+): Promise<T> {
+  let last = await fn()
+  let n = 0
+  while (!done(last) && n < tries) {
+    await new Promise((r) => setTimeout(r, intervalMs))
+    last = await fn()
+    n++
+  }
+  return last
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function useCreateTwin() {
+  const [authed, setAuthed] = useState<boolean | null>(null)
   const [step, setStep] = useState<Step>("consent")
 
   const [name, setName] = useState("")
   const [consent, setConsent] = useState(false)
 
+  const [twinId, setTwinId] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   // Identity
   const [faceFile, setFaceFile] = useState<File | null>(null)
   const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null)
-  const [faceStatus, setFaceStatus] = useState<"idle" | "scanning" | "done" | "error">("idle")
-  const [faceAnalysis, setFaceAnalysis] = useState<FaceAnalysis | null>(null)
+  const [faceStatus, setFaceStatus] = useState<PhaseStatus>("idle")
+  const [faceResult, setFaceResult] = useState<FaceResult | null>(null)
 
   // Voice
   const [voiceUrl, setVoiceUrl] = useState<string | null>(null)
   const [voiceDuration, setVoiceDuration] = useState(0)
-  const [voiceStatus, setVoiceStatus] = useState<"idle" | "analyzing" | "done" | "error">("idle")
-  const [voiceAnalysis, setVoiceAnalysis] = useState<VoiceAnalysis | null>(null)
-  const voiceBlobRef = useRef<Blob | null>(null)
+  const [voiceStatus, setVoiceStatus] = useState<PhaseStatus>("idle")
+  const [voiceResult, setVoiceResult] = useState<VoiceResult | null>(null)
 
   // Languages
   const [languages, setLanguages] = useState<Language[]>([])
   const [selectedLangs, setSelectedLangs] = useState<string[]>(["en-IN"])
 
   // Processing
-  const [job, setJob] = useState<Job | null>(null)
-  const [avatar, setAvatar] = useState<Avatar | null>(null)
+  const [pipeline, setPipeline] = useState<Pipeline | null>(null)
+
+  const blobUrls = useRef<string[]>([])
+  const track = (url: string) => { blobUrls.current.push(url); return url }
+
+  useEffect(() => {
+    setAuthed(!!getAccessToken())
+  }, [])
 
   useEffect(() => {
     let alive = true
-    systemService.languages().then((l) => alive && setLanguages(l)).catch(() => {})
-    return () => {
-      alive = false
-    }
+    avatarApi.languages()
+      .then((l) => alive && setLanguages(l as Language[]))
+      .catch(() => { /* backend offline — languages stay empty, surfaced in UI */ })
+    return () => { alive = false }
   }, [])
 
-  // Clean up any object URLs.
-  useEffect(() => () => {
-    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
-    if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-  }, [facePreviewUrl, voiceUrl])
+  useEffect(() => () => { blobUrls.current.forEach(URL.revokeObjectURL) }, [])
+
+  const primaryLang = () => (selectedLangs[0]?.split("-")[0] || "en")
+
+  // Step 0 → create the twin, then enter identity.
+  const beginCreation = useCallback(async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      const twin: any = await digitalTwinApi.create({
+        name: name.trim() || "My Twin",
+        description: "Created with DreamTalk Astra",
+      })
+      setTwinId(twin.id ?? twin.twin_id)
+      setStep("identity")
+    } catch (e: any) {
+      setError(e?.message?.includes("Failed to fetch") || e?.message?.includes("HTTP")
+        ? "Couldn't reach the backend. Make sure the DreamTalk API is running."
+        : e?.message || "Could not create your twin.")
+    } finally {
+      setBusy(false)
+    }
+  }, [name, selectedLangs])
 
   const analyzeFace = useCallback(async (file: File) => {
-    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
+    if (!twinId) return
+    const url = track(URL.createObjectURL(file))
     setFaceFile(file)
-    setFacePreviewUrl(URL.createObjectURL(file))
-    setFaceStatus("scanning")
-    setFaceAnalysis(null)
+    setFacePreviewUrl(url)
+    setFaceStatus("uploading")
+    setFaceResult(null)
+    setError(null)
     try {
-      const result = await faceService.analyze(file)
-      setFaceAnalysis(result)
-      setFaceStatus(result.status === "ready" ? "done" : "error")
-    } catch {
-      setFaceStatus("error")
-      setFaceAnalysis({
-        status: "no_face", confidence: 0, faces: 0, quality: "low",
-        message: "Could not analyze the image. Try another photo.",
+      const form = new FormData()
+      form.append("files", file)
+      await digitalTwinApi.uploadAppearance(twinId, form)
+      setFaceStatus("analyzing")
+      const res: any = await pollUntil(
+        () => digitalTwinApi.getAppearanceResult(twinId),
+        (r: any) => isOk(r?.status) || isFail(r?.status) || r?.face_detected === true,
+      )
+      setFaceResult({
+        faceDetected: !!res.face_detected,
+        quality: res.quality_score ?? 0,
+        previewUrl: res.preview_url,
+        statusRaw: res.status,
       })
+      setFaceStatus(isFail(res.status) || res.face_detected === false ? "error" : "done")
+    } catch (e: any) {
+      setFaceStatus("error")
+      setError(e?.message || "Face analysis failed.")
     }
-  }, [facePreviewUrl])
+  }, [twinId])
 
   const clearFace = useCallback(() => {
-    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
-    setFaceFile(null)
-    setFacePreviewUrl(null)
-    setFaceStatus("idle")
-    setFaceAnalysis(null)
-  }, [facePreviewUrl])
+    setFaceFile(null); setFacePreviewUrl(null); setFaceStatus("idle"); setFaceResult(null)
+  }, [])
 
   const setVoice = useCallback(async (blob: Blob, durationSec: number) => {
-    voiceBlobRef.current = blob
-    if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-    setVoiceUrl(URL.createObjectURL(blob))
+    if (!twinId) return
+    const url = track(URL.createObjectURL(blob))
+    setVoiceUrl(url)
     setVoiceDuration(durationSec)
-    setVoiceStatus("analyzing")
-    setVoiceAnalysis(null)
+    setVoiceStatus("uploading")
+    setVoiceResult(null)
+    setError(null)
     try {
-      const result = await voiceService.analyze(blob, durationSec)
-      setVoiceAnalysis(result)
-      setVoiceStatus(result.status === "ready" ? "done" : "error")
-    } catch {
-      setVoiceStatus("error")
-      setVoiceAnalysis({
-        status: "low_quality", durationSec, clarity: 0, quality: "low",
-        message: "Could not analyze the audio. Try again.",
+      const form = new FormData()
+      form.append("files", blob, "voice-sample.webm")
+      await digitalTwinApi.uploadVoice(twinId, form)
+      setVoiceStatus("analyzing")
+      const res: any = await pollUntil(
+        () => digitalTwinApi.getVoiceResult(twinId),
+        (r: any) => isOk(r?.status) || isFail(r?.status) || r?.is_cloned === true,
+      )
+      setVoiceResult({
+        isCloned: !!res.is_cloned,
+        isSynthetic: !!res.is_synthetic,
+        quality: res.quality_score ?? 0,
+        statusRaw: res.status,
       })
+      setVoiceStatus(isFail(res.status) ? "error" : "done")
+    } catch (e: any) {
+      setVoiceStatus("error")
+      setError(e?.message || "Voice processing failed.")
     }
-  }, [voiceUrl])
+  }, [twinId])
 
   const clearVoice = useCallback(() => {
-    voiceBlobRef.current = null
-    if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-    setVoiceUrl(null)
-    setVoiceDuration(0)
-    setVoiceStatus("idle")
-    setVoiceAnalysis(null)
-  }, [voiceUrl])
+    setVoiceUrl(null); setVoiceDuration(0); setVoiceStatus("idle"); setVoiceResult(null)
+  }, [])
 
   const toggleLang = useCallback((code: string) => {
-    setSelectedLangs((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-    )
+    setSelectedLangs((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code])
   }, [])
 
   const startProcessing = useCallback(async () => {
+    if (!twinId) return
     setStep("processing")
-    const created = await avatarService.create({
-      name: name || "My Twin",
-      faceFileName: faceFile?.name,
-      voiceFileName: voiceBlobRef.current ? "voice-sample" : undefined,
-      languages: selectedLangs,
-      consent,
-    })
-    setAvatar(created)
-    let current = await jobService.create(created.avatarId)
-    setJob(current)
-    // Poll until terminal.
-    while (current.status === "processing" || current.status === "queued") {
-      current = await jobService.get(current.jobId)
-      setJob({ ...current })
+    setError(null)
+    try {
+      await digitalTwinApi.update(twinId, { language: primaryLang() }).catch(() => {})
+      await digitalTwinApi.runPipeline(twinId)
+      const final: any = await pollUntil(
+        () => digitalTwinApi.getPipelineStatus(twinId),
+        (r: any) => isOk(r?.status) || isFail(r?.status),
+        { tries: 120, intervalMs: 2000 },
+      )
+      setPipeline({
+        status: final.status,
+        progress: final.progress ?? (isOk(final.status) ? 100 : 0),
+        stage: final.stage ?? final.status,
+      })
+      if (isFail(final.status)) {
+        setError("Avatar processing failed. Please try again.")
+      } else {
+        setStep("preview")
+      }
+    } catch (e: any) {
+      setError(e?.message || "Processing failed.")
     }
-    if (current.status === "completed") {
-      const refreshed = await avatarService.get(created.avatarId)
-      if (refreshed) setAvatar(refreshed)
-      setStep("preview")
-    }
-  }, [name, faceFile, selectedLangs, consent])
+  }, [twinId, selectedLangs])
+
+  // Live-ish progress display while the pipeline runs.
+  useEffect(() => {
+    if (step !== "processing" || !twinId) return
+    let alive = true
+    const id = setInterval(async () => {
+      try {
+        const s: any = await digitalTwinApi.getPipelineStatus(twinId)
+        if (alive) setPipeline({ status: s.status, progress: s.progress ?? 0, stage: s.stage ?? s.status })
+      } catch { /* ignore */ }
+    }, 2000)
+    return () => { alive = false; clearInterval(id) }
+  }, [step, twinId])
 
   const canProceed: Record<Step, boolean> = {
-    consent: consent && name.trim().length > 0,
+    consent: consent && name.trim().length > 0 && authed === true && !busy,
     identity: faceStatus === "done",
     voice: voiceStatus === "done" && selectedLangs.length > 0,
-    processing: job?.status === "completed",
+    processing: pipeline ? isOk(pipeline.status) : false,
     preview: true,
   }
 
-  const goNext = useCallback(() => {
-    setStep((s) => {
-      const i = STEP_ORDER.indexOf(s)
-      return STEP_ORDER[Math.min(STEP_ORDER.length - 1, i + 1)]
-    })
-  }, [])
-  const goBack = useCallback(() => {
-    setStep((s) => {
-      const i = STEP_ORDER.indexOf(s)
-      return STEP_ORDER[Math.max(0, i - 1)]
-    })
-  }, [])
+  const goNext = useCallback(() => setStep((s) => STEP_ORDER[Math.min(STEP_ORDER.length - 1, STEP_ORDER.indexOf(s) + 1)]), [])
+  const goBack = useCallback(() => setStep((s) => STEP_ORDER[Math.max(1, STEP_ORDER.indexOf(s) - 1)]), [])
 
   return {
-    step, setStep, goNext, goBack, canProceed,
-    name, setName, consent, setConsent,
-    faceFile, facePreviewUrl, faceStatus, faceAnalysis, analyzeFace, clearFace,
-    voiceUrl, voiceDuration, voiceStatus, voiceAnalysis, setVoice, clearVoice,
+    authed, step, setStep, goNext, goBack, canProceed,
+    name, setName, consent, setConsent, busy, error, twinId, beginCreation,
+    faceFile, facePreviewUrl, faceStatus, faceResult, analyzeFace, clearFace,
+    voiceUrl, voiceDuration, voiceStatus, voiceResult, setVoice, clearVoice,
     languages, selectedLangs, toggleLang,
-    job, avatar, startProcessing,
+    pipeline, startProcessing, isOk,
   }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
