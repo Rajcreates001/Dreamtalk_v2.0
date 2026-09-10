@@ -13,7 +13,7 @@ interface FloatingShape {
   color: string
 }
 
-const COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#06b6d4"]
+const COLORS = ["#8F9A5E", "#853953", "#B03A5E", "#CC3A63", "#D6A44C", "#06b6d4"]
 
 function ShapeGeometry({ type }: { type: FloatingShape["type"] }) {
   switch (type) {

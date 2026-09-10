@@ -9,9 +9,9 @@ import { DigitalHumanScene } from "@/components/login/DigitalHumanScene"
 import { SignupWizard } from "./SignupWizard"
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#7C5CFF",
-  healthcare: "#00E5FF",
-  business: "#42FFC6",
+  personal: "#CC3A63",
+  healthcare: "#A2AB73",
+  business: "#A2AB73",
 }
 
 export function SignupExperience() {
@@ -22,16 +22,16 @@ export function SignupExperience() {
 
   if (!mounted) {
     return (
-      <main className="min-h-dvh flex bg-[#070B14]" suppressHydrationWarning>
+      <main className="min-h-dvh flex bg-[#201D1D]" suppressHydrationWarning>
         <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#64748B]/30 border-t-[#7C5CFF]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8A8178]/30 border-t-[#CC3A63]" />
         </div>
       </main>
     )
   }
 
   return (
-    <main className="relative min-h-dvh bg-[#070B14] overflow-hidden flex flex-col">
+    <main className="relative min-h-dvh bg-[#201D1D] overflow-hidden flex flex-col">
       <AuroraBackdrop />
 
       {/* Back to Home */}
@@ -61,15 +61,15 @@ export function SignupExperience() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="text-center space-y-2 px-8"
             >
-              <h2 className="text-lg font-bold text-[#F8FAFC]">Create Your Digital Twin</h2>
-              <p className="text-xs text-[#94A3B8] leading-relaxed max-w-sm mx-auto">
+              <h2 className="text-lg font-bold text-[#F3F4F4]">Create Your Digital Twin</h2>
+              <p className="text-xs text-[#B0A79C] leading-relaxed max-w-sm mx-auto">
                 An intelligent Digital Human that learns, evolves, and works alongside you — across personal, healthcare, and enterprise environments.
               </p>
               <div className="flex items-center justify-center gap-4 pt-2">
                 {[
-                  { label: "Learn", color: "#7C5CFF" },
-                  { label: "Evolve", color: "#00E5FF" },
-                  { label: "Remember", color: "#42FFC6" },
+                  { label: "Learn", color: "#CC3A63" },
+                  { label: "Evolve", color: "#A2AB73" },
+                  { label: "Remember", color: "#A2AB73" },
                 ].map((f) => (
                   <span key={f.label} className="text-[10px] font-mono tracking-wider" style={{ color: `${f.color}99` }}>{f.label}</span>
                 ))}
@@ -88,14 +88,14 @@ export function SignupExperience() {
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-center mb-6">
               <span className="text-xs uppercase tracking-[0.3em] text-white/20 font-mono">DreamTalk</span>
               <h1 className="text-2xl font-bold mt-2" style={{
-                backgroundImage: "linear-gradient(135deg, #F8FAFC, #7C5CFF, #00E5FF)",
+                backgroundImage: "linear-gradient(135deg, #F3F4F4, #CC3A63, #A2AB73)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}>
                 Begin Your Journey
               </h1>
-              <p className="text-xs text-[#94A3B8] mt-1">Initialize your Digital Twin Operating System</p>
+              <p className="text-xs text-[#B0A79C] mt-1">Initialize your Digital Twin Operating System</p>
             </motion.div>
 
             {/* Glass panel */}
@@ -113,8 +113,8 @@ export function SignupExperience() {
             </motion.div>
 
             {/* Footer */}
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-[10px] text-[#64748B] mt-6">
-              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-[#7C5CFF] hover:text-[#00E5FF] transition-colors">Terms</a> and <a href="#" className="text-[#7C5CFF] hover:text-[#00E5FF] transition-colors">Privacy Policy</a>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-[10px] text-[#8A8178] mt-6">
+              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-[#CC3A63] hover:text-[#A2AB73] transition-colors">Terms</a> and <a href="#" className="text-[#CC3A63] hover:text-[#A2AB73] transition-colors">Privacy Policy</a>
             </motion.p>
           </div>
         </motion.div>

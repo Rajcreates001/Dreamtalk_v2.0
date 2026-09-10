@@ -18,7 +18,7 @@ export function HeroSection() {
     <section ref={sectionRef} className="relative min-h-dvh w-full overflow-hidden bg-background">
       {/* 3D Background Scene */}
       <SceneCanvas className="fixed inset-0 -z-10">
-        <ParticleField count={2500} color="#10b981" speed={0.4} spread={18} size={0.025} />
+        <ParticleField count={2500} color="#8F9A5E" speed={0.4} spread={18} size={0.025} />
         <FloatingShapes count={15} />
       </SceneCanvas>
 
@@ -78,7 +78,7 @@ export function HeroSection() {
         >
           <Link href="/signup">
             <ShimmerButton
-              shimmerColor="#10b981"
+              shimmerColor="#8F9A5E"
               background="rgba(16, 185, 129, 0.15)"
               className="text-foreground font-medium text-base px-8 py-3"
             >

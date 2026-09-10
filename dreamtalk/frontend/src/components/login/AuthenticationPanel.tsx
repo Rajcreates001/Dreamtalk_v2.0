@@ -28,9 +28,9 @@ const DEMO_CREDENTIALS: Record<string, { email: string; password: string }> = {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#7C5CFF",
-  healthcare: "#00E5FF",
-  business: "#42FFC6",
+  personal: "#CC3A63",
+  healthcare: "#A2AB73",
+  business: "#A2AB73",
 }
 
 export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentColor, oauthError: externalError }: AuthenticationPanelProps) {
@@ -154,7 +154,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                 className="flex items-center gap-3 px-6 py-2"
               >
                 <div className={`w-1.5 h-1.5 rounded-full ${welcomeStep > i ? "" : "opacity-0"}`} style={{ background: accentColor }} />
-                <span className={`text-sm ${welcomeStep > i ? "text-[#F8FAFC]" : "text-[#64748B]"}`}>{text}</span>
+                <span className={`text-sm ${welcomeStep > i ? "text-[#F3F4F4]" : "text-[#8A8178]"}`}>{text}</span>
               </motion.div>
             ))}
 
@@ -167,8 +167,8 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
         ) : step === "role" ? (
           <motion.div key="role" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">
             <div className="text-center">
-              <h2 className="text-xl font-bold text-[#F8FAFC]">Choose Your Role</h2>
-              <p className="text-xs text-[#94A3B8] mt-1">Select how you&apos;ll use DreamTalk</p>
+              <h2 className="text-xl font-bold text-[#F3F4F4]">Choose Your Role</h2>
+              <p className="text-xs text-[#B0A79C] mt-1">Select how you&apos;ll use DreamTalk</p>
             </div>
 
             {error && (
@@ -204,38 +204,38 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                       <Icon className="h-4 w-4" style={{ color: rc }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-[#F8FAFC]">{role.label}</h3>
-                      <p className="text-[11px] text-[#94A3B8] mt-0.5">{role.desc}</p>
+                      <h3 className="text-sm font-semibold text-[#F3F4F4]">{role.label}</h3>
+                      <p className="text-[11px] text-[#B0A79C] mt-0.5">{role.desc}</p>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-[#64748B] group-hover:text-[#CBD5E1] transition-colors mt-2 shrink-0" />
+                    <ArrowRight className="h-4 w-4 text-[#8A8178] group-hover:text-[#D8D2C8] transition-colors mt-2 shrink-0" />
                   </div>
                 </motion.button>
               )
             })}
 
             <div className="pt-2">
-              <div className="relative text-center text-[10px] text-[#64748B] mb-3">
-                <span className="relative z-10 px-2" style={{ background: "#0F172A" }}>or continue with</span>
+              <div className="relative text-center text-[10px] text-[#8A8178] mb-3">
+                <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or continue with</span>
                 <div className="absolute inset-x-0 top-1/2 h-px bg-white/[0.06]" />
               </div>
               <div className="flex gap-2">
-                <button onClick={loginWithGoogle} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Google</button>
-                <button onClick={loginWithGitHub} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">GitHub</button>
-                <button onClick={loginWithMicrosoft} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Microsoft</button>
+                <button onClick={loginWithGoogle} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Google</button>
+                <button onClick={loginWithGitHub} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">GitHub</button>
+                <button onClick={loginWithMicrosoft} className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Microsoft</button>
               </div>
             </div>
 
             {/* Back to Home */}
             <div className="text-center pt-1">
-              <Link href="/" className="text-[10px] text-[#64748B] hover:text-[#F8FAFC] transition-colors">← Back to Home</Link>
+              <Link href="/" className="text-[10px] text-[#8A8178] hover:text-[#F3F4F4] transition-colors">← Back to Home</Link>
             </div>
           </motion.div>
         ) : (
           <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
             <div className="text-center">
-              <button onClick={handleBack} className="text-[10px] hover:text-[#00E5FF] mb-2 inline-block" style={{ color: accentColor }}>← Change role</button>
-              <h2 className="text-lg font-bold text-[#F8FAFC]">Welcome</h2>
-              <p className="text-xs text-[#94A3B8]">Sign in to your account</p>
+              <button onClick={handleBack} className="text-[10px] hover:text-[#A2AB73] mb-2 inline-block" style={{ color: accentColor }}>← Change role</button>
+              <h2 className="text-lg font-bold text-[#F3F4F4]">Welcome</h2>
+              <p className="text-xs text-[#B0A79C]">Sign in to your account</p>
             </div>
 
             {error && (
@@ -247,22 +247,22 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
 
             <form onSubmit={handleSubmit} className="space-y-3 mt-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-[#CBD5E1]">Email</label>
+                <label className="text-xs font-medium text-[#D8D2C8]">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#64748B]" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8A8178]" />
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required
-                    className="w-full h-11 pl-9 pr-3 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 transition-all"
+                    className="w-full h-11 pl-9 pr-3 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 transition-all"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-[#CBD5E1]">Password</label>
+                <label className="text-xs font-medium text-[#D8D2C8]">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#64748B]" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8A8178]" />
                   <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" required
-                    className="w-full h-11 pl-9 pr-9 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 transition-all"
+                    className="w-full h-11 pl-9 pr-9 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 transition-all"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#CBD5E1]">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8178] hover:text-[#D8D2C8]">
                     {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
@@ -282,7 +282,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
 
             {/* Demo quick-fill */}
             <div className="mt-4 pt-3 border-t border-white/[0.06]">
-              <p className="text-[10px] text-[#64748B] text-center mb-2">Demo quick fill</p>
+              <p className="text-[10px] text-[#8A8178] text-center mb-2">Demo quick fill</p>
               <div className="flex gap-2">
                 {ROLES.map((role) => {
                   const rc = ROLE_COLORS[role.id]
@@ -292,7 +292,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                       style={{
                         borderColor: selectedRole === role.id ? `${rc}50` : "rgba(255,255,255,0.06)",
                         background: selectedRole === role.id ? `${rc}10` : "rgba(255,255,255,0.04)",
-                        color: selectedRole === role.id ? rc : "#94A3B8",
+                        color: selectedRole === role.id ? rc : "#B0A79C",
                       }}
                     >
                       {role.label}
@@ -302,17 +302,17 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
               </div>
             </div>
 
-            <div className="relative text-center text-[10px] text-[#64748B] mt-4">
-              <span className="relative z-10 px-2" style={{ background: "#0F172A" }}>or continue with</span>
+            <div className="relative text-center text-[10px] text-[#8A8178] mt-4">
+              <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or continue with</span>
               <div className="absolute inset-x-0 top-1/2 h-px bg-white/[0.06]" />
             </div>
             <div className="flex gap-2 mt-3">
-              <button onClick={loginWithGoogle} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Google</button>
-              <button onClick={loginWithGitHub} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">GitHub</button>
-              <button onClick={loginWithMicrosoft} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Microsoft</button>
+              <button onClick={loginWithGoogle} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Google</button>
+              <button onClick={loginWithGitHub} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">GitHub</button>
+              <button onClick={loginWithMicrosoft} className="flex-1 py-2 rounded-xl border border-white/[0.06] text-[11px] font-medium text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all bg-white/[0.04]">Microsoft</button>
             </div>
 
-            <p className="text-center text-[10px] text-[#94A3B8] mt-4">
+            <p className="text-center text-[10px] text-[#B0A79C] mt-4">
               Don&apos;t have an account?{" "}<Link href="/signup" className="font-medium transition-colors" style={{ color: accentColor }}>Sign up</Link>
             </p>
           </motion.div>

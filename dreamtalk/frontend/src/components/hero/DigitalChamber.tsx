@@ -35,19 +35,19 @@ function ChamberRings() {
       {/* Outer ring - Energy */}
       <mesh ref={outerRef}>
         <torusGeometry args={[2.8, 0.015, 16, 64]} />
-        <meshBasicMaterial color="#7C5CFF" transparent opacity={0.15} />
+        <meshBasicMaterial color="#CC3A63" transparent opacity={0.15} />
       </mesh>
 
       {/* Middle ring - Knowledge */}
       <mesh ref={midRef}>
         <torusGeometry args={[2.0, 0.012, 12, 48]} />
-        <meshBasicMaterial color="#42FFC6" transparent opacity={0.2} />
+        <meshBasicMaterial color="#A2AB73" transparent opacity={0.2} />
       </mesh>
 
       {/* Inner ring - Voice */}
       <mesh ref={innerRef}>
         <torusGeometry args={[1.3, 0.01, 12, 48]} />
-        <meshBasicMaterial color="#7C5CFF" transparent opacity={0.15} />
+        <meshBasicMaterial color="#CC3A63" transparent opacity={0.15} />
       </mesh>
     </group>
   )
@@ -77,11 +77,11 @@ function EnergyPulse() {
     <group>
       <mesh ref={ref}>
         <sphereGeometry args={[1.6, 32, 32]} />
-        <meshBasicMaterial color="#7C5CFF" transparent opacity={0.08} wireframe depthWrite={false} />
+        <meshBasicMaterial color="#CC3A63" transparent opacity={0.08} wireframe depthWrite={false} />
       </mesh>
       <mesh ref={ref2}>
         <sphereGeometry args={[1.8, 24, 24]} />
-        <meshBasicMaterial color="#00E5FF" transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial color="#A2AB73" transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -102,7 +102,7 @@ function KnowledgeOrbit() {
         speed: 0.08 + Math.random() * 0.25,
         phase: (i / count) * Math.PI * 2 + Math.random() * 0.5,
         yOffset: (Math.random() - 0.5) * 0.6,
-        color: i % 3 === 0 ? "#7C5CFF" : i % 3 === 1 ? "#00E5FF" : "#42FFC6",
+        color: i % 3 === 0 ? "#CC3A63" : i % 3 === 1 ? "#A2AB73" : "#A2AB73",
         size: 0.025 + Math.random() * 0.04,
       })
     }
@@ -204,7 +204,7 @@ function NeuralConnections() {
           itemSize={3}
         />
       </bufferGeometry>
-      <lineBasicMaterial color="#7C5CFF" transparent opacity={0.08} />
+      <lineBasicMaterial color="#CC3A63" transparent opacity={0.08} />
     </lineSegments>
   )
 }

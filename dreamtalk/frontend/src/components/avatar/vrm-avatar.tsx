@@ -61,11 +61,11 @@ function SphereHead({ emotion, isSpeaking, lipSyncValue }: {
     idlePhase: 0, blinkTimer: 0, blinkPhase: 0, nextBlink: 3,
   })
 
-  const targetColor = useRef(new THREE.Color("#88CC88"))
+  const targetColor = useRef(new THREE.Color("#A2AB73"))
 
   const EMOTION_COLORS: Record<string, string> = {
-    happy: "#FFD700", sad: "#4169E1", angry: "#FF4444", fear: "#9932CC",
-    surprise: "#FF8C00", neutral: "#88CC88", disgust: "#556B2F", contempt: "#8B4513",
+    happy: "#D6A44C", sad: "#4169E1", angry: "#FF4444", fear: "#9932CC",
+    surprise: "#FF8C00", neutral: "#A2AB73", disgust: "#556B2F", contempt: "#8B4513",
   }
 
   useEffect(() => {
@@ -139,39 +139,39 @@ function SphereHead({ emotion, isSpeaking, lipSyncValue }: {
       <mesh><sphereGeometry args={[0.55, 48, 48]} /><meshStandardMaterial map={faceTexture} roughness={0.5} metalness={0.05} /></mesh>
       {/* Eyes */}
       <group position={[-0.18, 0.12, 0.48]}>
-        <mesh ref={leftEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F8F8FF" /></mesh>
-        <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5C3A1E" /></mesh>
-        <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#1A0F05" /></mesh>
+        <mesh ref={leftEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F3F4F4" /></mesh>
+        <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5A4A3A" /></mesh>
+        <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#201D1D" /></mesh>
         <mesh position={[0.01, 0.01, 0.07]}><sphereGeometry args={[0.006, 8, 8]} /><meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.3} /></mesh>
       </group>
       <group position={[0.18, 0.12, 0.48]}>
-        <mesh ref={rightEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F8F8FF" /></mesh>
-        <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5C3A1E" /></mesh>
-        <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#1A0F05" /></mesh>
+        <mesh ref={rightEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F3F4F4" /></mesh>
+        <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5A4A3A" /></mesh>
+        <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#201D1D" /></mesh>
         <mesh position={[0.01, 0.01, 0.07]}><sphereGeometry args={[0.006, 8, 8]} /><meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.3} /></mesh>
       </group>
       {/* Brows */}
       <mesh ref={leftBrowRef} position={[-0.18, 0.52, 0.44]} rotation={[0, 0, 0.15]}>
-        <boxGeometry args={[0.14, 0.025, 0.02]} /><meshStandardMaterial color="#3D2B1F" />
+        <boxGeometry args={[0.14, 0.025, 0.02]} /><meshStandardMaterial color="#3A3535" />
       </mesh>
       <mesh ref={rightBrowRef} position={[0.18, 0.52, 0.44]} rotation={[0, 0, -0.15]}>
-        <boxGeometry args={[0.14, 0.025, 0.02]} /><meshStandardMaterial color="#3D2B1F" />
+        <boxGeometry args={[0.14, 0.025, 0.02]} /><meshStandardMaterial color="#3A3535" />
       </mesh>
       {/* Nose */}
-      <mesh position={[0, 0.02, 0.55]}><sphereGeometry args={[0.035, 12, 12]} /><meshStandardMaterial color="#E8C4A0" /></mesh>
+      <mesh position={[0, 0.02, 0.55]}><sphereGeometry args={[0.035, 12, 12]} /><meshStandardMaterial color="#E6D9C4" /></mesh>
       {/* Mouth */}
       <mesh ref={mouthRef} position={[0, -0.14, 0.48]}>
         <boxGeometry args={[0.12, 0.02, 0.015]} /><meshStandardMaterial color="#CC7777" />
       </mesh>
       {/* Ears */}
-      <mesh position={[-0.53, 0.05, 0.05]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color="#E8C4A0" /></mesh>
-      <mesh position={[0.53, 0.05, 0.05]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color="#E8C4A0" /></mesh>
+      <mesh position={[-0.53, 0.05, 0.05]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color="#E6D9C4" /></mesh>
+      <mesh position={[0.53, 0.05, 0.05]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color="#E6D9C4" /></mesh>
       {/* Neck */}
       <mesh position={[0, -0.7, 0]}><cylinderGeometry args={[0.12, 0.15, 0.25, 16]} /><meshStandardMaterial color={skin} /></mesh>
       {/* Emotion ring */}
       <mesh ref={ringRef} position={[0, 0, -0.02]}>
         <ringGeometry args={[0.58, 0.62, 48]} />
-        <meshBasicMaterial color="#88CC88" transparent opacity={0.15} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#A2AB73" transparent opacity={0.15} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )

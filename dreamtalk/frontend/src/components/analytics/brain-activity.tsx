@@ -14,11 +14,11 @@ interface BrainActivityProps {
 }
 
 const BRAIN_AREAS: Record<string, { label: string; color: string; description: string }> = {
-  pfc: { label: "Prefrontal Cortex", color: "#3b82f6", description: "Executive function" },
-  dacc: { label: "dACC", color: "#ef4444", description: "Conflict monitoring" },
-  insula: { label: "Insula", color: "#a855f7", description: "Emotion processing" },
-  ipl: { label: "IPL", color: "#22c55e", description: "Context integration" },
-  bg: { label: "Basal Ganglia", color: "#f59e0b", description: "Action selection" },
+  pfc: { label: "Prefrontal Cortex", color: "#853953", description: "Executive function" },
+  dacc: { label: "dACC", color: "#D84C63", description: "Conflict monitoring" },
+  insula: { label: "Insula", color: "#9E3B6B", description: "Emotion processing" },
+  ipl: { label: "IPL", color: "#8F9A5E", description: "Context integration" },
+  bg: { label: "Basal Ganglia", color: "#D6A44C", description: "Action selection" },
 };
 
 export function BrainActivity({ refreshInterval = 3000 }: BrainActivityProps) {

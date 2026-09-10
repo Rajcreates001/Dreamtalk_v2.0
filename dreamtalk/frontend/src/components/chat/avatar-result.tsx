@@ -83,7 +83,7 @@ export function AvatarResult({
             cameraDistance={3.2}
             className="w-full h-full"
           />
-          <BorderBeam size={80} duration={10} colorFrom="#10b981" colorTo="#3b82f6" borderWidth={1} />
+          <BorderBeam size={80} duration={10} colorFrom="#8F9A5E" colorTo="#853953" borderWidth={1} />
           {emotion && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}

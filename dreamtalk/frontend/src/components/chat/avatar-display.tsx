@@ -26,7 +26,7 @@ export function AvatarDisplay({ isSpeaking, emotion, className }: AvatarDisplayP
         className
       )}
     >
-      <BorderBeam size={100} duration={8} colorFrom="#10b981" colorTo="#3b82f6" borderWidth={1} />
+      <BorderBeam size={100} duration={8} colorFrom="#8F9A5E" colorTo="#853953" borderWidth={1} />
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full p-6">
         <div className={cn(

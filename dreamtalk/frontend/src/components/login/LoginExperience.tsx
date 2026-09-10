@@ -13,9 +13,9 @@ import { storeAuth } from "@/lib/api"
 type RoleId = "personal" | "healthcare" | "business" | null | ""
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#7C5CFF",
-  healthcare: "#00E5FF",
-  business: "#42FFC6",
+  personal: "#CC3A63",
+  healthcare: "#A2AB73",
+  business: "#A2AB73",
 }
 
 const PROGRESS_STEPS = ["Choose Role", "Authenticate", "Enter DreamTalk"]
@@ -63,21 +63,21 @@ export function LoginExperience() {
     setStep("login")
   }
 
-  const accentColor = selectedRole && ROLE_COLORS[selectedRole] ? ROLE_COLORS[selectedRole] : "#7C5CFF"
+  const accentColor = selectedRole && ROLE_COLORS[selectedRole] ? ROLE_COLORS[selectedRole] : "#CC3A63"
   const progressIndex = step === "role" ? 0 : 1
 
   if (!mounted) {
     return (
-      <main className="min-h-dvh flex bg-[#070B14]" suppressHydrationWarning>
+      <main className="min-h-dvh flex bg-[#201D1D]" suppressHydrationWarning>
         <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#64748B]/30 border-t-[#7C5CFF]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8A8178]/30 border-t-[#CC3A63]" />
         </div>
       </main>
     )
   }
 
   return (
-    <main className="relative min-h-dvh bg-[#070B14] overflow-hidden flex flex-col">
+    <main className="relative min-h-dvh bg-[#201D1D] overflow-hidden flex flex-col">
       {/* ─── Aurora Background ─── */}
       <AuroraBackdrop />
 
@@ -163,14 +163,14 @@ export function LoginExperience() {
             >
               <span className="text-xs uppercase tracking-[0.3em] text-white/20 font-mono">DreamTalk</span>
               <h1 className="text-2xl font-bold mt-2" style={{
-                backgroundImage: `linear-gradient(135deg, #F8FAFC, ${accentColor}, #00E5FF)`,
+                backgroundImage: `linear-gradient(135deg, #F3F4F4, ${accentColor}, #A2AB73)`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}>
                 Enter the Future
               </h1>
-              <p className="text-xs text-[#94A3B8] mt-1">Your Digital Twin Operating System</p>
+              <p className="text-xs text-[#B0A79C] mt-1">Your Digital Twin Operating System</p>
             </motion.div>
 
             <motion.div
@@ -213,12 +213,12 @@ export function LoginExperience() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-center text-[10px] text-[#64748B] mt-6"
+              className="text-center text-[10px] text-[#8A8178] mt-6"
             >
               By continuing, you agree to DreamTalk&apos;s{" "}
-              <a href="#" className="hover:text-[#F8FAFC] transition-colors" style={{ color: accentColor }}>Terms</a>
+              <a href="#" className="hover:text-[#F3F4F4] transition-colors" style={{ color: accentColor }}>Terms</a>
               {" "}and{" "}
-              <a href="#" className="hover:text-[#F8FAFC] transition-colors" style={{ color: accentColor }}>Privacy Policy</a>
+              <a href="#" className="hover:text-[#F3F4F4] transition-colors" style={{ color: accentColor }}>Privacy Policy</a>
             </motion.p>
           </div>
         </motion.div>

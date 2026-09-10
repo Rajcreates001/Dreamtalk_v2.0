@@ -13,8 +13,8 @@ const RING_CONFIGS = [
   { radius: 30 },
 ]
 
-export function DigitalHumanScene({ roleColor = "#7C5CFF", roleId }: DigitalHumanSceneProps) {
-  const accentColor = roleId === "healthcare" ? "#00E5FF" : roleId === "business" ? "#42FFC6" : "#7C5CFF"
+export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHumanSceneProps) {
+  const accentColor = roleId === "healthcare" ? "#A2AB73" : roleId === "business" ? "#A2AB73" : "#CC3A63"
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
@@ -81,7 +81,7 @@ export function DigitalHumanScene({ roleColor = "#7C5CFF", roleId }: DigitalHuma
                   animation: "breathe 4s ease-in-out infinite",
                 }}
               >
-                <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#070B14] flex items-center justify-center flex-col gap-1.5">
+                <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1.5">
                   <div className="flex gap-4">
                     <div
                       className="w-[3px] h-[3px] rounded-full"

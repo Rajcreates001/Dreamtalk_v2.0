@@ -5,14 +5,14 @@ import { BookOpen, FileText, Globe, Video, Mic, Image, Code, Download, ArrowRigh
 import { SectionWrapper, SectionHeading, GlassCard } from "./SectionWrapper"
 
 const sources = [
-  { icon: FileText, label: "PDF", color: "#FF5F73" },
-  { icon: FileText, label: "Word", color: "#3B82F6" },
-  { icon: Globe, label: "Websites", color: "#22D3EE" },
-  { icon: Video, label: "YouTube", color: "#FF5F73" },
-  { icon: Mic, label: "Audio", color: "#FBBF24" },
-  { icon: Image, label: "Images", color: "#42FFC6" },
-  { icon: Code, label: "Code", color: "#7C5CFF" },
-  { icon: Download, label: "Any Format", color: "#22D3EE" },
+  { icon: FileText, label: "PDF", color: "#D84C63" },
+  { icon: FileText, label: "Word", color: "#853953" },
+  { icon: Globe, label: "Websites", color: "#A2AB73" },
+  { icon: Video, label: "YouTube", color: "#D84C63" },
+  { icon: Mic, label: "Audio", color: "#D6A44C" },
+  { icon: Image, label: "Images", color: "#A2AB73" },
+  { icon: Code, label: "Code", color: "#CC3A63" },
+  { icon: Download, label: "Any Format", color: "#A2AB73" },
 ]
 
 export function KnowledgeEngine() {
@@ -34,10 +34,10 @@ export function KnowledgeEngine() {
         {/* Pipeline stages */}
         <div className="grid grid-cols-4 gap-3 mb-8">
           {[
-            { label: "Upload", icon: Download, color: "#7C5CFF", desc: "Documents, media, links" },
-            { label: "Process", icon: Code, color: "#22D3EE", desc: "Parse, embed, index" },
-            { label: "Graph", icon: Globe, color: "#42FFC6", desc: "Knowledge graph" },
-            { label: "Reason", icon: BookOpen, color: "#FBBF24", desc: "Query & learn" },
+            { label: "Upload", icon: Download, color: "#CC3A63", desc: "Documents, media, links" },
+            { label: "Process", icon: Code, color: "#A2AB73", desc: "Parse, embed, index" },
+            { label: "Graph", icon: Globe, color: "#A2AB73", desc: "Knowledge graph" },
+            { label: "Reason", icon: BookOpen, color: "#D6A44C", desc: "Query & learn" },
           ].map((stage, i) => (
             <motion.div
               key={stage.label}
@@ -52,12 +52,12 @@ export function KnowledgeEngine() {
                 style={{ background: `${stage.color}08` }}
               >
                 <stage.icon className="h-6 w-6 mx-auto mb-2" style={{ color: stage.color }} />
-                <h4 className="text-sm font-semibold text-[#F8FAFC]">{stage.label}</h4>
-                <p className="text-[10px] text-[#64748B] mt-1">{stage.desc}</p>
+                <h4 className="text-sm font-semibold text-[#F3F4F4]">{stage.label}</h4>
+                <p className="text-[10px] text-[#8A8178] mt-1">{stage.desc}</p>
               </div>
               {i < 3 && (
                 <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2">
-                  <ArrowRight className="h-4 w-4 text-[#7C5CFF]/30" />
+                  <ArrowRight className="h-4 w-4 text-[#CC3A63]/30" />
                 </div>
               )}
             </motion.div>
@@ -73,11 +73,11 @@ export function KnowledgeEngine() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 + i * 0.03 }}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#0F172A]/40 border border-white/[0.04] hover:border-white/[0.1] transition-all group"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#2C2929]/40 border border-white/[0.04] hover:border-white/[0.1] transition-all group"
               whileHover={{ y: -2 }}
             >
               <source.icon className="h-4 w-4" style={{ color: source.color }} />
-              <span className="text-[9px] text-[#64748B] font-medium">{source.label}</span>
+              <span className="text-[9px] text-[#8A8178] font-medium">{source.label}</span>
             </motion.div>
           ))}
         </div>
@@ -89,17 +89,17 @@ export function KnowledgeEngine() {
           {
             title: "Document Intelligence",
             desc: "Upload PDFs, Word docs, research papers. We extract text, tables, images, and structure into a queryable knowledge graph.",
-            color: "#7C5CFF",
+            color: "#CC3A63",
           },
           {
             title: "Web & Media Learning",
             desc: "Crawl websites, transcribe YouTube videos, process audio recordings. Your avatar learns from any digital source.",
-            color: "#22D3EE",
+            color: "#A2AB73",
           },
           {
             title: "Continuous Updates",
             desc: "Add new knowledge anytime. The graph grows, connections strengthen, and your Digital Human becomes more knowledgeable.",
-            color: "#42FFC6",
+            color: "#A2AB73",
           },
         ].map((item, i) => (
           <motion.div
@@ -108,11 +108,11 @@ export function KnowledgeEngine() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 + i * 0.1 }}
-            className="rounded-2xl bg-[#0F172A]/60 border border-white/[0.06] p-6 hover:bg-white/[0.03] transition-all"
+            className="rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-6 hover:bg-white/[0.03] transition-all"
           >
             <div className="w-3 h-3 rounded-full mb-4" style={{ background: item.color }} />
-            <h3 className="text-base font-semibold text-[#F8FAFC] mb-2">{item.title}</h3>
-            <p className="text-sm text-[#94A3B8] leading-relaxed">{item.desc}</p>
+            <h3 className="text-base font-semibold text-[#F3F4F4] mb-2">{item.title}</h3>
+            <p className="text-sm text-[#B0A79C] leading-relaxed">{item.desc}</p>
           </motion.div>
         ))}
       </div>

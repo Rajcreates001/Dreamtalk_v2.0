@@ -142,7 +142,7 @@ export default function VoiceCloningPage() {
           analyserRef.current.getByteFrequencyData(data)
 
           ctx2d.clearRect(0, 0, width, height)
-          ctx2d.fillStyle = "rgba(255, 107, 157, 0.1)"
+          ctx2d.fillStyle = "rgba(204,58,99, 0.1)"
           ctx2d.fillRect(0, 0, width, height)
 
           const barWidth = width / data.length * 2.5
@@ -150,8 +150,8 @@ export default function VoiceCloningPage() {
           for (let i = 0; i < data.length && x < width; i++) {
             const barHeight = (data[i] / 255) * height * 0.8
             const gradient = ctx2d.createLinearGradient(0, height, 0, height - barHeight)
-            gradient.addColorStop(0, "#FF6B9D")
-            gradient.addColorStop(1, "#7C5CFF")
+            gradient.addColorStop(0, "#CC3A63")
+            gradient.addColorStop(1, "#CC3A63")
             ctx2d.fillStyle = gradient
             ctx2d.fillRect(x, height - barHeight, barWidth - 1, barHeight)
             x += barWidth
@@ -369,8 +369,8 @@ export default function VoiceCloningPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#F8FAFC] mb-1">Voice Cloning</h1>
-        <p className="text-sm text-[#94A3B8]">Record or upload a voice, clone it, and generate speech in any language</p>
+        <h1 className="text-2xl font-bold text-[#F3F4F4] mb-1">Voice Cloning</h1>
+        <p className="text-sm text-[#B0A79C]">Record or upload a voice, clone it, and generate speech in any language</p>
       </div>
 
       {/* ── Step Progress Bar ──────────────────────────────────────────── */}
@@ -382,14 +382,14 @@ export default function VoiceCloningPage() {
             <div key={step.id} className="flex items-center gap-2">
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                isActive ? "bg-[#FF6B9D]/15 text-[#FF6B9D] border border-[#FF6B9D]/30" :
-                isDone ? "bg-[#42FFC6]/10 text-[#42FFC6] border border-[#42FFC6]/20" :
-                "bg-white/[0.04] text-[#64748B] border border-white/[0.06]"
+                isActive ? "bg-[#CC3A63]/15 text-[#CC3A63] border border-[#CC3A63]/30" :
+                isDone ? "bg-[#A2AB73]/10 text-[#A2AB73] border border-[#A2AB73]/20" :
+                "bg-white/[0.04] text-[#8A8178] border border-white/[0.06]"
               )}>
                 {isDone ? <Check className="h-3 w-3" /> : <span className="w-4 text-center">{step.num}</span>}
                 <span className="hidden sm:inline">{step.label}</span>
               </div>
-              {i < STEPS.length - 1 && <div className={cn("w-6 h-px", isDone ? "bg-[#42FFC6]/30" : "bg-white/[0.08]")} />}
+              {i < STEPS.length - 1 && <div className={cn("w-6 h-px", isDone ? "bg-[#A2AB73]/30" : "bg-white/[0.08]")} />}
             </div>
           )
         })}
@@ -399,33 +399,33 @@ export default function VoiceCloningPage() {
       <AnimatePresence>
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="flex items-start gap-3 p-4 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/30">
-            <AlertCircle className="h-5 w-5 text-[#FF5F73] shrink-0 mt-0.5" />
+            className="flex items-start gap-3 p-4 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/30">
+            <AlertCircle className="h-5 w-5 text-[#D84C63] shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-[#FF5F73]">{error.message}</p>
-              {error.detail && <p className="text-xs text-[#94A3B8] mt-1">{error.detail}</p>}
+              <p className="text-sm font-medium text-[#D84C63]">{error.message}</p>
+              {error.detail && <p className="text-xs text-[#B0A79C] mt-1">{error.detail}</p>}
             </div>
-            <button onClick={() => setError(null)} className="text-[#94A3B8] hover:text-[#CBD5E1] text-xs">Dismiss</button>
+            <button onClick={() => setError(null)} className="text-[#B0A79C] hover:text-[#D8D2C8] text-xs">Dismiss</button>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ── Step 1: Record or Upload ─────────────────────────────────── */}
-      <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-6">
+      <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-lg bg-[#FF6B9D]/15 flex items-center justify-center">
-            <span className="text-xs font-bold text-[#FF6B9D]">1</span>
+          <div className="w-7 h-7 rounded-lg bg-[#CC3A63]/15 flex items-center justify-center">
+            <span className="text-xs font-bold text-[#CC3A63]">1</span>
           </div>
-          <h2 className="text-sm font-semibold text-[#F8FAFC]">Record or Upload Voice</h2>
-          {cloneStatus === "ready" && <Check className="h-4 w-4 text-[#42FFC6]" />}
+          <h2 className="text-sm font-semibold text-[#F3F4F4]">Record or Upload Voice</h2>
+          {cloneStatus === "ready" && <Check className="h-4 w-4 text-[#A2AB73]" />}
         </div>
 
         {/* Voice name */}
         <div className="mb-4">
-          <label className="text-[10px] text-[#64748B] mb-1 block">Voice Profile Name</label>
+          <label className="text-[10px] text-[#8A8178] mb-1 block">Voice Profile Name</label>
           <input type="text" value={voiceName} onChange={(e) => setVoiceName(e.target.value)}
             placeholder="e.g. My Voice, Speaker A"
-            className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#FF6B9D]/30" />
+            className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
         </div>
 
         {/* Record / Upload buttons */}
@@ -433,17 +433,17 @@ export default function VoiceCloningPage() {
           <div className="grid grid-cols-2 gap-3">
             {/* Record from mic */}
             <button onClick={startRecording}
-              className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-[#FF6B9D]/30 hover:border-[#FF6B9D]/60 bg-[#FF6B9D]/5 hover:bg-[#FF6B9D]/10 transition-all">
-              <Mic className="h-8 w-8 text-[#FF6B9D]" />
-              <span className="text-sm font-medium text-[#FF6B9D]">Record from Mic</span>
-              <span className="text-xs text-[#64748B]">Click to start recording</span>
+              className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-[#CC3A63]/30 hover:border-[#CC3A63]/60 bg-[#CC3A63]/5 hover:bg-[#CC3A63]/10 transition-all">
+              <Mic className="h-8 w-8 text-[#CC3A63]" />
+              <span className="text-sm font-medium text-[#CC3A63]">Record from Mic</span>
+              <span className="text-xs text-[#8A8178]">Click to start recording</span>
             </button>
             {/* Upload file */}
             <button onClick={openFilePicker}
-              className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-[#7C5CFF]/30 hover:border-[#7C5CFF]/60 bg-[#7C5CFF]/5 hover:bg-[#7C5CFF]/10 transition-all">
-              <Upload className="h-8 w-8 text-[#7C5CFF]" />
-              <span className="text-sm font-medium text-[#7C5CFF]">Upload File</span>
-              <span className="text-xs text-[#64748B]">MP3, WAV, M4A, FLAC</span>
+              className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-[#CC3A63]/30 hover:border-[#CC3A63]/60 bg-[#CC3A63]/5 hover:bg-[#CC3A63]/10 transition-all">
+              <Upload className="h-8 w-8 text-[#CC3A63]" />
+              <span className="text-sm font-medium text-[#CC3A63]">Upload File</span>
+              <span className="text-xs text-[#8A8178]">MP3, WAV, M4A, FLAC</span>
             </button>
           </div>
         )}
@@ -451,17 +451,17 @@ export default function VoiceCloningPage() {
         {/* Recording in progress */}
         {isRecording && (
           <div className="space-y-3">
-            <canvas ref={canvasRef} width={400} height={80} className="w-full h-20 rounded-xl bg-[#FF6B9D]/5" />
+            <canvas ref={canvasRef} width={400} height={80} className="w-full h-20 rounded-xl bg-[#CC3A63]/5" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5F73]" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF5F73]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D84C63]" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#D84C63]" />
                 </span>
-                <span className="text-sm font-mono text-[#FF5F73]">{formatTime(recordingTime)}</span>
+                <span className="text-sm font-mono text-[#D84C63]">{formatTime(recordingTime)}</span>
               </div>
               <button onClick={stopRecording}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF5F73]/15 border border-[#FF5F73]/30 text-[#FF5F73] text-sm font-medium hover:bg-[#FF5F73]/25 transition-all">
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D84C63]/15 border border-[#D84C63]/30 text-[#D84C63] text-sm font-medium hover:bg-[#D84C63]/25 transition-all">
                 <Square className="h-4 w-4 fill-current" /> Stop Recording
               </button>
             </div>
@@ -471,13 +471,13 @@ export default function VoiceCloningPage() {
         {/* Recorded / uploaded file */}
         {(recordedBlob || voiceFile) && !isRecording && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42FFC6]/5 border border-[#42FFC6]/20">
-              <Check className="h-4 w-4 text-[#42FFC6] shrink-0" />
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-[#A2AB73]/5 border border-[#A2AB73]/20">
+              <Check className="h-4 w-4 text-[#A2AB73] shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#42FFC6] truncate">{voiceFile?.name || "Recorded voice"}</p>
-                {recordedUrl && <p className="text-xs text-[#64748B]">{formatTime(recordingTime)} recorded</p>}
+                <p className="text-sm text-[#A2AB73] truncate">{voiceFile?.name || "Recorded voice"}</p>
+                {recordedUrl && <p className="text-xs text-[#8A8178]">{formatTime(recordingTime)} recorded</p>}
               </div>
-              <button onClick={resetRecording} className="text-[#64748B] hover:text-[#CBD5E1] transition-colors">
+              <button onClick={resetRecording} className="text-[#8A8178] hover:text-[#D8D2C8] transition-colors">
                 <RotateCcw className="h-4 w-4" />
               </button>
             </div>
@@ -490,43 +490,43 @@ export default function VoiceCloningPage() {
         {/* Clone button */}
         {voiceFile && cloneStatus !== "cloning" && cloneStatus !== "ready" && (
           <button onClick={handleClone}
-            className="mt-4 flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#7C5CFF] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#FF6B9D]/20 transition-all">
+            className="mt-4 flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#CC3A63] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#CC3A63]/20 transition-all">
             <Wand2 className="h-4 w-4" /> Clone Voice
           </button>
         )}
 
         {/* Cloning progress */}
         {cloneStatus === "cloning" && (
-          <div className="mt-4 flex items-center gap-3 p-4 rounded-xl bg-[#FBBF24]/5 border border-[#FBBF24]/20">
-            <Loader2 className="h-5 w-5 animate-spin text-[#FBBF24]" />
+          <div className="mt-4 flex items-center gap-3 p-4 rounded-xl bg-[#D6A44C]/5 border border-[#D6A44C]/20">
+            <Loader2 className="h-5 w-5 animate-spin text-[#D6A44C]" />
             <div>
-              <p className="text-sm text-[#FBBF24]">Cloning voice...</p>
-              <p className="text-xs text-[#64748B]">Analyzing voice characteristics</p>
+              <p className="text-sm text-[#D6A44C]">Cloning voice...</p>
+              <p className="text-xs text-[#8A8178]">Analyzing voice characteristics</p>
             </div>
           </div>
         )}
 
         {clonedVoiceId && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-[#64748B]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#42FFC6]" />
-            Voice ID: <code className="text-[#94A3B8] font-mono">{clonedVoiceId}</code>
+          <div className="mt-3 flex items-center gap-2 text-xs text-[#8A8178]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#A2AB73]" />
+            Voice ID: <code className="text-[#B0A79C] font-mono">{clonedVoiceId}</code>
           </div>
         )}
       </div>
 
       {/* ── Step 2 & 3: Preview (only after cloning) ─────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg bg-[#FBBF24]/15 flex items-center justify-center">
-              <span className="text-xs font-bold text-[#FBBF24]">2</span>
+            <div className="w-7 h-7 rounded-lg bg-[#D6A44C]/15 flex items-center justify-center">
+              <span className="text-xs font-bold text-[#D6A44C]">2</span>
             </div>
-            <h2 className="text-sm font-semibold text-[#F8FAFC]">Preview Cloned Voice</h2>
+            <h2 className="text-sm font-semibold text-[#F3F4F4]">Preview Cloned Voice</h2>
           </div>
-          <p className="text-xs text-[#64748B] mb-4">Hear a sample of your cloned voice before generating full audio</p>
+          <p className="text-xs text-[#8A8178] mb-4">Hear a sample of your cloned voice before generating full audio</p>
           <div className="flex items-center gap-3">
             <button onClick={handlePreview} disabled={previewing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FBBF24]/15 border border-[#FBBF24]/30 text-[#FBBF24] text-sm font-medium hover:bg-[#FBBF24]/25 transition-all disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D6A44C]/15 border border-[#D6A44C]/30 text-[#D6A44C] text-sm font-medium hover:bg-[#D6A44C]/25 transition-all disabled:opacity-50">
               {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {previewing ? "Generating preview..." : "Play Preview"}
             </button>
@@ -539,22 +539,22 @@ export default function VoiceCloningPage() {
 
       {/* ── Step 3: Language ─────────────────────────────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg bg-[#7C5CFF]/15 flex items-center justify-center">
-              <span className="text-xs font-bold text-[#7C5CFF]">3</span>
+            <div className="w-7 h-7 rounded-lg bg-[#CC3A63]/15 flex items-center justify-center">
+              <span className="text-xs font-bold text-[#CC3A63]">3</span>
             </div>
-            <h2 className="text-sm font-semibold text-[#F8FAFC]">Output Language</h2>
+            <h2 className="text-sm font-semibold text-[#F3F4F4]">Output Language</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {LANGUAGES.map((l) => (
               <button key={l.code} onClick={() => setOutputLang(l.code)}
                 className={cn("px-4 py-2 rounded-xl text-xs transition-all border flex items-center gap-1.5",
                   outputLang === l.code
-                    ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/30 text-[#F8FAFC]"
-                    : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8] hover:text-[#CBD5E1]")}>
+                    ? "bg-[#CC3A63]/15 border-[#CC3A63]/30 text-[#F3F4F4]"
+                    : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C] hover:text-[#D8D2C8]")}>
                 {l.name}
-                {l.native && <span className="w-1.5 h-1.5 rounded-full bg-[#42FFC6] shrink-0" />}
+                {l.native && <span className="w-1.5 h-1.5 rounded-full bg-[#A2AB73] shrink-0" />}
               </button>
             ))}
           </div>
@@ -563,12 +563,12 @@ export default function VoiceCloningPage() {
 
       {/* ── Step 4: Generate / Live ──────────────────────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-7 h-7 rounded-lg bg-[#42FFC6]/15 flex items-center justify-center">
-              <span className="text-xs font-bold text-[#42FFC6]">4</span>
+            <div className="w-7 h-7 rounded-lg bg-[#A2AB73]/15 flex items-center justify-center">
+              <span className="text-xs font-bold text-[#A2AB73]">4</span>
             </div>
-            <h2 className="text-sm font-semibold text-[#F8FAFC]">Generate Speech</h2>
+            <h2 className="text-sm font-semibold text-[#F3F4F4]">Generate Speech</h2>
           </div>
 
           {/* Tabs */}
@@ -579,7 +579,7 @@ export default function VoiceCloningPage() {
               return (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs transition-all",
-                    tab === t.id ? "bg-[#7C5CFF]/15 text-[#F8FAFC]" : "text-[#94A3B8]")}>
+                    tab === t.id ? "bg-[#CC3A63]/15 text-[#F3F4F4]" : "text-[#B0A79C]")}>
                   <Icon className="h-3.5 w-3.5" /> {t.label}
                 </button>
               )
@@ -594,8 +594,8 @@ export default function VoiceCloningPage() {
                   <button key={sample.label} onClick={() => setScript(sample.text)}
                     className={cn("px-3 py-1.5 rounded-lg text-xs border transition-all",
                       script === sample.text
-                        ? "bg-[#FF6B9D]/10 border-[#FF6B9D]/30 text-[#FF6B9D]"
-                        : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8] hover:text-[#CBD5E1]")}>
+                        ? "bg-[#CC3A63]/10 border-[#CC3A63]/30 text-[#CC3A63]"
+                        : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C] hover:text-[#D8D2C8]")}>
                     <Sparkles className="h-3 w-3 inline mr-1" />{sample.label}
                   </button>
                 ))}
@@ -603,17 +603,17 @@ export default function VoiceCloningPage() {
 
               <textarea value={script} onChange={(e) => setScript(e.target.value)}
                 placeholder="Type your script here..." rows={5}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#FF6B9D]/30 resize-none" />
+                className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
 
               <div className="flex gap-2">
                 <button onClick={handleGenerate} disabled={!script.trim() || generating}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#7C5CFF] text-white font-medium disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#FF6B9D]/20">
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#CC3A63] text-white font-medium disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#CC3A63]/20">
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                   {generating ? "Generating..." : "Generate Audio"}
                 </button>
                 {generatedAudio && (
                   <a href={generatedAudio} download
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#CBD5E1] text-sm hover:bg-white/[0.08] transition-all">
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] text-sm hover:bg-white/[0.08] transition-all">
                     <Download className="h-4 w-4" /> Download
                   </a>
                 )}
@@ -621,9 +621,9 @@ export default function VoiceCloningPage() {
 
               {generatedAudio && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42FFC6]/5 border border-[#42FFC6]/20">
-                    <Check className="h-4 w-4 text-[#42FFC6]" />
-                    <span className="text-xs text-[#42FFC6]">Audio generated successfully</span>
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-[#A2AB73]/5 border border-[#A2AB73]/20">
+                    <Check className="h-4 w-4 text-[#A2AB73]" />
+                    <span className="text-xs text-[#A2AB73]">Audio generated successfully</span>
                   </div>
                   <audio controls src={generatedAudio} className="w-full h-10 rounded-lg" />
                 </div>
@@ -634,28 +634,28 @@ export default function VoiceCloningPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                 <div className={cn("w-16 h-16 rounded-full flex items-center justify-center transition-all",
-                  isLive ? "bg-[#FF6B9D]/15 border border-[#FF6B9D]/30 animate-pulse" : "bg-[#42FFC6]/10 border border-[#42FFC6]/20")}>
-                  {isListening ? <Mic className="h-8 w-8 text-[#FF6B9D] animate-bounce" /> : <Radio className="h-8 w-8 text-[#42FFC6]" />}
+                  isLive ? "bg-[#CC3A63]/15 border border-[#CC3A63]/30 animate-pulse" : "bg-[#A2AB73]/10 border border-[#A2AB73]/20")}>
+                  {isListening ? <Mic className="h-8 w-8 text-[#CC3A63] animate-bounce" /> : <Radio className="h-8 w-8 text-[#A2AB73]" />}
                 </div>
               </div>
 
               {isLive && (
                 <div className="space-y-3">
                   {liveTranscript && (
-                    <div className="p-3 rounded-xl bg-[#7C5CFF]/5 border border-[#7C5CFF]/20">
-                      <p className="text-[10px] text-[#7C5CFF] mb-1 font-medium">You said:</p>
-                      <p className="text-sm text-[#CBD5E1]">{liveTranscript}</p>
+                    <div className="p-3 rounded-xl bg-[#CC3A63]/5 border border-[#CC3A63]/20">
+                      <p className="text-[10px] text-[#CC3A63] mb-1 font-medium">You said:</p>
+                      <p className="text-sm text-[#D8D2C8]">{liveTranscript}</p>
                     </div>
                   )}
                   {liveLoading && (
-                    <div className="flex items-center gap-2 text-xs text-[#FBBF24]">
+                    <div className="flex items-center gap-2 text-xs text-[#D6A44C]">
                       <Loader2 className="h-3 w-3 animate-spin" /> Processing response...
                     </div>
                   )}
                   {liveResponse && (
-                    <div className="p-3 rounded-xl bg-[#42FFC6]/5 border border-[#42FFC6]/20">
-                      <p className="text-[10px] text-[#42FFC6] mb-1 font-medium">Response:</p>
-                      <p className="text-sm text-[#CBD5E1]">{liveResponse}</p>
+                    <div className="p-3 rounded-xl bg-[#A2AB73]/5 border border-[#A2AB73]/20">
+                      <p className="text-[10px] text-[#A2AB73] mb-1 font-medium">Response:</p>
+                      <p className="text-sm text-[#D8D2C8]">{liveResponse}</p>
                     </div>
                   )}
                 </div>
@@ -664,16 +664,16 @@ export default function VoiceCloningPage() {
               <div className="text-center">
                 <button onClick={isLive ? stopLiveConversation : startLiveConversation}
                   className={cn("inline-flex items-center gap-2 px-8 py-4 rounded-xl font-medium transition-all text-sm",
-                    isLive ? "bg-[#FF5F73]/15 text-[#FF5F73] border border-[#FF5F73]/30" : "bg-gradient-to-r from-[#FF6B9D] to-[#7C5CFF] text-white hover:shadow-lg hover:shadow-[#FF6B9D]/20")}>
+                    isLive ? "bg-[#D84C63]/15 text-[#D84C63] border border-[#D84C63]/30" : "bg-gradient-to-r from-[#CC3A63] to-[#CC3A63] text-white hover:shadow-lg hover:shadow-[#CC3A63]/20")}>
                   {isLive ? <><Square className="h-4 w-4 fill-current" /> Stop</> : <><Mic className="h-4 w-4" /> Start Live</>}
                 </button>
               </div>
 
               {isLive && isListening && (
-                <div className="flex items-center justify-center gap-2 text-xs text-[#42FFC6]">
+                <div className="flex items-center justify-center gap-2 text-xs text-[#A2AB73]">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#42FFC6]" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#42FFC6]" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73]" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A2AB73]" />
                   </span>
                   Listening... Speak now
                 </div>

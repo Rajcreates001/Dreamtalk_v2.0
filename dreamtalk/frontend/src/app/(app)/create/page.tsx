@@ -201,23 +201,23 @@ export default function CreateDigitalHumanPage() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 15 }}
-          className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#42FFC6]/20 to-[#00E5FF]/20 border border-[#42FFC6]/20 flex items-center justify-center"
+          className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#A2AB73]/20 to-[#A2AB73]/20 border border-[#A2AB73]/20 flex items-center justify-center"
         >
-          <Check className="h-10 w-10 text-[#42FFC6]" />
+          <Check className="h-10 w-10 text-[#A2AB73]" />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h1 className="text-3xl font-bold text-[#F8FAFC] mb-2">Your Digital Human is Ready!</h1>
-          <p className="text-[#94A3B8] mb-8">
+          <h1 className="text-3xl font-bold text-[#F3F4F4] mb-2">Your Digital Human is Ready!</h1>
+          <p className="text-[#B0A79C] mb-8">
             Face created · Voice cloned · Brain initialized · Personality mapped
           </p>
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => router.push(`/dh/${generatedTwinId}`)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white font-medium shadow-lg shadow-[#7C5CFF]/20 hover:shadow-[#7C5CFF]/30 transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all"
             >
               <Sparkles className="h-4 w-4" />
               Open Digital Human
@@ -235,7 +235,7 @@ export default function CreateDigitalHumanPage() {
                 setTraits([])
                 setError(null)
               }}
-              className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#94A3B8] hover:text-[#F8FAFC] transition-all"
+              className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#B0A79C] hover:text-[#F3F4F4] transition-all"
             >
               Create Another
             </button>
@@ -253,8 +253,8 @@ export default function CreateDigitalHumanPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl font-bold text-[#F8FAFC] mb-2">Create Digital Human</h1>
-        <p className="text-[#94A3B8]">
+        <h1 className="text-3xl font-bold text-[#F3F4F4] mb-2">Create Digital Human</h1>
+        <p className="text-[#B0A79C]">
           Step {step + 1} of 5 · {STEP_LABELS[step]}
         </p>
       </motion.div>
@@ -268,10 +268,10 @@ export default function CreateDigitalHumanPage() {
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all",
                 i === step
-                  ? "bg-[#7C5CFF]/15 text-[#7C5CFF] border border-[#7C5CFF]/20"
+                  ? "bg-[#CC3A63]/15 text-[#CC3A63] border border-[#CC3A63]/20"
                   : i < step
-                    ? "bg-[#42FFC6]/10 text-[#42FFC6] border border-[#42FFC6]/20 cursor-pointer"
-                    : "bg-white/[0.04] text-[#64748B] border border-transparent"
+                    ? "bg-[#A2AB73]/10 text-[#A2AB73] border border-[#A2AB73]/20 cursor-pointer"
+                    : "bg-white/[0.04] text-[#8A8178] border border-transparent"
               )}
             >
               {i < step ? <Check className="h-3 w-3" /> : <span>{i + 1}</span>}
@@ -281,7 +281,7 @@ export default function CreateDigitalHumanPage() {
               <div
                 className={cn(
                   "w-8 h-px",
-                  i < step ? "bg-[#42FFC6]/40" : "bg-white/[0.06]"
+                  i < step ? "bg-[#A2AB73]/40" : "bg-white/[0.06]"
                 )}
               />
             )}
@@ -294,7 +294,7 @@ export default function CreateDigitalHumanPage() {
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-lg mx-auto mb-6 px-4 py-3 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/20 text-xs text-[#FF5F73] text-center"
+          className="max-w-lg mx-auto mb-6 px-4 py-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63] text-center"
         >
           {error}
         </motion.div>
@@ -313,8 +313,8 @@ export default function CreateDigitalHumanPage() {
           {step === 0 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-[#F8FAFC] mb-1">Upload a Photo</h2>
-                <p className="text-sm text-[#94A3B8]">
+                <h2 className="text-xl font-semibold text-[#F3F4F4] mb-1">Upload a Photo</h2>
+                <p className="text-sm text-[#B0A79C]">
                   This will be used to create the face and avatar
                 </p>
               </div>
@@ -325,26 +325,26 @@ export default function CreateDigitalHumanPage() {
                 className={cn(
                   "relative border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer mx-auto max-w-md",
                   photoPreview
-                    ? "border-[#42FFC6]/30 bg-[#42FFC6]/5"
-                    : "border-white/[0.08] hover:border-[#7C5CFF]/30 hover:bg-[#7C5CFF]/5"
+                    ? "border-[#A2AB73]/30 bg-[#A2AB73]/5"
+                    : "border-white/[0.08] hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5"
                 )}
               >
                 {photoPreview ? (
                   <div className="space-y-3">
-                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-[#42FFC6]/30">
+                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-[#A2AB73]/30">
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     </div>
-                    <p className="text-xs text-[#42FFC6] font-medium">Photo uploaded</p>
-                    <p className="text-[10px] text-[#64748B]">Click to change</p>
+                    <p className="text-xs text-[#A2AB73] font-medium">Photo uploaded</p>
+                    <p className="text-[10px] text-[#8A8178]">Click to change</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="w-20 h-20 mx-auto rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-[#64748B]" />
+                      <Camera className="h-8 w-8 text-[#8A8178]" />
                     </div>
                     <div>
-                      <p className="text-sm text-[#94A3B8] font-medium">Drop photo here or click to browse</p>
-                      <p className="text-xs text-[#64748B] mt-1">PNG, JPEG, WEBP, HEIC · Up to 20MB</p>
+                      <p className="text-sm text-[#B0A79C] font-medium">Drop photo here or click to browse</p>
+                      <p className="text-xs text-[#8A8178] mt-1">PNG, JPEG, WEBP, HEIC · Up to 20MB</p>
                     </div>
                   </div>
                 )}
@@ -361,12 +361,12 @@ export default function CreateDigitalHumanPage() {
               <div className="flex justify-center gap-3">
                 <button
                   onClick={() => cameraInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] transition-all"
                 >
                   <Video className="h-3.5 w-3.5" />
                   Use Camera
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] transition-all">
+                <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] transition-all">
                   <Upload className="h-3.5 w-3.5" />
                   Upload Video
                 </button>
@@ -379,8 +379,8 @@ export default function CreateDigitalHumanPage() {
           {step === 1 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-[#F8FAFC] mb-1">Choose Voice</h2>
-                <p className="text-sm text-[#94A3B8]">
+                <h2 className="text-xl font-semibold text-[#F3F4F4] mb-1">Choose Voice</h2>
+                <p className="text-sm text-[#B0A79C]">
                   Upload a voice sample or generate an AI voice
                 </p>
               </div>
@@ -392,26 +392,26 @@ export default function CreateDigitalHumanPage() {
                   className={cn(
                     "p-6 rounded-2xl border text-center transition-all",
                     voiceMethod === "upload"
-                      ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20"
-                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#7C5CFF]/20 hover:bg-[#7C5CFF]/5"
+                      ? "bg-[#CC3A63]/15 border-[#CC3A63]/20"
+                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
-                  <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "#7C5CFF" : "#64748B" }} />
-                  <p className="text-sm font-medium text-[#F8FAFC] mb-1">Upload Voice</p>
-                  <p className="text-xs text-[#64748B]">Record or upload a sample</p>
+                  <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "#CC3A63" : "#8A8178" }} />
+                  <p className="text-sm font-medium text-[#F3F4F4] mb-1">Upload Voice</p>
+                  <p className="text-xs text-[#8A8178]">Record or upload a sample</p>
                 </button>
                 <button
                   onClick={() => setVoiceMethod("generate")}
                   className={cn(
                     "p-6 rounded-2xl border text-center transition-all",
                     voiceMethod === "generate"
-                      ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20"
-                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#7C5CFF]/20 hover:bg-[#7C5CFF]/5"
+                      ? "bg-[#CC3A63]/15 border-[#CC3A63]/20"
+                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
-                  <Wand2 className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "generate" ? "#7C5CFF" : "#64748B" }} />
-                  <p className="text-sm font-medium text-[#F8FAFC] mb-1">Generate AI Voice</p>
-                  <p className="text-xs text-[#64748B]">Choose gender, age, region</p>
+                  <Wand2 className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "generate" ? "#CC3A63" : "#8A8178" }} />
+                  <p className="text-sm font-medium text-[#F3F4F4] mb-1">Generate AI Voice</p>
+                  <p className="text-xs text-[#8A8178]">Choose gender, age, region</p>
                 </button>
               </div>
 
@@ -427,19 +427,19 @@ export default function CreateDigitalHumanPage() {
                     }
                     input.click()
                   }}
-                  className="max-w-lg mx-auto border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-[#7C5CFF]/30 transition-all"
-                  style={{ borderColor: voiceFile ? "#42FFC6" : "rgba(255,255,255,0.08)" }}
+                  className="max-w-lg mx-auto border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-[#CC3A63]/30 transition-all"
+                  style={{ borderColor: voiceFile ? "#A2AB73" : "rgba(255,255,255,0.08)" }}
                 >
                   {voiceFile ? (
                     <div className="space-y-2">
-                      <Music className="h-6 w-6 mx-auto text-[#42FFC6]" />
-                      <p className="text-xs text-[#42FFC6]">{voiceFile.name}</p>
-                      <p className="text-[10px] text-[#64748B]">Click to change</p>
+                      <Music className="h-6 w-6 mx-auto text-[#A2AB73]" />
+                      <p className="text-xs text-[#A2AB73]">{voiceFile.name}</p>
+                      <p className="text-[10px] text-[#8A8178]">Click to change</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Upload className="h-6 w-6 mx-auto text-[#64748B]" />
-                      <p className="text-xs text-[#94A3B8]">MP3, WAV, M4A, FLAC, OGG</p>
+                      <Upload className="h-6 w-6 mx-auto text-[#8A8178]" />
+                      <p className="text-xs text-[#B0A79C]">MP3, WAV, M4A, FLAC, OGG</p>
                     </div>
                   )}
                 </div>
@@ -447,10 +447,10 @@ export default function CreateDigitalHumanPage() {
 
               {/* Generate form */}
               {voiceMethod === "generate" && (
-                <div className="max-w-lg mx-auto space-y-4 p-6 rounded-2xl bg-[#0F172A]/80 border border-white/[0.06]">
+                <div className="max-w-lg mx-auto space-y-4 p-6 rounded-2xl bg-[#2C2929]/80 border border-white/[0.06]">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] text-[#64748B] mb-1 block">Gender</label>
+                      <label className="text-[10px] text-[#8A8178] mb-1 block">Gender</label>
                       <div className="flex gap-1.5">
                         {GENDERS.map((g) => (
                           <button
@@ -459,8 +459,8 @@ export default function CreateDigitalHumanPage() {
                             className={cn(
                               "flex-1 px-3 py-2 rounded-lg text-xs transition-all border",
                               voiceGender === g
-                                ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20 text-[#F8FAFC]"
-                                : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8]"
+                                ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-[#F3F4F4]"
+                                : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C]"
                             )}
                           >
                             {g}
@@ -469,11 +469,11 @@ export default function CreateDigitalHumanPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-[10px] text-[#64748B] mb-1 block">Age</label>
+                      <label className="text-[10px] text-[#8A8178] mb-1 block">Age</label>
                       <select
                         value={voiceAge}
                         onChange={(e) => setVoiceAge(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#CBD5E1] [&>option]:text-[#0F172A]"
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#D8D2C8] [&>option]:text-[#2C2929]"
                       >
                         {AGE_GROUPS.map((a) => (
                           <option key={a}>{a}</option>
@@ -482,7 +482,7 @@ export default function CreateDigitalHumanPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] text-[#64748B] mb-1 block">Region / Language</label>
+                    <label className="text-[10px] text-[#8A8178] mb-1 block">Region / Language</label>
                     <div className="flex flex-wrap gap-1.5">
                       {REGIONS.slice(0, 8).map((r) => (
                         <button
@@ -491,8 +491,8 @@ export default function CreateDigitalHumanPage() {
                           className={cn(
                             "px-2.5 py-1.5 rounded-lg text-[10px] transition-all border",
                             voiceRegion === r
-                              ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20 text-[#F8FAFC]"
-                              : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8]"
+                              ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-[#F3F4F4]"
+                              : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C]"
                           )}
                         >
                           {r}
@@ -502,11 +502,11 @@ export default function CreateDigitalHumanPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] text-[#64748B] mb-1 block">Accent</label>
+                      <label className="text-[10px] text-[#8A8178] mb-1 block">Accent</label>
                       <select
                         value={voiceAccent}
                         onChange={(e) => setVoiceAccent(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#CBD5E1] [&>option]:text-[#0F172A]"
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#D8D2C8] [&>option]:text-[#2C2929]"
                       >
                         {ACCENTS.map((a) => (
                           <option key={a}>{a}</option>
@@ -514,11 +514,11 @@ export default function CreateDigitalHumanPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-[#64748B] mb-1 block">Emotion Bias</label>
+                      <label className="text-[10px] text-[#8A8178] mb-1 block">Emotion Bias</label>
                       <select
                         value={voiceEmotion}
                         onChange={(e) => setVoiceEmotion(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#CBD5E1] [&>option]:text-[#0F172A]"
+                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#D8D2C8] [&>option]:text-[#2C2929]"
                       >
                         {EMOTION_BIASES.map((e) => (
                           <option key={e}>{e}</option>
@@ -535,8 +535,8 @@ export default function CreateDigitalHumanPage() {
           {step === 2 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-[#F8FAFC] mb-1">Teach Your Digital Human</h2>
-                <p className="text-sm text-[#94A3B8]">
+                <h2 className="text-xl font-semibold text-[#F3F4F4] mb-1">Teach Your Digital Human</h2>
+                <p className="text-sm text-[#B0A79C]">
                   Upload documents or describe the person
                 </p>
               </div>
@@ -555,8 +555,8 @@ export default function CreateDigitalHumanPage() {
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border",
                         brainTab === tab.id
-                          ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20 text-[#F8FAFC]"
-                          : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8]"
+                          ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-[#F3F4F4]"
+                          : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C]"
                       )}
                     >
                       <Icon className="h-3.5 w-3.5" />
@@ -568,10 +568,10 @@ export default function CreateDigitalHumanPage() {
 
               {brainTab === "documents" && (
                 <div className="max-w-lg mx-auto space-y-3">
-                  <div className="border-2 border-dashed border-white/[0.08] rounded-2xl p-8 text-center hover:border-[#7C5CFF]/30 hover:bg-[#7C5CFF]/5 transition-all cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto mb-3 text-[#64748B]" />
-                    <p className="text-sm text-[#94A3B8] font-medium mb-1">Drop files here</p>
-                    <p className="text-xs text-[#64748B]">PDF, DOCX, TXT, CSV, Markdown</p>
+                  <div className="border-2 border-dashed border-white/[0.08] rounded-2xl p-8 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto mb-3 text-[#8A8178]" />
+                    <p className="text-sm text-[#B0A79C] font-medium mb-1">Drop files here</p>
+                    <p className="text-xs text-[#8A8178]">PDF, DOCX, TXT, CSV, Markdown</p>
                   </div>
                   <div className="flex justify-center gap-2">
                     {[
@@ -582,7 +582,7 @@ export default function CreateDigitalHumanPage() {
                       return (
                         <button
                           key={item.label}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-[#94A3B8] hover:text-[#F8FAFC] transition-all"
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-[#B0A79C] hover:text-[#F3F4F4] transition-all"
                         >
                           <Icon className="h-3 w-3" />
                           {item.label}
@@ -600,9 +600,9 @@ export default function CreateDigitalHumanPage() {
                     onChange={(e) => setDescribeText(e.target.value)}
                     placeholder="My grandfather was a retired teacher. He loved helping students, gardening, and reading history books. He always spoke calmly and believed everyone deserved respect..."
                     rows={8}
-                    className="w-full px-4 py-3 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30 resize-none"
+                    className="w-full px-4 py-3 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
                   />
-                  <p className="text-[10px] text-[#64748B] mt-1">
+                  <p className="text-[10px] text-[#8A8178] mt-1">
                     Write naturally. The AI will understand.
                   </p>
                 </div>
@@ -614,8 +614,8 @@ export default function CreateDigitalHumanPage() {
           {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-[#F8FAFC] mb-1">Define Relationship</h2>
-                <p className="text-sm text-[#94A3B8]">
+                <h2 className="text-xl font-semibold text-[#F3F4F4] mb-1">Define Relationship</h2>
+                <p className="text-sm text-[#B0A79C]">
                   How will you interact with this Digital Human?
                 </p>
               </div>
@@ -627,8 +627,8 @@ export default function CreateDigitalHumanPage() {
                     className={cn(
                       "px-4 py-2.5 rounded-xl text-sm transition-all border",
                       relationship === r
-                        ? "bg-gradient-to-r from-[#FF6B9D]/20 to-[#7C5CFF]/20 border-[#FF6B9D]/30 text-[#F8FAFC] shadow-lg shadow-[#FF6B9D]/10"
-                        : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8] hover:text-[#CBD5E1] hover:bg-white/[0.08]"
+                        ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#CC3A63]/20 border-[#CC3A63]/30 text-[#F3F4F4] shadow-lg shadow-[#CC3A63]/10"
+                        : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-white/[0.08]"
                     )}
                   >
                     {r}
@@ -642,8 +642,8 @@ export default function CreateDigitalHumanPage() {
           {step === 4 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-[#F8FAFC] mb-1">Select Personality</h2>
-                <p className="text-sm text-[#94A3B8]">
+                <h2 className="text-xl font-semibold text-[#F3F4F4] mb-1">Select Personality</h2>
+                <p className="text-sm text-[#B0A79C]">
                   Choose traits that describe this Digital Human
                 </p>
               </div>
@@ -655,8 +655,8 @@ export default function CreateDigitalHumanPage() {
                     className={cn(
                       "px-4 py-2.5 rounded-xl text-sm transition-all border",
                       traits.includes(trait)
-                        ? "bg-gradient-to-r from-[#7C5CFF]/20 to-[#00E5FF]/15 border-[#7C5CFF]/30 text-[#F8FAFC] shadow-lg shadow-[#7C5CFF]/10"
-                        : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8] hover:text-[#CBD5E1] hover:bg-white/[0.08]"
+                        ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/15 border-[#CC3A63]/30 text-[#F3F4F4] shadow-lg shadow-[#CC3A63]/10"
+                        : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-white/[0.08]"
                     )}
                   >
                     {trait}
@@ -664,7 +664,7 @@ export default function CreateDigitalHumanPage() {
                 ))}
               </div>
               {traits.length > 0 && (
-                <p className="text-center text-xs text-[#64748B]">
+                <p className="text-center text-xs text-[#8A8178]">
                   {traits.length} trait{traits.length > 1 ? "s" : ""} selected
                 </p>
               )}
@@ -681,8 +681,8 @@ export default function CreateDigitalHumanPage() {
           className={cn(
             "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm transition-all",
             step === 0 || generating
-              ? "text-[#64748B] opacity-30 cursor-not-allowed"
-              : "text-[#94A3B8] hover:text-[#F8FAFC] bg-white/[0.04]"
+              ? "text-[#8A8178] opacity-30 cursor-not-allowed"
+              : "text-[#B0A79C] hover:text-[#F3F4F4] bg-white/[0.04]"
           )}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -696,8 +696,8 @@ export default function CreateDigitalHumanPage() {
             className={cn(
               "flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-medium transition-all",
               canProceed()
-                ? "bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white shadow-lg shadow-[#7C5CFF]/20"
-                : "bg-white/[0.04] text-[#64748B] cursor-not-allowed"
+                ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20"
+                : "bg-white/[0.04] text-[#8A8178] cursor-not-allowed"
             )}
           >
             Continue
@@ -707,7 +707,7 @@ export default function CreateDigitalHumanPage() {
           <button
             onClick={handleGenerate}
             disabled={!canProceed() || generating}
-            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium shadow-lg shadow-[#7C5CFF]/20 hover:shadow-[#7C5CFF]/30 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all disabled:opacity-50"
           >
             {generating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -728,7 +728,7 @@ export default function CreateDigitalHumanPage() {
         >
           <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6]"
+              className="h-full rounded-full bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]"
               initial={{ width: "0%" }}
               animate={{ width: `${buildProgress}%` }}
               transition={{ duration: 0.3 }}
@@ -745,9 +745,9 @@ export default function CreateDigitalHumanPage() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
                     isDone
-                      ? "bg-[#42FFC6]/5"
+                      ? "bg-[#A2AB73]/5"
                       : isCurrent
-                        ? "bg-[#7C5CFF]/10"
+                        ? "bg-[#CC3A63]/10"
                         : "opacity-40"
                   )}
                 >
@@ -755,24 +755,24 @@ export default function CreateDigitalHumanPage() {
                     className={cn(
                       "w-6 h-6 rounded-full flex items-center justify-center",
                       isDone
-                        ? "bg-[#42FFC6]/10"
+                        ? "bg-[#A2AB73]/10"
                         : isCurrent
-                          ? "bg-[#7C5CFF]/10"
+                          ? "bg-[#CC3A63]/10"
                           : "bg-white/[0.04]"
                     )}
                   >
                     {isDone ? (
-                      <Check className="h-3 w-3 text-[#42FFC6]" />
+                      <Check className="h-3 w-3 text-[#A2AB73]" />
                     ) : isCurrent ? (
-                      <Loader2 className="h-3 w-3 animate-spin text-[#7C5CFF]" />
+                      <Loader2 className="h-3 w-3 animate-spin text-[#CC3A63]" />
                     ) : (
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#64748B]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#8A8178]" />
                     )}
                   </div>
                   <span
                     className={cn(
                       "text-xs",
-                      isDone ? "text-[#42FFC6]" : isCurrent ? "text-[#F8FAFC]" : "text-[#64748B]"
+                      isDone ? "text-[#A2AB73]" : isCurrent ? "text-[#F3F4F4]" : "text-[#8A8178]"
                     )}
                   >
                     {bs.label}
@@ -782,7 +782,7 @@ export default function CreateDigitalHumanPage() {
             })}
           </div>
           {currentStepLabel && (
-            <p className="text-center text-xs text-[#7C5CFF] animate-pulse">{currentStepLabel}</p>
+            <p className="text-center text-xs text-[#CC3A63] animate-pulse">{currentStepLabel}</p>
           )}
         </motion.div>
       )}

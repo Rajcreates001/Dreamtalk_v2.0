@@ -36,17 +36,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!mounted) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-[#070B14]">
+      <div className="min-h-dvh flex items-center justify-center bg-[#201D1D]">
         <div className="relative">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] animate-breathe" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#7C5CFF] animate-pulse-glow" />
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] animate-breathe" />
+          <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#CC3A63] animate-pulse-glow" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-dvh bg-[#070B14] overflow-hidden">
+    <div className="flex h-dvh bg-[#201D1D] overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarMobileOpen && (
         <div

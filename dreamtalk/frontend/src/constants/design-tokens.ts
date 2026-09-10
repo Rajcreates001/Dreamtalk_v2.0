@@ -54,86 +54,86 @@ export interface SectionTheme {
 export const sectionThemes: Record<string, SectionTheme> = {
   hero: {
     name: "Hero",
-    color: { primary: "#7C5CFF", secondary: "#00E5FF", accent: "#42FFC6", glow: "rgba(124,92,255,0.4)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0A0F1F] to-[#070B14]", blob1: "rgba(124,92,255,0.12)", blob2: "rgba(0,229,255,0.07)", blob3: "rgba(66,255,198,0.05)" },
+    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.4)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(204,58,99,0.12)", blob2: "rgba(162,171,115,0.07)", blob3: "rgba(162,171,115,0.05)" },
     glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(255,255,255,0.06)", blur: "blur(28px)" },
   },
   problem: {
     name: "Problem",
-    color: { primary: "#FF5F73", secondary: "#FF8A65", accent: "#FFB74D", glow: "rgba(255,95,115,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0F0B0B] to-[#070B14]", blob1: "rgba(255,95,115,0.08)", blob2: "rgba(255,138,101,0.04)", blob3: "rgba(255,183,77,0.03)" },
-    glass: { bg: "rgba(15,10,10,0.72)", border: "rgba(255,95,115,0.06)", blur: "blur(28px)" },
+    color: { primary: "#D84C63", secondary: "#C77B54", accent: "#D6A44C", glow: "rgba(216,76,99,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0F0B0B] to-[#201D1D]", blob1: "rgba(216,76,99,0.08)", blob2: "rgba(255,138,101,0.04)", blob3: "rgba(255,183,77,0.03)" },
+    glass: { bg: "rgba(15,10,10,0.72)", border: "rgba(216,76,99,0.06)", blur: "blur(28px)" },
   },
   solution: {
     name: "Solution",
-    color: { primary: "#7C5CFF", secondary: "#42FFC6", accent: "#00E5FF", glow: "rgba(124,92,255,0.35)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0A0F1A] to-[#070B14]", blob1: "rgba(124,92,255,0.1)", blob2: "rgba(66,255,198,0.05)", blob3: "rgba(0,229,255,0.04)" },
-    glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(124,92,255,0.08)", blur: "blur(28px)" },
+    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.35)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(204,58,99,0.1)", blob2: "rgba(162,171,115,0.05)", blob3: "rgba(162,171,115,0.04)" },
+    glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(204,58,99,0.08)", blur: "blur(28px)" },
   },
   avatar: {
     name: "Avatar Studio",
-    color: { primary: "#EC4899", secondary: "#7C5CFF", accent: "#F472B6", glow: "rgba(236,72,153,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#100B15] to-[#070B14]", blob1: "rgba(236,72,153,0.08)", blob2: "rgba(124,92,255,0.05)", blob3: "rgba(244,114,182,0.03)" },
-    glass: { bg: "rgba(20,10,20,0.72)", border: "rgba(236,72,153,0.06)", blur: "blur(28px)" },
+    color: { primary: "#CC3A63", secondary: "#CC3A63", accent: "#F472B6", glow: "rgba(204,58,99,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100B15] to-[#201D1D]", blob1: "rgba(204,58,99,0.08)", blob2: "rgba(204,58,99,0.05)", blob3: "rgba(244,114,182,0.03)" },
+    glass: { bg: "rgba(20,10,20,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
   },
   knowledge: {
     name: "Knowledge",
-    color: { primary: "#22D3EE", secondary: "#7C5CFF", accent: "#34D399", glow: "rgba(34,211,238,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0A0F1A] to-[#070B14]", blob1: "rgba(34,211,238,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(52,211,153,0.03)" },
-    glass: { bg: "rgba(10,20,30,0.72)", border: "rgba(34,211,238,0.06)", blur: "blur(28px)" },
+    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#34D399", glow: "rgba(162,171,115,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(52,211,153,0.03)" },
+    glass: { bg: "rgba(10,20,30,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
   },
   memory: {
     name: "Memory",
-    color: { primary: "#7C5CFF", secondary: "#8B5CF6", accent: "#A78BFA", glow: "rgba(124,92,255,0.35)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0B0918] to-[#070B14]", blob1: "rgba(124,92,255,0.1)", blob2: "rgba(139,92,246,0.05)", blob3: "rgba(167,139,250,0.03)" },
-    glass: { bg: "rgba(15,10,25,0.72)", border: "rgba(124,92,255,0.06)", blur: "blur(28px)" },
+    color: { primary: "#CC3A63", secondary: "#B03A5E", accent: "#A78BFA", glow: "rgba(204,58,99,0.35)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0B0918] to-[#201D1D]", blob1: "rgba(204,58,99,0.1)", blob2: "rgba(176,58,94,0.05)", blob3: "rgba(167,139,250,0.03)" },
+    glass: { bg: "rgba(15,10,25,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
   },
   humanization: {
     name: "Humanization",
-    color: { primary: "#FF6B9D", secondary: "#7C5CFF", accent: "#FFB347", glow: "rgba(255,107,157,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#100910] to-[#070B14]", blob1: "rgba(255,107,157,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(255,179,71,0.03)" },
-    glass: { bg: "rgba(20,10,15,0.72)", border: "rgba(255,107,157,0.06)", blur: "blur(28px)" },
+    color: { primary: "#CC3A63", secondary: "#CC3A63", accent: "#FFB347", glow: "rgba(204,58,99,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100910] to-[#201D1D]", blob1: "rgba(204,58,99,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(255,179,71,0.03)" },
+    glass: { bg: "rgba(20,10,15,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
   },
   reasoning: {
     name: "Reasoning",
-    color: { primary: "#FBBF24", secondary: "#7C5CFF", accent: "#F59E0B", glow: "rgba(251,191,36,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0F0E08] to-[#070B14]", blob1: "rgba(251,191,36,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(245,158,11,0.03)" },
+    color: { primary: "#D6A44C", secondary: "#CC3A63", accent: "#D6A44C", glow: "rgba(251,191,36,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0F0E08] to-[#201D1D]", blob1: "rgba(251,191,36,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(245,158,11,0.03)" },
     glass: { bg: "rgba(20,15,8,0.72)", border: "rgba(251,191,36,0.06)", blur: "blur(28px)" },
   },
   voice: {
     name: "Voice",
-    color: { primary: "#00E5FF", secondary: "#7C5CFF", accent: "#22D3EE", glow: "rgba(0,229,255,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0A0D18] to-[#070B14]", blob1: "rgba(0,229,255,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(34,211,238,0.03)" },
-    glass: { bg: "rgba(10,15,25,0.72)", border: "rgba(0,229,255,0.06)", blur: "blur(28px)" },
+    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#A2AB73", glow: "rgba(162,171,115,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0D18] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(162,171,115,0.03)" },
+    glass: { bg: "rgba(10,15,25,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
   },
   deploy: {
     name: "Deployment",
-    color: { primary: "#0EA5E9", secondary: "#7C5CFF", accent: "#38BDF8", glow: "rgba(14,165,233,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#080F18] to-[#070B14]", blob1: "rgba(14,165,233,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(56,189,248,0.03)" },
+    color: { primary: "#0EA5E9", secondary: "#CC3A63", accent: "#A2AB73", glow: "rgba(14,165,233,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F18] to-[#201D1D]", blob1: "rgba(14,165,233,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(162,171,115,0.03)" },
     glass: { bg: "rgba(10,15,22,0.72)", border: "rgba(14,165,233,0.06)", blur: "blur(28px)" },
   },
   industry: {
     name: "Industries",
-    color: { primary: "#10B981", secondary: "#7C5CFF", accent: "#34D399", glow: "rgba(16,185,129,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#080F12] to-[#070B14]", blob1: "rgba(16,185,129,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(52,211,153,0.03)" },
+    color: { primary: "#8F9A5E", secondary: "#CC3A63", accent: "#34D399", glow: "rgba(16,185,129,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F12] to-[#201D1D]", blob1: "rgba(16,185,129,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(52,211,153,0.03)" },
     glass: { bg: "rgba(10,18,15,0.72)", border: "rgba(16,185,129,0.06)", blur: "blur(28px)" },
   },
   security: {
     name: "Security",
-    color: { primary: "#38BDF8", secondary: "#7C5CFF", accent: "#60A5FA", glow: "rgba(56,189,248,0.3)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#080D16] to-[#070B14]", blob1: "rgba(56,189,248,0.08)", blob2: "rgba(124,92,255,0.04)", blob3: "rgba(96,165,250,0.03)" },
-    glass: { bg: "rgba(10,14,22,0.72)", border: "rgba(56,189,248,0.06)", blur: "blur(28px)" },
+    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#60A5FA", glow: "rgba(162,171,115,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080D16] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(96,165,250,0.03)" },
+    glass: { bg: "rgba(10,14,22,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
   },
   cta: {
     name: "CTA",
-    color: { primary: "#7C5CFF", secondary: "#00E5FF", accent: "#42FFC6", glow: "rgba(124,92,255,0.5)" },
-    background: { base: "#070B14", gradient: "from-[#070B14] via-[#0A0F1F] to-[#070B14]", blob1: "rgba(124,92,255,0.15)", blob2: "rgba(0,229,255,0.08)", blob3: "rgba(66,255,198,0.06)" },
-    glass: { bg: "rgba(15,23,42,0.85)", border: "rgba(124,92,255,0.12)", blur: "blur(28px)" },
+    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.5)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(204,58,99,0.15)", blob2: "rgba(162,171,115,0.08)", blob3: "rgba(162,171,115,0.06)" },
+    glass: { bg: "rgba(15,23,42,0.85)", border: "rgba(204,58,99,0.12)", blur: "blur(28px)" },
   },
   footer: {
     name: "Footer",
-    color: { primary: "#475569", secondary: "#64748B", accent: "#94A3B8", glow: "rgba(71,85,105,0.2)" },
-    background: { base: "#050812", gradient: "from-[#050812] via-[#070B14] to-[#050812]", blob1: "rgba(71,85,105,0.04)", blob2: "rgba(100,116,139,0.02)", blob3: "rgba(148,163,184,0.01)" },
+    color: { primary: "#475569", secondary: "#8A8178", accent: "#B0A79C", glow: "rgba(71,85,105,0.2)" },
+    background: { base: "#1A1717", gradient: "from-[#1A1717] via-[#201D1D] to-[#1A1717]", blob1: "rgba(71,85,105,0.04)", blob2: "rgba(100,116,139,0.02)", blob3: "rgba(148,163,184,0.01)" },
     glass: { bg: "rgba(10,14,22,0.85)", border: "rgba(255,255,255,0.04)", blur: "blur(28px)" },
   },
 }
@@ -141,10 +141,10 @@ export const sectionThemes: Record<string, SectionTheme> = {
 /* ─── GLASS TOKENS ─── */
 export const glass = {
   subtle: "backdrop-blur-xl bg-white/[0.03] border border-white/[0.06]",
-  standard: "backdrop-blur-2xl bg-[#0F172A]/80 border border-white/[0.06]",
-  strong: "backdrop-blur-3xl bg-[#0F172A]/92 border border-white/[0.08]",
+  standard: "backdrop-blur-2xl bg-[#2C2929]/80 border border-white/[0.06]",
+  strong: "backdrop-blur-3xl bg-[#2C2929]/92 border border-white/[0.08]",
   premium: "backdrop-blur-2xl bg-gradient-to-b from-white/[0.05] to-white/[0.01] border border-white/[0.08]",
-  glow: "backdrop-blur-2xl bg-gradient-to-b from-[#7C5CFF]/[0.08] to-transparent border border-[#7C5CFF]/15",
+  glow: "backdrop-blur-2xl bg-gradient-to-b from-[#CC3A63]/[0.08] to-transparent border border-[#CC3A63]/15",
 } as const
 
 /* ─── ANIMATION TOKENS ─── */
@@ -166,9 +166,9 @@ export const typography = {
     card: "text-lg sm:text-xl font-semibold leading-snug tracking-tight",
   },
   body: {
-    large: "text-base sm:text-lg leading-relaxed text-[#94A3B8]",
-    standard: "text-sm leading-relaxed text-[#94A3B8]",
-    small: "text-xs leading-relaxed text-[#64748B]",
+    large: "text-base sm:text-lg leading-relaxed text-[#B0A79C]",
+    standard: "text-sm leading-relaxed text-[#B0A79C]",
+    small: "text-xs leading-relaxed text-[#8A8178]",
   },
   mono: {
     label: "text-[10px] font-mono uppercase tracking-[0.25em]",
@@ -179,10 +179,10 @@ export const typography = {
 
 /* ─── GRADIENT UTILITIES ─── */
 export const gradients = {
-  brand: "bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6]",
-  brandVertical: "bg-gradient-to-b from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6]",
-  text: "bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent",
-  textAnimated: "bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora",
+  brand: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]",
+  brandVertical: "bg-gradient-to-b from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]",
+  text: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent",
+  textAnimated: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora",
 } as const
 
 /* ─── BLUR LEVELS ─── */

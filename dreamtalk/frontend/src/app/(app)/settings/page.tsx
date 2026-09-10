@@ -32,8 +32,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#F8FAFC]">Settings</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Manage your account and workspace</p>
+        <h1 className="text-xl font-bold text-[#F3F4F4]">Settings</h1>
+        <p className="text-sm text-[#B0A79C] mt-1">Manage your account and workspace</p>
       </div>
 
       <div className="flex gap-6">
@@ -48,8 +48,8 @@ export default function SettingsPage() {
                 className={cn(
                   "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                   isActive
-                    ? "bg-[#7C5CFF]/10 text-[#F8FAFC] border border-[#7C5CFF]/20"
-                    : "text-[#94A3B8] hover:text-[#CBD5E1] hover:bg-white/[0.04] border border-transparent"
+                    ? "bg-[#CC3A63]/10 text-[#F3F4F4] border border-[#CC3A63]/20"
+                    : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-white/[0.04] border border-transparent"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -59,38 +59,38 @@ export default function SettingsPage() {
           })}
         </div>
 
-        <div className="flex-1 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] p-6 space-y-6">
+        <div className="flex-1 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-6 space-y-6">
           {activeTab === "account" && (
             <div className="space-y-5">
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">Account Settings</h3>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">Account Settings</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#94A3B8]">Full Name</label>
-                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30" />
+                  <label className="text-xs text-[#B0A79C]">Full Name</label>
+                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F3F4F4] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#94A3B8]">Email</label>
-                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30" />
+                  <label className="text-xs text-[#B0A79C]">Email</label>
+                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F3F4F4] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium">Save Changes</button>
+              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Save Changes</button>
             </div>
           )}
 
           {activeTab === "notifications" && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">Notification Preferences</h3>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">Notification Preferences</h3>
               {TOGGLE_ITEMS.map((item, i) => (
                 <div key={item.label} className="flex items-center justify-between py-2">
                   <div>
-                    <p className="text-sm text-[#CBD5E1]">{item.label}</p>
-                    <p className="text-xs text-[#64748B]">{item.desc}</p>
+                    <p className="text-sm text-[#D8D2C8]">{item.label}</p>
+                    <p className="text-xs text-[#8A8178]">{item.desc}</p>
                   </div>
                   <button
                     onClick={() => setToggles(prev => prev.map((v, j) => j === i ? !v : v))}
                     className={cn(
                       "w-9 h-5 rounded-full transition-all relative",
-                      toggles[i] ? "bg-[#7C5CFF]" : "bg-white/[0.08]"
+                      toggles[i] ? "bg-[#CC3A63]" : "bg-white/[0.08]"
                     )}
                   >
                     <div className={cn(
@@ -105,49 +105,49 @@ export default function SettingsPage() {
 
           {activeTab === "security" && (
             <div className="space-y-5">
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">Security</h3>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">Security</h3>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#94A3B8]">Current Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30" />
+                <label className="text-xs text-[#B0A79C]">Current Password</label>
+                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#94A3B8]">New Password</label>
-                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30" />
+                  <label className="text-xs text-[#B0A79C]">New Password</label>
+                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#94A3B8]">Confirm Password</label>
-                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30" />
+                  <label className="text-xs text-[#B0A79C]">Confirm Password</label>
+                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium">Update Password</button>
+              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Update Password</button>
             </div>
           )}
 
           {activeTab === "api" && (
             <div className="space-y-5">
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">API Keys</h3>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">API Keys</h3>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-[#94A3B8]">Production Key</span>
-                  <span className="text-[10px] text-[#42FFC6]">Active</span>
+                  <span className="text-xs text-[#B0A79C]">Production Key</span>
+                  <span className="text-[10px] text-[#A2AB73]">Active</span>
                 </div>
-                <code className="text-xs text-[#CBD5E1] font-mono">dt_sk_prod_••••••••••••••••</code>
+                <code className="text-xs text-[#D8D2C8] font-mono">dt_sk_prod_••••••••••••••••</code>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-[#94A3B8]">Development Key</span>
-                  <span className="text-[10px] text-[#FBBF24]">Testing</span>
+                  <span className="text-xs text-[#B0A79C]">Development Key</span>
+                  <span className="text-[10px] text-[#D6A44C]">Testing</span>
                 </div>
-                <code className="text-xs text-[#CBD5E1] font-mono">dt_sk_dev_••••••••••••••••</code>
+                <code className="text-xs text-[#D8D2C8] font-mono">dt_sk_dev_••••••••••••••••</code>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-all">Generate New Key</button>
+              <button className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#B0A79C] hover:text-[#F3F4F4] transition-all">Generate New Key</button>
             </div>
           )}
 
           {activeTab !== "account" && activeTab !== "notifications" && activeTab !== "security" && activeTab !== "api" && (
             <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-[#64748B]">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} settings coming soon</p>
+              <p className="text-sm text-[#8A8178]">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} settings coming soon</p>
             </div>
           )}
         </div>

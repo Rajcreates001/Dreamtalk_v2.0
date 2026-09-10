@@ -142,11 +142,11 @@ export default function BrainManagerPage() {
         </h3>
         <div className="space-y-3">
           {[
-            { key: "pfcWeight", label: "Prefrontal Cortex", color: "#3b82f6" },
-            { key: "daccWeight", label: "dACC (Conflict)", color: "#ef4444" },
-            { key: "insulaWeight", label: "Insula (Emotion)", color: "#a855f7" },
-            { key: "iplWeight", label: "IPL (Context)", color: "#22c55e" },
-            { key: "bgWeight", label: "Basal Ganglia", color: "#f59e0b" },
+            { key: "pfcWeight", label: "Prefrontal Cortex", color: "#853953" },
+            { key: "daccWeight", label: "dACC (Conflict)", color: "#D84C63" },
+            { key: "insulaWeight", label: "Insula (Emotion)", color: "#9E3B6B" },
+            { key: "iplWeight", label: "IPL (Context)", color: "#8F9A5E" },
+            { key: "bgWeight", label: "Basal Ganglia", color: "#D6A44C" },
           ].map((area) => (
             <div key={area.key} className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: area.color }} />

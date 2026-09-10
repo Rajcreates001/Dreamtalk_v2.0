@@ -5,11 +5,11 @@ import { Brain, ArrowRight, CircuitBoard, Cpu, Network, Zap } from "lucide-react
 import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 
 const steps = [
-  { icon: CircuitBoard, label: "Input", desc: "User query or command", color: "#7C5CFF" },
-  { icon: Brain, label: "Context", desc: "Session history & persona", color: "#22D3EE" },
-  { icon: Network, label: "Memory", desc: "Relevant past interactions", color: "#42FFC6" },
-  { icon: Cpu, label: "Knowledge", desc: "Structured knowledge graph", color: "#FBBF24" },
-  { icon: Zap, label: "Reasoning", desc: "Multi-step analysis", color: "#FF5F73" },
+  { icon: CircuitBoard, label: "Input", desc: "User query or command", color: "#CC3A63" },
+  { icon: Brain, label: "Context", desc: "Session history & persona", color: "#A2AB73" },
+  { icon: Network, label: "Memory", desc: "Relevant past interactions", color: "#A2AB73" },
+  { icon: Cpu, label: "Knowledge", desc: "Structured knowledge graph", color: "#D6A44C" },
+  { icon: Zap, label: "Reasoning", desc: "Multi-step analysis", color: "#D84C63" },
 ]
 
 export function ReasoningEngine() {
@@ -44,10 +44,10 @@ export function ReasoningEngine() {
                 style={{ background: `${step.color}08` }}
               >
                 <step.icon className="h-4 w-4" style={{ color: step.color }} />
-                <span className="text-xs font-medium text-[#CBD5E1]">{step.label}</span>
+                <span className="text-xs font-medium text-[#D8D2C8]">{step.label}</span>
               </div>
               {i < steps.length - 1 && (
-                <ArrowRight className="h-3.5 w-3.5 text-[#64748B]/40 hidden sm:block" />
+                <ArrowRight className="h-3.5 w-3.5 text-[#8A8178]/40 hidden sm:block" />
               )}
             </motion.div>
           ))}
@@ -59,12 +59,12 @@ export function ReasoningEngine() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6 }}
-          className="rounded-2xl bg-[#0F172A]/60 border border-white/[0.06] p-6 lg:p-8"
+          className="rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-6 lg:p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#F8FAFC]">Transparent reasoning</h3>
-              <p className="text-sm text-[#94A3B8] leading-relaxed">
+              <h3 className="text-lg font-semibold text-[#F3F4F4]">Transparent reasoning</h3>
+              <p className="text-sm text-[#B0A79C] leading-relaxed">
                 Every response your Digital Twin generates is the result of a sophisticated reasoning process.
                 DreamTalk combines short-term context, long-term memory, structured knowledge, and emotional
                 awareness to produce responses that feel genuinely intelligent.
@@ -73,7 +73,7 @@ export function ReasoningEngine() {
                 {["Context-aware", "Memory-backed", "Knowledge-grounded", "Emotion-aware"].map((tag) => (
                   <span
                     key={tag}
-                    className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-[#7C5CFF] bg-[#7C5CFF]/10 border border-[#7C5CFF]/20"
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-[#CC3A63] bg-[#CC3A63]/10 border border-[#CC3A63]/20"
                   >
                     {tag}
                   </span>
@@ -90,9 +90,9 @@ export function ReasoningEngine() {
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
                   {[
-                    { label: "?", color: "#7C5CFF" },
-                    { label: "...", color: "#22D3EE" },
-                    { label: "!", color: "#42FFC6" },
+                    { label: "?", color: "#CC3A63" },
+                    { label: "...", color: "#A2AB73" },
+                    { label: "!", color: "#A2AB73" },
                   ].map((item, i) => (
                     <motion.div
                       key={item.label}
@@ -111,7 +111,7 @@ export function ReasoningEngine() {
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="absolute w-1 h-1 rounded-full bg-[#7C5CFF]"
+                  className="absolute w-1 h-1 rounded-full bg-[#CC3A63]"
                   animate={{
                     x: [0, 200, 0],
                     y: [30 + i * 40, 20 + i * 30, 30 + i * 40],

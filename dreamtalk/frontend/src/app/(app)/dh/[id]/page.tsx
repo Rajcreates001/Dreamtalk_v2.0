@@ -30,12 +30,12 @@ const INDIAN_LANGUAGES = [
 ]
 
 const EMOTIONS = [
-  { id: "neutral", label: "Neutral", color: "#94A3B8" },
-  { id: "happy", label: "Happy", color: "#FBBF24" },
+  { id: "neutral", label: "Neutral", color: "#B0A79C" },
+  { id: "happy", label: "Happy", color: "#D6A44C" },
   { id: "sad", label: "Sad", color: "#6366F1" },
-  { id: "angry", label: "Angry", color: "#FF5F73" },
-  { id: "calm", label: "Calm", color: "#42FFC6" },
-  { id: "excited", label: "Excited", color: "#FF6B9D" },
+  { id: "angry", label: "Angry", color: "#D84C63" },
+  { id: "calm", label: "Calm", color: "#A2AB73" },
+  { id: "excited", label: "Excited", color: "#CC3A63" },
 ]
 
 export default function DigitalHumanWorkspacePage() {
@@ -106,7 +106,7 @@ export default function DigitalHumanWorkspacePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-[#64748B]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#8A8178]" />
       </div>
     )
   }
@@ -114,11 +114,11 @@ export default function DigitalHumanWorkspacePage() {
   if (loadError) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center space-y-4">
-        <div className="w-16 h-16 mx-auto rounded-full bg-[#FF5F73]/10 flex items-center justify-center">
-          <Trash2 className="h-6 w-6 text-[#FF5F73]" />
+        <div className="w-16 h-16 mx-auto rounded-full bg-[#D84C63]/10 flex items-center justify-center">
+          <Trash2 className="h-6 w-6 text-[#D84C63]" />
         </div>
-        <p className="text-[#94A3B8]">{loadError}</p>
-        <button onClick={() => router.push("/home")} className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm">
+        <p className="text-[#B0A79C]">{loadError}</p>
+        <button onClick={() => router.push("/home")} className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm">
           Go Home
         </button>
       </div>
@@ -249,21 +249,21 @@ export default function DigitalHumanWorkspacePage() {
         className="flex items-center justify-between mb-6"
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#7C5CFF] to-[#00E5FF] flex items-center justify-center text-white font-bold">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold">
             {dhName.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#F8FAFC]">{dhName}</h1>
-            <p className="text-sm text-[#94A3B8]">{dhRole} · {dhRelationship}</p>
+            <h1 className="text-xl font-bold text-[#F3F4F4]">{dhName}</h1>
+            <p className="text-sm text-[#B0A79C]">{dhRole} · {dhRelationship}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#42FFC6]/10 border border-[#42FFC6]/20">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#A2AB73]/10 border border-[#A2AB73]/20">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#42FFC6] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#42FFC6]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A2AB73]" />
             </span>
-            <span className="text-xs text-[#42FFC6] font-medium">
+            <span className="text-xs text-[#A2AB73] font-medium">
               {dh?.status === "published" || dh?.status === "active" || dh?.is_active ? "Active" : "Draft"}
             </span>
           </div>
@@ -271,7 +271,7 @@ export default function DigitalHumanWorkspacePage() {
       </motion.div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-1 p-1 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] mb-6 w-fit">
+      <div className="flex gap-1 p-1 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] mb-6 w-fit">
         {WORKSPACE_TABS.map((tab) => {
           const Icon = tab.icon
           return (
@@ -281,8 +281,8 @@ export default function DigitalHumanWorkspacePage() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-xs transition-all",
                 activeTab === tab.id
-                  ? "bg-[#7C5CFF]/15 text-[#F8FAFC] border border-[#7C5CFF]/20"
-                  : "text-[#94A3B8] hover:text-[#CBD5E1] border border-transparent"
+                  ? "bg-[#CC3A63]/15 text-[#F3F4F4] border border-[#CC3A63]/20"
+                  : "text-[#B0A79C] hover:text-[#D8D2C8] border border-transparent"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -306,24 +306,24 @@ export default function DigitalHumanWorkspacePage() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                 {/* Avatar card */}
-                <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-6 relative overflow-hidden">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-[#7C5CFF]/5 blur-[80px]" />
+                <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-6 relative overflow-hidden">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-[#CC3A63]/5 blur-[80px]" />
                   <div className="relative z-10 flex items-start gap-6">
-                    <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] flex items-center justify-center text-white font-bold text-2xl shrink-0">
+                    <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] flex items-center justify-center text-white font-bold text-2xl shrink-0">
                       {dhName.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-lg font-bold text-[#F8FAFC]">{dhName}</h2>
-                      <p className="text-sm text-[#94A3B8]">{dhRole}</p>
+                      <h2 className="text-lg font-bold text-[#F3F4F4]">{dhName}</h2>
+                      <p className="text-sm text-[#B0A79C]">{dhRole}</p>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {(Array.isArray(dhPersonality) ? dhPersonality : []).map((trait: string) => (
-                          <span key={trait} className="px-2.5 py-1 rounded-lg bg-[#7C5CFF]/10 text-[10px] text-[#7C5CFF] border border-[#7C5CFF]/20">{trait}</span>
+                          <span key={trait} className="px-2.5 py-1 rounded-lg bg-[#CC3A63]/10 text-[10px] text-[#CC3A63] border border-[#CC3A63]/20">{trait}</span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-4 mt-4 text-xs text-[#64748B]">
-                        <span className="flex items-center gap-1"><Heart className="h-3 w-3 text-[#FF6B9D]" /> {dhRelationship}</span>
-                        <span className="flex items-center gap-1"><Globe className="h-3 w-3 text-[#00E5FF]" /> {dhLanguages} languages</span>
-                        <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 text-[#42FFC6]" /> {dhKnowledgeSize}</span>
+                      <div className="flex items-center gap-4 mt-4 text-xs text-[#8A8178]">
+                        <span className="flex items-center gap-1"><Heart className="h-3 w-3 text-[#CC3A63]" /> {dhRelationship}</span>
+                        <span className="flex items-center gap-1"><Globe className="h-3 w-3 text-[#A2AB73]" /> {dhLanguages} languages</span>
+                        <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 text-[#A2AB73]" /> {dhKnowledgeSize}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {dhLastActive}</span>
                       </div>
                     </div>
@@ -331,15 +331,15 @@ export default function DigitalHumanWorkspacePage() {
                 </div>
 
                 {/* Memories */}
-                <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-5">
-                  <h3 className="text-sm font-semibold text-[#F8FAFC] mb-3 flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-[#7C5CFF]" /> Recent Memories
+                <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-5">
+                  <h3 className="text-sm font-semibold text-[#F3F4F4] mb-3 flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-[#CC3A63]" /> Recent Memories
                   </h3>
                   <div className="space-y-2">
                     {dhMemories.map((mem: string, i: number) => (
                       <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#7C5CFF] mt-1.5 shrink-0" />
-                        <p className="text-xs text-[#94A3B8]">{mem}</p>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#CC3A63] mt-1.5 shrink-0" />
+                        <p className="text-xs text-[#B0A79C]">{mem}</p>
                       </div>
                     ))}
                   </div>
@@ -358,7 +358,7 @@ export default function DigitalHumanWorkspacePage() {
                       <button
                         key={action.label}
                         onClick={() => setActiveTab(action.tab)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#7C5CFF]/10 transition-all"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-[#CC3A63]/10 transition-all"
                       >
                         <Icon className="h-3.5 w-3.5" />
                         {action.label}
@@ -371,17 +371,17 @@ export default function DigitalHumanWorkspacePage() {
               {/* Stats sidebar */}
               <div className="space-y-3">
                 {[
-                  { label: "Emotion", value: dhEmotion, color: "#FF6B9D", icon: Smile },
-                  { label: "Conversations", value: dhConversations ? Number(dhConversations).toLocaleString() : "0", color: "#00E5FF", icon: MessageSquare },
-                  { label: "Relationship", value: dhRelationship, color: "#FF6B9D", icon: Heart },
-                  { label: "Knowledge", value: dhKnowledgeSize, color: "#42FFC6", icon: BookOpen },
+                  { label: "Emotion", value: dhEmotion, color: "#CC3A63", icon: Smile },
+                  { label: "Conversations", value: dhConversations ? Number(dhConversations).toLocaleString() : "0", color: "#A2AB73", icon: MessageSquare },
+                  { label: "Relationship", value: dhRelationship, color: "#CC3A63", icon: Heart },
+                  { label: "Knowledge", value: dhKnowledgeSize, color: "#A2AB73", icon: BookOpen },
                 ].map((stat) => {
                   const Icon = stat.icon
                   return (
-                    <div key={stat.label} className="rounded-xl bg-[#0F172A]/80 border border-white/[0.06] p-4">
+                    <div key={stat.label} className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <Icon className="h-3.5 w-3.5" style={{ color: stat.color }} />
-                        <span className="text-[10px] text-[#64748B]">{stat.label}</span>
+                        <span className="text-[10px] text-[#8A8178]">{stat.label}</span>
                       </div>
                       <p className="text-sm font-bold" style={{ color: stat.color }}>{stat.value}</p>
                     </div>
@@ -395,14 +395,14 @@ export default function DigitalHumanWorkspacePage() {
           {activeTab === "talk" && (
             <div className="grid lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3">
-                <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] flex flex-col h-[500px]">
+                <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] flex flex-col h-[500px]">
                   <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
                     <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-[#00E5FF]" />
-                      <h3 className="text-sm font-semibold text-[#F8FAFC]">Live Conversation</h3>
+                      <MessageSquare className="h-4 w-4 text-[#A2AB73]" />
+                      <h3 className="text-sm font-semibold text-[#F3F4F4]">Live Conversation</h3>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
-                      <span className={cn("flex items-center gap-1", isListening && "text-[#FF5F73]")}>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8A8178]">
+                      <span className={cn("flex items-center gap-1", isListening && "text-[#D84C63]")}>
                         <Radio className="h-3 w-3" />
                         {isListening ? "Listening" : "Idle"}
                       </span>
@@ -412,35 +412,35 @@ export default function DigitalHumanWorkspacePage() {
                     {talkMessages.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-center">
                         <div>
-                          <MessageSquare className="h-8 w-8 text-[#64748B] mx-auto mb-2 opacity-50" />
-                          <p className="text-xs text-[#64748B]">Start a conversation with {dhName}</p>
-                          <p className="text-[10px] text-[#64748B] mt-1">Language: {INDIAN_LANGUAGES.find(l => l.code === talkLang)?.native}</p>
+                          <MessageSquare className="h-8 w-8 text-[#8A8178] mx-auto mb-2 opacity-50" />
+                          <p className="text-xs text-[#8A8178]">Start a conversation with {dhName}</p>
+                          <p className="text-[10px] text-[#8A8178] mt-1">Language: {INDIAN_LANGUAGES.find(l => l.code === talkLang)?.native}</p>
                         </div>
                       </div>
                     ) : (
                       talkMessages.map((msg, i) => (
                         <div key={i} className={cn("flex gap-2.5", msg.role === "user" ? "justify-end" : "justify-start")}>
                           {msg.role === "assistant" && (
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#7C5CFF]/20 to-[#00E5FF]/20 flex items-center justify-center shrink-0">
-                              <Brain className="h-3.5 w-3.5 text-[#7C5CFF]" />
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 flex items-center justify-center shrink-0">
+                              <Brain className="h-3.5 w-3.5 text-[#CC3A63]" />
                             </div>
                           )}
                           <div className={cn(
                             "max-w-[75%] px-4 py-2.5 rounded-2xl text-sm",
                             msg.role === "user"
-                              ? "bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white rounded-tr-md"
-                              : "bg-white/[0.04] border border-white/[0.06] text-[#CBD5E1] rounded-tl-md"
+                              ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white rounded-tr-md"
+                              : "bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] rounded-tl-md"
                           )}>{msg.text}</div>
                         </div>
                       ))
                     )}
                     {isThinking && (
                       <div className="flex gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#7C5CFF]/20 to-[#00E5FF]/20 flex items-center justify-center">
-                          <Brain className="h-3.5 w-3.5 text-[#7C5CFF]" />
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 flex items-center justify-center">
+                          <Brain className="h-3.5 w-3.5 text-[#CC3A63]" />
                         </div>
                         <div className="px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.06] rounded-tl-md">
-                          <Loader2 className="h-4 w-4 animate-spin text-[#7C5CFF]" />
+                          <Loader2 className="h-4 w-4 animate-spin text-[#CC3A63]" />
                         </div>
                       </div>
                     )}
@@ -453,9 +453,9 @@ export default function DigitalHumanWorkspacePage() {
                         onChange={(e) => setTalkInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleTalkSend()}
                         placeholder={`Speak in ${INDIAN_LANGUAGES.find(l => l.code === talkLang)?.name}...`}
-                        className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30"
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
                       />
-                      <button onClick={handleTalkSend} disabled={!talkInput.trim() || isThinking} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white disabled:opacity-50">
+                      <button onClick={handleTalkSend} disabled={!talkInput.trim() || isThinking} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white disabled:opacity-50">
                         <Send className="h-4 w-4" />
                       </button>
                     </div>
@@ -465,8 +465,8 @@ export default function DigitalHumanWorkspacePage() {
 
               {/* Talk sidebar */}
               <div className="space-y-3">
-                <div className="rounded-xl bg-[#0F172A]/80 border border-white/[0.06] p-4">
-                  <h4 className="text-xs font-semibold text-[#F8FAFC] mb-3">Language</h4>
+                <div className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-4">
+                  <h4 className="text-xs font-semibold text-[#F3F4F4] mb-3">Language</h4>
                   <div className="space-y-1">
                     {INDIAN_LANGUAGES.map((lang) => (
                       <button
@@ -475,19 +475,19 @@ export default function DigitalHumanWorkspacePage() {
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all border",
                           talkLang === lang.code
-                            ? "bg-[#7C5CFF]/15 border-[#7C5CFF]/20 text-[#F8FAFC]"
-                            : "bg-white/[0.04] border-white/[0.06] text-[#94A3B8]"
+                            ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-[#F3F4F4]"
+                            : "bg-white/[0.04] border-white/[0.06] text-[#B0A79C]"
                         )}
                       >
                         <span>{lang.native}</span>
-                        <span className="text-[9px] text-[#64748B]">{lang.name}</span>
+                        <span className="text-[9px] text-[#8A8178]">{lang.name}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="rounded-xl bg-[#0F172A]/80 border border-white/[0.06] p-4">
-                  <p className="text-[10px] text-[#64748B] mb-2">The AI responds based on {dhName}'s personality and relationship with you.</p>
-                  <div className="flex items-center gap-1.5 text-xs text-[#42FFC6]">
+                <div className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-4">
+                  <p className="text-[10px] text-[#8A8178] mb-2">The AI responds based on {dhName}'s personality and relationship with you.</p>
+                  <div className="flex items-center gap-1.5 text-xs text-[#A2AB73]">
                     <Mic className="h-3 w-3" />
                     Connected to digital brain
                   </div>
@@ -504,70 +504,70 @@ export default function DigitalHumanWorkspacePage() {
                 onChange={(e) => setScriptText(e.target.value)}
                 placeholder="Type your script here..."
                 rows={6}
-                className="w-full px-4 py-3 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30 resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
               />
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-[#64748B] mb-1 block">Language</label>
+                  <label className="text-[10px] text-[#8A8178] mb-1 block">Language</label>
                   <select value={scriptLang} onChange={(e) => setScriptLang(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#CBD5E1] [&>option]:text-[#0F172A]">
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#D8D2C8] [&>option]:text-[#2C2929]">
                     {INDIAN_LANGUAGES.map((l) => (
                       <option key={l.code} value={l.code}>{l.name} ({l.native})</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-[#64748B] mb-1 block">Emotion</label>
+                  <label className="text-[10px] text-[#8A8178] mb-1 block">Emotion</label>
                   <select value={scriptEmotion} onChange={(e) => setScriptEmotion(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#CBD5E1] [&>option]:text-[#0F172A]">
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#D8D2C8] [&>option]:text-[#2C2929]">
                     {EMOTIONS.map((e) => (
                       <option key={e.id} value={e.id}>{e.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-[#64748B] mb-1 block">Speed</label>
+                  <label className="text-[10px] text-[#8A8178] mb-1 block">Speed</label>
                   <input type="range" min={0.5} max={2} step={0.1} value={scriptSpeed}
                     onChange={(e) => setScriptSpeed(parseFloat(e.target.value))}
-                    className="w-full mt-2 accent-[#7C5CFF]" />
-                  <p className="text-[10px] text-[#64748B] text-center">{scriptSpeed}x</p>
+                    className="w-full mt-2 accent-[#CC3A63]" />
+                  <p className="text-[10px] text-[#8A8178] text-center">{scriptSpeed}x</p>
                 </div>
               </div>
 
               {/* Error state */}
               {scriptError && (
-                <div className="p-3 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/20 text-xs text-[#FF5F73]">
+                <div className="p-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63]">
                   {scriptError}
                 </div>
               )}
 
               {/* Result */}
               {scriptResult && (
-                <div className="p-4 rounded-xl bg-[#42FFC6]/5 border border-[#42FFC6]/20 space-y-2">
-                  <p className="text-xs text-[#42FFC6] font-medium">✓ Script generated!</p>
+                <div className="p-4 rounded-xl bg-[#A2AB73]/5 border border-[#A2AB73]/20 space-y-2">
+                  <p className="text-xs text-[#A2AB73] font-medium">✓ Script generated!</p>
                   {scriptResult.audio_url && (
                     <audio src={scriptResult.audio_url} controls className="w-full h-8" />
                   )}
                   {scriptResult.duration && (
-                    <p className="text-[10px] text-[#64748B]">Duration: {scriptResult.duration.toFixed(1)}s</p>
+                    <p className="text-[10px] text-[#8A8178]">Duration: {scriptResult.duration.toFixed(1)}s</p>
                   )}
                 </div>
               )}
 
               <div className="flex gap-2">
                 <button onClick={handleGenerateScript} disabled={!scriptText.trim() || generatingScript}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white font-medium disabled:opacity-50">
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white font-medium disabled:opacity-50">
                   {generatingScript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                   {generatingScript ? "Generating..." : "Generate Audio"}
                 </button>
-                <button disabled className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#64748B] text-sm">
+                <button disabled className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#8A8178] text-sm">
                   <Video className="h-4 w-4" /> Generate Video
                 </button>
               </div>
               {generatingScript && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42FFC6]/5 border border-[#42FFC6]/20">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#42FFC6]" />
-                  <span className="text-xs text-[#42FFC6]">Generating with {INDIAN_LANGUAGES.find(l => l.code === scriptLang)?.name} voice...</span>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-[#A2AB73]/5 border border-[#A2AB73]/20">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#A2AB73]" />
+                  <span className="text-xs text-[#A2AB73]">Generating with {INDIAN_LANGUAGES.find(l => l.code === scriptLang)?.name} voice...</span>
                 </div>
               )}
             </div>
@@ -579,25 +579,25 @@ export default function DigitalHumanWorkspacePage() {
               {/* Upload area */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-white/[0.08] rounded-2xl p-10 text-center hover:border-[#7C5CFF]/30 hover:bg-[#7C5CFF]/5 transition-all cursor-pointer"
+                className="border-2 border-dashed border-white/[0.08] rounded-2xl p-10 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer"
               >
                 {uploadingKnowledge ? (
                   <div className="space-y-3">
-                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-[#7C5CFF]" />
-                    <p className="text-sm text-[#94A3B8]">Uploading...</p>
+                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-[#CC3A63]" />
+                    <p className="text-sm text-[#B0A79C]">Uploading...</p>
                   </div>
                 ) : (
                   <>
-                    <Upload className="h-8 w-8 mx-auto mb-3 text-[#64748B]" />
-                    <p className="text-sm text-[#94A3B8] font-medium">Upload files to teach {dhName}</p>
-                    <p className="text-xs text-[#64748B] mt-1">PDF, DOCX, TXT, CSV, Markdown</p>
+                    <Upload className="h-8 w-8 mx-auto mb-3 text-[#8A8178]" />
+                    <p className="text-sm text-[#B0A79C] font-medium">Upload files to teach {dhName}</p>
+                    <p className="text-xs text-[#8A8178] mt-1">PDF, DOCX, TXT, CSV, Markdown</p>
                   </>
                 )}
               </div>
               <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.csv,.md" onChange={handleKnowledgeUpload} className="hidden" />
 
               {knowledgeError && (
-                <div className="p-3 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/20 text-xs text-[#FF5F73]">
+                <div className="p-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63]">
                   {knowledgeError}
                 </div>
               )}
@@ -610,7 +610,7 @@ export default function DigitalHumanWorkspacePage() {
                 ].map((item) => {
                   const Icon = item.icon
                   return (
-                    <button key={item.label} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] transition-all">
+                    <button key={item.label} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] transition-all">
                       <Icon className="h-3.5 w-3.5" /> {item.label}
                     </button>
                   )
@@ -618,10 +618,10 @@ export default function DigitalHumanWorkspacePage() {
               </div>
 
               {/* Knowledge sources */}
-              <div className="rounded-2xl bg-[#0F172A]/80 border border-white/[0.06] p-5">
-                <h3 className="text-sm font-semibold text-[#F8FAFC] mb-3">Current Knowledge</h3>
+              <div className="rounded-2xl bg-[#2C2929]/80 border border-white/[0.06] p-5">
+                <h3 className="text-sm font-semibold text-[#F3F4F4] mb-3">Current Knowledge</h3>
                 {knowledgeSources.length === 0 ? (
-                  <p className="text-xs text-[#64748B] text-center py-4">No knowledge sources yet. Upload documents above.</p>
+                  <p className="text-xs text-[#8A8178] text-center py-4">No knowledge sources yet. Upload documents above.</p>
                 ) : (
                   <div className="space-y-2">
                     {knowledgeSources.map((doc: any) => {
@@ -629,14 +629,14 @@ export default function DigitalHumanWorkspacePage() {
                       return (
                         <div key={docId} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                           <div className="flex items-center gap-2 min-w-0">
-                            <FileText className="h-3.5 w-3.5 text-[#64748B] shrink-0" />
-                            <span className="text-xs text-[#CBD5E1] truncate">{doc.name || doc.filename || doc.file_name || "Unknown"}</span>
+                            <FileText className="h-3.5 w-3.5 text-[#8A8178] shrink-0" />
+                            <span className="text-xs text-[#D8D2C8] truncate">{doc.name || doc.filename || doc.file_name || "Unknown"}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", doc.status === "completed" || doc.status === "learned" ? "bg-[#42FFC6]/10 text-[#42FFC6]" : "bg-[#FBBF24]/10 text-[#FBBF24]")}>
+                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", doc.status === "completed" || doc.status === "learned" ? "bg-[#A2AB73]/10 text-[#A2AB73]" : "bg-[#D6A44C]/10 text-[#D6A44C]")}>
                               {doc.status || "processing"}
                             </span>
-                            <button onClick={() => handleDeleteKnowledge(docId)} className="text-[#64748B] hover:text-[#FF5F73] transition-all">
+                            <button onClick={() => handleDeleteKnowledge(docId)} className="text-[#8A8178] hover:text-[#D84C63] transition-all">
                               <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
@@ -661,31 +661,31 @@ export default function DigitalHumanWorkspacePage() {
               ].map((section) => {
                 const Icon = section.icon
                 return (
-                  <div key={section.title} className="flex items-center justify-between p-4 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] hover:border-white/[0.12] transition-all">
+                  <div key={section.title} className="flex items-center justify-between p-4 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] hover:border-white/[0.12] transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-[#94A3B8]" />
+                        <Icon className="h-4 w-4 text-[#B0A79C]" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#F8FAFC]">{section.title}</p>
-                        <p className="text-xs text-[#64748B]">{section.desc}</p>
+                        <p className="text-sm font-medium text-[#F3F4F4]">{section.title}</p>
+                        <p className="text-xs text-[#8A8178]">{section.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-[#64748B]" />
+                    <ChevronRight className="h-4 w-4 text-[#8A8178]" />
                   </div>
                 )
               })}
               <div className="flex gap-3 pt-4">
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">
                   <Download className="h-4 w-4" /> Export
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#94A3B8]">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-[#B0A79C]">
                   <Share2 className="h-4 w-4" /> Share
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/20 text-sm text-[#FF5F73] hover:bg-[#FF5F73]/20 transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-sm text-[#D84C63] hover:bg-[#D84C63]/20 transition-all"
                 >
                   {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {deleting ? "Deleting..." : "Delete"}

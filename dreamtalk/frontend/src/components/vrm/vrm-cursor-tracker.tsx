@@ -160,8 +160,8 @@ export function VrmCursorTracker({ modelUrl, className, height = 400, overlay = 
           <>
             <ambientLight intensity={0.6} />
             <hemisphereLight args={[0xea2264, 0xf78d60, 1.2]} position={[0, 50, 0]} />
-            <directionalLight position={[-30, 52.5, 30]} intensity={2.5} castShadow color="#EA2264" />
-            <pointLight position={[2, 1, 2]} intensity={0.8} color="#F78D60" />
+            <directionalLight position={[-30, 52.5, 30]} intensity={2.5} castShadow color="#CC3A63" />
+            <pointLight position={[2, 1, 2]} intensity={0.8} color="#C77B54" />
             <pointLight position={[-2, 0.5, -1]} intensity={0.5} color="#640D5F" />
             <mesh rotation-x={-Math.PI / 2} position-y={0} receiveShadow>
               <circleGeometry args={[1.8, 64]} />

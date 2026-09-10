@@ -45,25 +45,25 @@ export default function AnalyticsPage() {
       label: "Total Events",
       value: stats?.total_events ?? emotionData?.total_events ?? "—",
       icon: MessageSquare,
-      color: "#7C5CFF",
+      color: "#CC3A63",
     },
     {
       label: "Sessions Tracked",
       value: stats?.total_sessions ?? "—",
       icon: Users,
-      color: "#00E5FF",
+      color: "#A2AB73",
     },
     {
       label: "Dominant Emotion",
       value: emotionData?.dominant_emotion ?? "—",
       icon: Heart,
-      color: "#FF6B9D",
+      color: "#CC3A63",
     },
     {
       label: "Avg Valence",
       value: emotionData?.avg_valence?.toFixed(2) ?? "—",
       icon: TrendingUp,
-      color: "#42FFC6",
+      color: "#A2AB73",
     },
   ]
 

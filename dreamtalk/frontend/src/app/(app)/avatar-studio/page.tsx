@@ -68,12 +68,12 @@ export default function AvatarStudioPage() {
   }
 
   const EMOTIONS = [
-    { name: "Happy", emoji: "😊", color: "#22c55e" },
-    { name: "Sad", emoji: "😢", color: "#3b82f6" },
-    { name: "Surprised", emoji: "😮", color: "#f59e0b" },
-    { name: "Angry", emoji: "😠", color: "#ef4444" },
-    { name: "Neutral", emoji: "😐", color: "#6b7280" },
-    { name: "Wink", emoji: "😉", color: "#a855f7" },
+    { name: "Happy", emoji: "😊", color: "#8F9A5E" },
+    { name: "Sad", emoji: "😢", color: "#853953" },
+    { name: "Surprised", emoji: "😮", color: "#D6A44C" },
+    { name: "Angry", emoji: "😠", color: "#D84C63" },
+    { name: "Neutral", emoji: "😐", color: "#8A8178" },
+    { name: "Wink", emoji: "😉", color: "#9E3B6B" },
   ]
 
   return (

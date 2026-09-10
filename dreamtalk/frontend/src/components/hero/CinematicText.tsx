@@ -47,7 +47,7 @@ function WordReveal({ text, className = "", delay = 0, gradient = false, revealT
           className="inline-block mr-[0.3em]"
         >
           {gradient ? (
-            <span className="bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora">
+            <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora">
               {word}
             </span>
           ) : (
@@ -89,7 +89,7 @@ export function CinematicText({ lines }: CinematicTextProps) {
                 }}
                 className={line.className}
               >
-                <span className="bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora">
+                <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora">
                   {line.text}
                 </span>
               </motion.h1>

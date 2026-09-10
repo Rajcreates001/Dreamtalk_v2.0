@@ -40,8 +40,8 @@ export function PrimaryButton() {
         }}
         animate={{
           background: hovered
-            ? "linear-gradient(135deg, #7C5CFF, #00E5FF, #42FFC6, #7C5CFF)"
-            : "linear-gradient(135deg, #7C5CFF, #00E5FF)",
+            ? "linear-gradient(135deg, #CC3A63, #A2AB73, #A2AB73, #CC3A63)"
+            : "linear-gradient(135deg, #CC3A63, #A2AB73)",
         }}
         transition={{ duration: 0.4 }}
       />
@@ -96,8 +96,8 @@ export function PrimaryButton() {
         className="absolute inset-0 rounded-2xl"
         animate={{
           boxShadow: hovered
-            ? "0 0 40px rgba(124,92,255,0.3), 0 0 80px rgba(0,229,255,0.15), inset 0 0 20px rgba(255,255,255,0.05)"
-            : "0 4px 20px rgba(124,92,255,0.2)",
+            ? "0 0 40px rgba(204,58,99,0.3), 0 0 80px rgba(162,171,115,0.15), inset 0 0 20px rgba(255,255,255,0.05)"
+            : "0 4px 20px rgba(204,58,99,0.2)",
         }}
         transition={{ duration: 0.3 }}
       />
@@ -132,12 +132,12 @@ export function SecondaryButton() {
         style={{
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          background: "radial-gradient(circle at 50% 50%, rgba(124,92,255,0.08), transparent)",
+          background: "radial-gradient(circle at 50% 50%, rgba(204,58,99,0.08), transparent)",
         }}
       />
 
-      <Play className="relative z-10 h-4 w-4 text-[#CBD5E1] group-hover:text-white transition-colors" />
-      <span className="relative z-10 text-[#CBD5E1] group-hover:text-white font-medium text-sm tracking-wide transition-colors">
+      <Play className="relative z-10 h-4 w-4 text-[#D8D2C8] group-hover:text-white transition-colors" />
+      <span className="relative z-10 text-[#D8D2C8] group-hover:text-white font-medium text-sm tracking-wide transition-colors">
         Watch Demo
       </span>
 

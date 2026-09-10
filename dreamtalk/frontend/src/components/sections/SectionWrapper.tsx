@@ -59,34 +59,34 @@ function SectionInner({
     default: "bg-transparent",
     alt: "bg-white/[0.01] border-y border-white/[0.04]",
     dark: "bg-[#050816]",
-    aurora: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.02] to-transparent",
-    problem: "bg-gradient-to-b from-transparent via-[#FF5F73]/[0.015] to-transparent",
-    solution: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.025] via-[#00E5FF]/[0.01] to-transparent",
-    memory: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.02] to-transparent",
-    knowledge: "bg-gradient-to-b from-transparent via-[#22D3EE]/[0.015] to-transparent",
-    voice: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.02] via-[#22D3EE]/[0.01] to-transparent",
-    deploy: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.015] to-transparent",
-    cta: "bg-gradient-to-b from-transparent via-[#7C5CFF]/[0.03] via-[#00E5FF]/[0.015] to-transparent",
+    aurora: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] to-transparent",
+    problem: "bg-gradient-to-b from-transparent via-[#D84C63]/[0.015] to-transparent",
+    solution: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.025] via-[#A2AB73]/[0.01] to-transparent",
+    memory: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] to-transparent",
+    knowledge: "bg-gradient-to-b from-transparent via-[#A2AB73]/[0.015] to-transparent",
+    voice: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] via-[#A2AB73]/[0.01] to-transparent",
+    deploy: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.015] to-transparent",
+    cta: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.03] via-[#A2AB73]/[0.015] to-transparent",
   }
 
   // Per-section accent colors for the blurred radial blobs
   const accentColors: Record<string, { primary: string; secondary: string }> = {
-    default: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    alt: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    dark: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    aurora: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    problem: { primary: "#FF5F73", secondary: "#7C5CFF" },
-    solution: { primary: "#7C5CFF", secondary: "#42FFC6" },
-    memory: { primary: "#7C5CFF", secondary: "#8B5CF6" },
-    knowledge: { primary: "#22D3EE", secondary: "#7C5CFF" },
-    voice: { primary: "#7C5CFF", secondary: "#22D3EE" },
-    deploy: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    cta: { primary: "#7C5CFF", secondary: "#00E5FF" },
-    avatar: { primary: "#EC4899", secondary: "#7C5CFF" },
-    humanization: { primary: "#FF6B9D", secondary: "#7C5CFF" },
-    reasoning: { primary: "#FBBF24", secondary: "#7C5CFF" },
-    industry: { primary: "#10B981", secondary: "#7C5CFF" },
-    security: { primary: "#38BDF8", secondary: "#7C5CFF" },
+    default: { primary: "#CC3A63", secondary: "#A2AB73" },
+    alt: { primary: "#CC3A63", secondary: "#A2AB73" },
+    dark: { primary: "#CC3A63", secondary: "#A2AB73" },
+    aurora: { primary: "#CC3A63", secondary: "#A2AB73" },
+    problem: { primary: "#D84C63", secondary: "#CC3A63" },
+    solution: { primary: "#CC3A63", secondary: "#A2AB73" },
+    memory: { primary: "#CC3A63", secondary: "#B03A5E" },
+    knowledge: { primary: "#A2AB73", secondary: "#CC3A63" },
+    voice: { primary: "#CC3A63", secondary: "#A2AB73" },
+    deploy: { primary: "#CC3A63", secondary: "#A2AB73" },
+    cta: { primary: "#CC3A63", secondary: "#A2AB73" },
+    avatar: { primary: "#CC3A63", secondary: "#CC3A63" },
+    humanization: { primary: "#CC3A63", secondary: "#CC3A63" },
+    reasoning: { primary: "#D6A44C", secondary: "#CC3A63" },
+    industry: { primary: "#8F9A5E", secondary: "#CC3A63" },
+    security: { primary: "#A2AB73", secondary: "#CC3A63" },
   }
 
   const ac = accentColors[bg] || accentColors.default
@@ -166,7 +166,7 @@ function RenderTitle({ title }: { title: string }) {
           <span key={i}>
             {i > 0 && <>{' '}</>}
             {isGradientWord ? (
-              <span className="bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent">
                 {word}
               </span>
             ) : (
@@ -205,16 +205,16 @@ export function SectionHeading({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.35, delay: 0.08 }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#7C5CFF]/10 border border-[#7C5CFF]/20 text-xs font-medium text-[#7C5CFF] mb-4"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs font-medium text-[#CC3A63] mb-4"
         >
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7C5CFF] opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#7C5CFF]" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC3A63] opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC3A63]" />
           </span>
           {label}
         </motion.span>
       )}
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F8FAFC] mb-4 tracking-tight">
+      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F3F4F4] mb-4 tracking-tight">
         <RenderTitle title={title} />
       </h2>
       {description && (
@@ -223,7 +223,7 @@ export function SectionHeading({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="text-lg text-[#94A3B8] max-w-2xl mx-auto leading-relaxed"
+          className="text-lg text-[#B0A79C] max-w-2xl mx-auto leading-relaxed"
         >
           {description}
         </motion.p>
@@ -278,9 +278,9 @@ export function GlassCard({
   return (
     <motion.div
       variants={staggerItem}
-      className={`rounded-[20px] bg-[#0F172A]/80 backdrop-blur-2xl border border-white/[0.06] p-6 ${
+      className={`rounded-[20px] bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-6 ${
         hover
-          ? "hover:-translate-y-1 hover:bg-white/[0.04] hover:border-[#7C5CFF]/20 transition-all duration-300 ease-out group cursor-default"
+          ? "hover:-translate-y-1 hover:bg-white/[0.04] hover:border-[#CC3A63]/20 transition-all duration-300 ease-out group cursor-default"
           : ""
       } ${className}`}
     >

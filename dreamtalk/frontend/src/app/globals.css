@@ -4,61 +4,115 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ══════════════════════════════════════════════════════════════
+   DREAMTALK ASTRA — DESIGN TOKENS
+   Human identity + AI + digital presence.
+   Warm / organic (light) · deep / intelligent (dark).
+   Brand: pink #CC3A63 (identity) · green #A2AB73 (organic)
+          burgundy #853953 · plum #612D53 (dark atmosphere)
+   ══════════════════════════════════════════════════════════════ */
 :root {
-  --background: #F8FBFF;
-  --foreground: #101828;
-  --card: #FFFFFF;
-  --card-foreground: #101828;
-  --popover: #FFFFFF;
-  --popover-foreground: #101828;
-  --primary: #7057FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #00CFFF;
-  --secondary-foreground: #FFFFFF;
-  --accent: #39E6B3;
-  --accent-foreground: #101828;
-  --muted: #F5F8FF;
-  --muted-foreground: #667085;
-  --destructive: #FF5F73;
-  --destructive-foreground: #FFFFFF;
-  --border: #D7E3F5;
-  --input: #D7E3F5;
-  --ring: #7057FF;
+  /* Surfaces — warm cream, premium light theme */
+  --background: #FFF7EB;
+  --background-secondary: #F9F0E0;
+  --foreground: #2B2622;
+  --foreground-muted: #7A7167;
+  --card: #FFFDF8;
+  --card-foreground: #2B2622;
+  --popover: #FFFDF8;
+  --popover-foreground: #2B2622;
+  --surface: #F9F0E0;
+  --surface-elevated: #FFFDF8;
+  --surface-glass: rgba(255, 249, 238, 0.72);
+
+  /* Brand */
+  --primary: #CC3A63;          /* human identity / primary action */
+  --primary-hover: #B7305A;
+  --primary-foreground: #FFF7EB;
+  --secondary: #A2AB73;        /* organic green */
+  --secondary-hover: #8E9863;
+  --secondary-foreground: #2B2622;
+  --accent: #A2AB73;
+  --accent-foreground: #2B2622;
+  --burgundy: #853953;
+  --plum: #612D53;
+
+  /* Neutrals */
+  --muted: #F1E7D6;
+  --muted-foreground: #857B6E;
+
+  /* Semantic states */
+  --success: #7E8F52;
+  --success-foreground: #FFF7EB;
+  --warning: #C88A2E;
+  --warning-foreground: #2B2622;
+  --destructive: #C0364F;
+  --destructive-foreground: #FFF7EB;
+  --error: #C0364F;
+
+  /* Lines */
+  --border: #E6D9C4;
+  --border-subtle: rgba(43, 38, 34, 0.08);
+  --input: #E6D9C4;
+  --ring: #CC3A63;
   --radius: 1rem;
-  --surface-glass: rgba(255,255,255,0.72);
-  --surface-elevated: #FFFFFF;
-  --glow-primary: rgba(112,87,255,0.35);
-  --glow-secondary: rgba(0,207,255,0.35);
-  --glow-accent: rgba(57,230,179,0.35);
-  --font-sans: var(--font-geist-sans), "Inter Variable", system-ui, sans-serif;
+
+  /* Ambient glows (retuned to brand) */
+  --glow-primary: rgba(204, 58, 99, 0.28);
+  --glow-secondary: rgba(162, 171, 115, 0.28);
+  --glow-accent: rgba(162, 171, 115, 0.24);
+
+  /* Type */
+  --font-sans: var(--font-manrope), var(--font-geist-sans), "Inter", system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-manrope), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), "JetBrains Mono", monospace;
 }
 
 .dark {
-  --background: #070B14;
-  --foreground: #F8FAFC;
-  --card: #0F172A;
-  --card-foreground: #F8FAFC;
-  --popover: #0F172A;
-  --popover-foreground: #F8FAFC;
-  --primary: #7C5CFF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #00E5FF;
-  --secondary-foreground: #FFFFFF;
-  --accent: #42FFC6;
-  --accent-foreground: #FFFFFF;
-  --muted: #182233;
-  --muted-foreground: #94A3B8;
-  --destructive: #FF5F73;
-  --destructive-foreground: #FFFFFF;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.08);
-  --ring: #7C5CFF;
-  --surface-glass: rgba(24,34,51,0.72);
-  --surface-elevated: #202C40;
-  --glow-primary: rgba(124,92,255,0.4);
-  --glow-secondary: rgba(0,229,255,0.3);
-  --glow-accent: rgba(66,255,198,0.3);
+  /* Surfaces — warm charcoal, deep & intelligent */
+  --background: #262322;
+  --background-secondary: #2E2A2A;
+  --foreground: #F3F4F4;
+  --foreground-muted: #B7ADA3;
+  --card: #322E2E;
+  --card-foreground: #F3F4F4;
+  --popover: #2C2929;
+  --popover-foreground: #F3F4F4;
+  --surface: #322E2E;
+  --surface-elevated: #3A3535;
+  --surface-glass: rgba(46, 42, 42, 0.72);
+
+  /* Brand — pink stays the identity accent; burgundy/plum give atmosphere */
+  --primary: #CC3A63;
+  --primary-hover: #DB4A72;
+  --primary-foreground: #FFF7EB;
+  --secondary: #A2AB73;
+  --secondary-hover: #B2BB83;
+  --secondary-foreground: #201D1D;
+  --accent: #A2AB73;
+  --accent-foreground: #201D1D;
+  --burgundy: #853953;
+  --plum: #612D53;
+
+  --muted: #3A3535;
+  --muted-foreground: #A69C92;
+
+  --success: #94A363;
+  --success-foreground: #201D1D;
+  --warning: #D6A44C;
+  --warning-foreground: #201D1D;
+  --destructive: #D84C63;
+  --destructive-foreground: #FFF7EB;
+  --error: #D84C63;
+
+  --border: rgba(243, 244, 244, 0.10);
+  --border-subtle: rgba(243, 244, 244, 0.06);
+  --input: rgba(243, 244, 244, 0.12);
+  --ring: #CC3A63;
+
+  --glow-primary: rgba(204, 58, 99, 0.38);
+  --glow-secondary: rgba(162, 171, 115, 0.26);
+  --glow-accent: rgba(133, 57, 83, 0.34);
 }
 
 @theme inline {
@@ -84,11 +138,21 @@
   --radius: var(--radius);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --color-surface: var(--surface);
   --color-surface-glass: var(--surface-glass);
   --color-surface-elevated: var(--surface-elevated);
+  --color-background-secondary: var(--background-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-burgundy: var(--burgundy);
+  --color-plum: var(--plum);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
   --color-glow-primary: var(--glow-primary);
   --color-glow-secondary: var(--glow-secondary);
   --color-glow-accent: var(--glow-accent);
+  --font-display: var(--font-display);
 }
 
 * {
@@ -102,6 +166,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Small uppercase technical labels (§7) */
+.label-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.68rem;
+  color: var(--foreground-muted);
 }
 
 html {
@@ -267,8 +345,8 @@ main {
 }
 
 @keyframes chamber-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(124,92,255,0); }
-  50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(124,92,255,0.3); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(204,58,99,0); }
+  50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(204,58,99,0.3); }
 }
 
 @keyframes chamber-glow {
@@ -322,8 +400,8 @@ main {
 }
 
 @keyframes security-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(56,189,248,0); }
-  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(56,189,248,0.2); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(162,171,115,0); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(162,171,115,0.2); }
 }
 
 @keyframes graph-grow {
@@ -407,14 +485,14 @@ main {
 }
 
 @utility glass-strong {
-  background: rgba(24, 34, 51, 0.85);
+  background: var(--surface-glass);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
 }
 
 @utility aurora-card {
-  background: linear-gradient(135deg, rgba(124,92,255,0.05), rgba(0,229,255,0.03), rgba(66,255,198,0.03));
+  background: linear-gradient(135deg, rgba(204,58,99,0.06), rgba(133,57,83,0.04), rgba(162,171,115,0.04));
   background-size: 200% 200%;
   animation: aurora-shift 15s ease-in-out infinite;
 }
@@ -495,7 +573,7 @@ main {
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,92,255,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(204,58,99,0.14) 0%, transparent 70%);
   animation: pulse-glow 6s ease-in-out infinite;
   top: -200px;
   right: -200px;
@@ -507,8 +585,24 @@ main {
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,229,255,0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(162,171,115,0.12) 0%, transparent 70%);
   animation: pulse-glow 8s ease-in-out infinite 2s;
   bottom: -150px;
   left: -150px;
+}
+
+/* ── Global theme transition (§9) — animate palette, not layout ── */
+:root, .dark {
+  --theme-ease: 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+body, header, nav, main, section, aside, footer,
+.glass, .glass-strong, [class*="bg-"], [class*="border-"] {
+  transition: background-color var(--theme-ease), border-color var(--theme-ease),
+    color var(--theme-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  body, header, nav, main, section, aside, footer,
+  .glass, .glass-strong, [class*="bg-"], [class*="border-"] {
+    transition: none;
+  }
 }

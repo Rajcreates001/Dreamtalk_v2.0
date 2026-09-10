@@ -63,7 +63,7 @@ export function AudioPlayer({ audioUrl, isLoading = false, className }: AudioPla
       const gradient = ctx.createLinearGradient(x, y, x, y + barH)
       if (isActive) {
         gradient.addColorStop(0, "rgba(16, 185, 129, 0.9)")
-        gradient.addColorStop(1, "rgba(59, 130, 246, 0.7)")
+        gradient.addColorStop(1, "rgba(133,57,83, 0.7)")
       } else {
         gradient.addColorStop(0, "rgba(156, 163, 175, 0.4)")
         gradient.addColorStop(1, "rgba(156, 163, 175, 0.2)")

@@ -10,7 +10,7 @@ interface VoiceVisualizerProps {
   bars?: number
 }
 
-export function VoiceVisualizer({ active = false, color = "#00E5FF", bars = 12 }: VoiceVisualizerProps) {
+export function VoiceVisualizer({ active = false, color = "#A2AB73", bars = 12 }: VoiceVisualizerProps) {
   const groupRef = useRef<THREE.Group>(null)
   const barRefs = useRef<(THREE.Mesh | null)[]>([])
   const outerRingRef = useRef<THREE.Mesh>(null)

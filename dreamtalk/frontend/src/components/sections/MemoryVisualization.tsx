@@ -9,25 +9,25 @@ const memoryTypes = [
     icon: Zap,
     title: "Working Memory",
     desc: "Short-term context during active conversations with 7-item capacity. Retains what matters right now.",
-    color: "#7C5CFF",
+    color: "#CC3A63",
   },
   {
     icon: Brain,
     title: "Episodic Memory",
     desc: "Past conversations, user preferences, and interaction history. Every session becomes lasting knowledge.",
-    color: "#22D3EE",
+    color: "#A2AB73",
   },
   {
     icon: Layers,
     title: "Semantic Memory",
     desc: "Knowledge graphs built from uploaded documents, websites, and content. Structured intelligence.",
-    color: "#42FFC6",
+    color: "#A2AB73",
   },
   {
     icon: GitBranch,
     title: "Procedural Memory",
     desc: "Learned patterns, skills, and response strategies refined through thousands of interactions.",
-    color: "#FBBF24",
+    color: "#D6A44C",
   },
 ]
 
@@ -69,7 +69,7 @@ export function MemoryVisualization() {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(124,92,255,0.15)"
+                stroke="rgba(204,58,99,0.15)"
                 strokeWidth="1"
                 initial={{ pathLength: 0 }}
                 whileInView={{ pathLength: 1 }}
@@ -81,13 +81,13 @@ export function MemoryVisualization() {
 
           {/* Neural nodes */}
           {[
-            { x: 50, y: 100, color: "#7C5CFF", label: "Input", size: 28 },
-            { x: 120, y: 60, color: "#22D3EE", label: "Process", size: 22 },
-            { x: 120, y: 140, color: "#22D3EE", label: "Analyze", size: 22 },
-            { x: 200, y: 100, color: "#42FFC6", label: "Memory", size: 32 },
-            { x: 280, y: 60, color: "#FBBF24", label: "Store", size: 22 },
-            { x: 280, y: 140, color: "#FBBF24", label: "Recall", size: 22 },
-            { x: 350, y: 100, color: "#FF5F73", label: "Output", size: 28 },
+            { x: 50, y: 100, color: "#CC3A63", label: "Input", size: 28 },
+            { x: 120, y: 60, color: "#A2AB73", label: "Process", size: 22 },
+            { x: 120, y: 140, color: "#A2AB73", label: "Analyze", size: 22 },
+            { x: 200, y: 100, color: "#A2AB73", label: "Memory", size: 32 },
+            { x: 280, y: 60, color: "#D6A44C", label: "Store", size: 22 },
+            { x: 280, y: 140, color: "#D6A44C", label: "Recall", size: 22 },
+            { x: 350, y: 100, color: "#D84C63", label: "Output", size: 28 },
           ].map((node, i) => (
             <motion.div
               key={node.label}
@@ -116,7 +116,7 @@ export function MemoryVisualization() {
                   style={{ background: node.color }}
                 />
               </motion.div>
-              <span className="text-[9px] text-[#64748B] mt-1 font-mono">{node.label}</span>
+              <span className="text-[9px] text-[#8A8178] mt-1 font-mono">{node.label}</span>
             </motion.div>
           ))}
 
@@ -124,7 +124,7 @@ export function MemoryVisualization() {
           {[0, 1, 2].map((particle) => (
             <motion.div
               key={particle}
-              className="absolute w-1.5 h-1.5 rounded-full bg-[#7C5CFF]"
+              className="absolute w-1.5 h-1.5 rounded-full bg-[#CC3A63]"
               initial={{ left: "10%", top: "50%", opacity: 0 }}
               animate={{
                 left: ["10%", "90%"],
@@ -152,8 +152,8 @@ export function MemoryVisualization() {
             >
               <mem.icon className="h-5 w-5" style={{ color: mem.color }} />
             </div>
-            <h3 className="text-base font-semibold text-[#F8FAFC] mb-2">{mem.title}</h3>
-            <p className="text-sm text-[#94A3B8] leading-relaxed">{mem.desc}</p>
+            <h3 className="text-base font-semibold text-[#F3F4F4] mb-2">{mem.title}</h3>
+            <p className="text-sm text-[#B0A79C] leading-relaxed">{mem.desc}</p>
             <div className="mt-4 flex items-center gap-2">
               <div className="flex-1 h-1 rounded-full bg-white/[0.06]">
                 <motion.div
@@ -164,7 +164,7 @@ export function MemoryVisualization() {
                   transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
                 />
               </div>
-              <span className="text-[10px] text-[#64748B] font-mono">Active</span>
+              <span className="text-[10px] text-[#8A8178] font-mono">Active</span>
             </div>
           </GlassCard>
         ))}

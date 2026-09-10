@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils"
 import { Bot, Mic, BookOpen, Globe, Download, Star, Store } from "lucide-react"
 
 const ITEMS = [
-  { name: "Customer Support Agent", type: "Template", downloads: "2.4K", rating: 4.8, color: "#7C5CFF", desc: "Full-featured customer support AI avatar" },
-  { name: "Premium Voice Pack", type: "Voice", downloads: "1.8K", rating: 4.9, color: "#00E5FF", desc: "12 high-quality natural voices" },
-  { name: "Medical Knowledge Base", type: "Knowledge", downloads: "3.2K", rating: 4.7, color: "#42FFC6", desc: "HIPAA-compliant medical training data" },
-  { name: "Japanese Language Pack", type: "Language", downloads: "892", rating: 4.6, color: "#FF6B9D", desc: "Fluency pack for Japanese" },
-  { name: "Enterprise Analytics", type: "Integration", downloads: "1.1K", rating: 4.5, color: "#FBBF24", desc: "Connect with your BI tools" },
-  { name: "Emotion Engine Pro", type: "Module", downloads: "567", rating: 4.9, color: "#8B5CF6", desc: "Advanced emotional intelligence module" },
+  { name: "Customer Support Agent", type: "Template", downloads: "2.4K", rating: 4.8, color: "#CC3A63", desc: "Full-featured customer support AI avatar" },
+  { name: "Premium Voice Pack", type: "Voice", downloads: "1.8K", rating: 4.9, color: "#A2AB73", desc: "12 high-quality natural voices" },
+  { name: "Medical Knowledge Base", type: "Knowledge", downloads: "3.2K", rating: 4.7, color: "#A2AB73", desc: "HIPAA-compliant medical training data" },
+  { name: "Japanese Language Pack", type: "Language", downloads: "892", rating: 4.6, color: "#CC3A63", desc: "Fluency pack for Japanese" },
+  { name: "Enterprise Analytics", type: "Integration", downloads: "1.1K", rating: 4.5, color: "#D6A44C", desc: "Connect with your BI tools" },
+  { name: "Emotion Engine Pro", type: "Module", downloads: "567", rating: 4.9, color: "#B03A5E", desc: "Advanced emotional intelligence module" },
 ]
 
 const CATEGORIES = ["All", "Templates", "Voices", "Knowledge", "Languages", "Integrations", "Modules"]
@@ -31,8 +31,8 @@ export default function MarketplacePage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#F8FAFC]">Marketplace</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Discover templates, voices, and integrations</p>
+        <h1 className="text-xl font-bold text-[#F3F4F4]">Marketplace</h1>
+        <p className="text-sm text-[#B0A79C] mt-1">Discover templates, voices, and integrations</p>
       </div>
 
       {/* Categories */}
@@ -44,8 +44,8 @@ export default function MarketplacePage() {
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               activeCat === cat
-                ? "bg-[#7C5CFF]/20 text-[#7C5CFF] border border-[#7C5CFF]/30"
-                : "bg-white/[0.04] text-[#94A3B8] hover:text-[#CBD5E1] border border-transparent"
+                ? "bg-[#CC3A63]/20 text-[#CC3A63] border border-[#CC3A63]/30"
+                : "bg-white/[0.04] text-[#B0A79C] hover:text-[#D8D2C8] border border-transparent"
             )}
           >
             {cat}
@@ -63,24 +63,24 @@ export default function MarketplacePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="p-4 rounded-xl bg-[#0F172A]/80 border border-white/[0.06] hover:bg-[#0F172A] hover:border-white/[0.12] transition-all group"
+              className="p-4 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] hover:bg-[#2C2929] hover:border-white/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15`, color: item.color }}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-[#FBBF24]" />
-                  <span className="text-xs text-[#CBD5E1]">{item.rating}</span>
+                  <Star className="h-3 w-3 text-[#D6A44C]" />
+                  <span className="text-xs text-[#D8D2C8]">{item.rating}</span>
                 </div>
               </div>
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">{item.name}</h3>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">{item.name}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-[#64748B] px-2 py-0.5 rounded-md bg-white/[0.04]">{item.type}</span>
-                <span className="text-[10px] text-[#64748B]">{item.downloads} downloads</span>
+                <span className="text-[10px] text-[#8A8178] px-2 py-0.5 rounded-md bg-white/[0.04]">{item.type}</span>
+                <span className="text-[10px] text-[#8A8178]">{item.downloads} downloads</span>
               </div>
-              <p className="text-xs text-[#64748B] mt-2">{item.desc}</p>
-              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.08] transition-all group">
+              <p className="text-xs text-[#8A8178] mt-2">{item.desc}</p>
+              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all group">
                 <Download className="h-3 w-3" />
                 Install
               </button>

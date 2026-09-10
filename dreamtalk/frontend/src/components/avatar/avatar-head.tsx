@@ -65,12 +65,12 @@ const EMOTION_EXPRESSIONS: Record<string, DerivedExpression> = {
 }
 
 const EMOTION_COLORS: Record<string, string> = {
-  happy: "#FFD700",
+  happy: "#D6A44C",
   sad: "#4169E1",
   angry: "#FF4444",
   fear: "#9932CC",
   surprise: "#FF8C00",
-  neutral: "#88CC88",
+  neutral: "#A2AB73",
   disgust: "#556B2F",
   contempt: "#8B4513",
 }
@@ -270,17 +270,17 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
         {/* White */}
         <mesh ref={leftEyeWhiteRef}>
           <sphereGeometry args={[0.075, 24, 24]} />
-          <meshStandardMaterial color="#F8F8FF" roughness={0.3} />
+          <meshStandardMaterial color="#F3F4F4" roughness={0.3} />
         </mesh>
         {/* Iris + Pupil group (moves with gaze) */}
         <group ref={leftPupilRef} position={[0, 0, 0.04]}>
           <mesh>
             <sphereGeometry args={[0.038, 16, 16]} />
-            <meshStandardMaterial color="#5C3A1E" roughness={0.5} />
+            <meshStandardMaterial color="#5A4A3A" roughness={0.5} />
           </mesh>
           <mesh position={[0, 0, 0.015]}>
             <sphereGeometry args={[0.02, 12, 12]} />
-            <meshStandardMaterial color="#1A0F05" roughness={0.2} />
+            <meshStandardMaterial color="#201D1D" roughness={0.2} />
           </mesh>
           {/* Eye highlight */}
           <mesh position={[0.01, 0.01, 0.025]}>
@@ -294,16 +294,16 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
       <group position={[0.18, 0.12, 0.48]}>
         <mesh ref={rightEyeWhiteRef}>
           <sphereGeometry args={[0.075, 24, 24]} />
-          <meshStandardMaterial color="#F8F8FF" roughness={0.3} />
+          <meshStandardMaterial color="#F3F4F4" roughness={0.3} />
         </mesh>
         <group ref={rightPupilRef} position={[0, 0, 0.04]}>
           <mesh>
             <sphereGeometry args={[0.038, 16, 16]} />
-            <meshStandardMaterial color="#5C3A1E" roughness={0.5} />
+            <meshStandardMaterial color="#5A4A3A" roughness={0.5} />
           </mesh>
           <mesh position={[0, 0, 0.015]}>
             <sphereGeometry args={[0.02, 12, 12]} />
-            <meshStandardMaterial color="#1A0F05" roughness={0.2} />
+            <meshStandardMaterial color="#201D1D" roughness={0.2} />
           </mesh>
           <mesh position={[0.01, 0.01, 0.025]}>
             <sphereGeometry args={[0.006, 8, 8]} />
@@ -315,19 +315,19 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
       {/* ── Left Eyebrow ─────────────────────────────────────────────── */}
       <mesh ref={leftBrowRef} position={[-0.18, 0.52, 0.44]} rotation={[0, 0, 0.15]}>
         <boxGeometry args={[0.14, 0.025, 0.02]} />
-        <meshStandardMaterial color="#3D2B1F" roughness={0.8} />
+        <meshStandardMaterial color="#3A3535" roughness={0.8} />
       </mesh>
 
       {/* ── Right Eyebrow ────────────────────────────────────────────── */}
       <mesh ref={rightBrowRef} position={[0.18, 0.52, 0.44]} rotation={[0, 0, -0.15]}>
         <boxGeometry args={[0.14, 0.025, 0.02]} />
-        <meshStandardMaterial color="#3D2B1F" roughness={0.8} />
+        <meshStandardMaterial color="#3A3535" roughness={0.8} />
       </mesh>
 
       {/* ── Nose ─────────────────────────────────────────────────────── */}
       <mesh position={[0, 0.02, 0.55]}>
         <sphereGeometry args={[0.035, 12, 12]} />
-        <meshStandardMaterial color="#E8C4A0" roughness={0.6} />
+        <meshStandardMaterial color="#E6D9C4" roughness={0.6} />
       </mesh>
 
       {/* ── Mouth ────────────────────────────────────────────────────── */}
@@ -347,11 +347,11 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
       {/* ── Ears ─────────────────────────────────────────────────────── */}
       <mesh position={[-0.53, 0.05, 0.05]}>
         <sphereGeometry args={[0.06, 12, 12]} />
-        <meshStandardMaterial color="#E8C4A0" roughness={0.7} />
+        <meshStandardMaterial color="#E6D9C4" roughness={0.7} />
       </mesh>
       <mesh position={[0.53, 0.05, 0.05]}>
         <sphereGeometry args={[0.06, 12, 12]} />
-        <meshStandardMaterial color="#E8C4A0" roughness={0.7} />
+        <meshStandardMaterial color="#E6D9C4" roughness={0.7} />
       </mesh>
 
       {/* ── Neck ─────────────────────────────────────────────────────── */}

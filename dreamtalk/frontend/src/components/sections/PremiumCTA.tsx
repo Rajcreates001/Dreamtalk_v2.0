@@ -11,7 +11,7 @@ export function PremiumCTA() {
       <div className="max-w-4xl mx-auto text-center relative">
         {/* Background glow */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-b from-[#7C5CFF]/10 via-[#00E5FF]/5 to-transparent rounded-3xl blur-3xl"
+          className="absolute inset-0 bg-gradient-to-b from-[#CC3A63]/10 via-[#A2AB73]/5 to-transparent rounded-3xl blur-3xl"
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
         />
@@ -22,7 +22,7 @@ export function PremiumCTA() {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#7C5CFF]/10 border border-[#7C5CFF]/20 text-xs font-medium text-[#7C5CFF] mb-6"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs font-medium text-[#CC3A63] mb-6"
           >
             <Sparkles className="h-3 w-3" />
             Your Digital Human is waiting
@@ -34,12 +34,12 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#F8FAFC] mb-6 tracking-tight"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#F3F4F4] mb-6 tracking-tight"
           >
             Create your
             <br />
             <motion.span
-              className="bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent inline-block"
+              className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent inline-block"
               animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
               transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
               style={{ backgroundSize: "200% 200%" }}
@@ -54,7 +54,7 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-lg text-[#B0A79C] max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Join thousands of creators, healthcare providers, and enterprises building the future of AI interaction.
           </motion.p>
@@ -69,7 +69,7 @@ export function PremiumCTA() {
           >
             <Link
               href="/signup"
-              className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white font-semibold text-sm overflow-hidden transition-all hover:scale-[1.02]"
+              className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white font-semibold text-sm overflow-hidden transition-all hover:scale-[1.02]"
             >
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
@@ -82,7 +82,7 @@ export function PremiumCTA() {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/[0.08] text-[#CBD5E1] text-sm font-medium hover:bg-white/[0.04] hover:text-[#F8FAFC] transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/[0.08] text-[#D8D2C8] text-sm font-medium hover:bg-white/[0.04] hover:text-[#F3F4F4] transition-all"
             >
               <Play className="h-4 w-4" />
               Watch Demo
@@ -95,7 +95,7 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
-            className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-[#64748B]"
+            className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-[#8A8178]"
           >
             <span>No credit card required</span>
             <span className="w-px h-4 bg-white/[0.06]" />

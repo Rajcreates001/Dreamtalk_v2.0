@@ -15,7 +15,7 @@ interface ParticleFieldProps {
 
 export function ParticleField({
   count = 2000,
-  color = "#10b981",
+  color = "#8F9A5E",
   speed = 0.3,
   size = 0.02,
   spread = 15,

@@ -10,14 +10,14 @@ const PLANS = [
     price: "$0",
     desc: "For personal exploration",
     features: ["1 Digital Human", "100 conversations/month", "Basic knowledge", "Community support"],
-    color: "#64748B",
+    color: "#8A8178",
   },
   {
     name: "Pro",
     price: "$29",
     desc: "For professionals",
     features: ["5 Digital Humans", "10,000 conversations/month", "Full knowledge access", "Priority support", "Custom voice"],
-    color: "#7C5CFF",
+    color: "#CC3A63",
     popular: true,
   },
   {
@@ -25,7 +25,7 @@ const PLANS = [
     price: "$99",
     desc: "For teams and enterprises",
     features: ["Unlimited Digital Humans", "Unlimited conversations", "Advanced analytics", "Dedicated support", "Custom models", "API access"],
-    color: "#00E5FF",
+    color: "#A2AB73",
   },
 ]
 
@@ -33,35 +33,35 @@ export default function BillingPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#F8FAFC]">Billing</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Manage your subscription and usage</p>
+        <h1 className="text-xl font-bold text-[#F3F4F4]">Billing</h1>
+        <p className="text-sm text-[#B0A79C] mt-1">Manage your subscription and usage</p>
       </div>
 
       {/* Current plan */}
-      <div className="p-5 rounded-xl bg-gradient-to-br from-[#7C5CFF]/8 to-[#00E5FF]/5 border border-[#7C5CFF]/15">
+      <div className="p-5 rounded-xl bg-gradient-to-br from-[#CC3A63]/8 to-[#A2AB73]/5 border border-[#CC3A63]/15">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C5CFF] to-[#00E5FF] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[#F8FAFC]">Pro Plan</h3>
-              <p className="text-xs text-[#94A3B8]">Next billing: April 15, 2026</p>
+              <h3 className="text-sm font-semibold text-[#F3F4F4]">Pro Plan</h3>
+              <p className="text-xs text-[#B0A79C]">Next billing: April 15, 2026</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-[#64748B]">
-              <span className="text-lg font-bold text-[#F8FAFC]">$29</span>/month
+            <p className="text-sm text-[#8A8178]">
+              <span className="text-lg font-bold text-[#F3F4F4]">$29</span>/month
             </p>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-4 text-xs text-[#94A3B8]">
+        <div className="mt-4 flex items-center gap-4 text-xs text-[#B0A79C]">
           <div className="flex items-center gap-1.5">
-            <CheckCircle className="h-3 w-3 text-[#42FFC6]" />
+            <CheckCircle className="h-3 w-3 text-[#A2AB73]" />
             <span>2,450 / 10,000 conversations</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <CheckCircle className="h-3 w-3 text-[#42FFC6]" />
+            <CheckCircle className="h-3 w-3 text-[#A2AB73]" />
             <span>3 / 5 avatars</span>
           </div>
         </div>
@@ -77,27 +77,27 @@ export default function BillingPage() {
             transition={{ delay: i * 0.06 }}
             className={`relative p-5 rounded-xl border transition-all ${
               plan.popular
-                ? "bg-gradient-to-br from-[#7C5CFF]/10 to-[#00E5FF]/8 border-[#7C5CFF]/30 shadow-lg shadow-[#7C5CFF]/10"
-                : "bg-[#0F172A]/80 border-white/[0.06] hover:border-white/[0.12]"
+                ? "bg-gradient-to-br from-[#CC3A63]/10 to-[#A2AB73]/8 border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/10"
+                : "bg-[#2C2929]/80 border-white/[0.06] hover:border-white/[0.12]"
             }`}
           >
             {plan.popular && (
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-[10px] text-white font-medium">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-[10px] text-white font-medium">
                 Popular
               </div>
             )}
-            <h3 className="text-lg font-bold text-[#F8FAFC]">{plan.name}</h3>
+            <h3 className="text-lg font-bold text-[#F3F4F4]">{plan.name}</h3>
             <div className="mt-2 mb-4">
-              <span className="text-3xl font-bold text-[#F8FAFC]">{plan.price}</span>
-              {plan.price !== "$0" && <span className="text-sm text-[#64748B]">/month</span>}
+              <span className="text-3xl font-bold text-[#F3F4F4]">{plan.price}</span>
+              {plan.price !== "$0" && <span className="text-sm text-[#8A8178]">/month</span>}
             </div>
-            <p className="text-xs text-[#94A3B8] mb-4">{plan.desc}</p>
+            <p className="text-xs text-[#B0A79C] mb-4">{plan.desc}</p>
 
             <ul className="space-y-2 mb-5">
               {plan.features.map((f) => (
                 <li key={f} className="flex items-start gap-2">
-                  <CheckCircle className="h-3.5 w-3.5 text-[#42FFC6] mt-0.5 shrink-0" />
-                  <span className="text-xs text-[#CBD5E1]">{f}</span>
+                  <CheckCircle className="h-3.5 w-3.5 text-[#A2AB73] mt-0.5 shrink-0" />
+                  <span className="text-xs text-[#D8D2C8]">{f}</span>
                 </li>
               ))}
             </ul>
@@ -106,8 +106,8 @@ export default function BillingPage() {
               href="#"
               className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
                 plan.popular
-                  ? "bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white shadow-lg shadow-[#7C5CFF]/20"
-                  : "bg-white/[0.04] border border-white/[0.06] text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.08]"
+                  ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20"
+                  : "bg-white/[0.04] border border-white/[0.06] text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08]"
               }`}
             >
               {plan.name === "Free" ? "Current Plan" : "Upgrade"} <ArrowRight className="h-3.5 w-3.5" />

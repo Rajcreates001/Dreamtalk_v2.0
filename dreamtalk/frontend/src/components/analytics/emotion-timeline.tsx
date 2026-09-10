@@ -16,14 +16,14 @@ interface EmotionTimelineProps {
 }
 
 const EMOTION_COLORS: Record<string, string> = {
-  happy: "#22c55e",
-  sad: "#3b82f6",
-  angry: "#ef4444",
-  fear: "#a855f7",
-  surprise: "#f59e0b",
+  happy: "#8F9A5E",
+  sad: "#853953",
+  angry: "#D84C63",
+  fear: "#9E3B6B",
+  surprise: "#D6A44C",
   disgust: "#84cc16",
-  neutral: "#6b7280",
-  contempt: "#f97316",
+  neutral: "#8A8178",
+  contempt: "#C77B54",
 };
 
 export function EmotionTimeline({ refreshInterval = 5000 }: EmotionTimelineProps) {
@@ -103,7 +103,7 @@ export function EmotionTimeline({ refreshInterval = 5000 }: EmotionTimelineProps
                       style={{
                         width: `${pct}%`,
                         backgroundColor:
-                          EMOTION_COLORS[emotion] || "#6b7280",
+                          EMOTION_COLORS[emotion] || "#8A8178",
                       }}
                       title={`${emotion}: ${count} (${pct.toFixed(1)}%)`}
                     />
@@ -119,7 +119,7 @@ export function EmotionTimeline({ refreshInterval = 5000 }: EmotionTimelineProps
                       className="inline-block h-2 w-2 rounded-full"
                       style={{
                         backgroundColor:
-                          EMOTION_COLORS[emotion] || "#6b7280",
+                          EMOTION_COLORS[emotion] || "#8A8178",
                       }}
                     />
                     {emotion} ({count})
@@ -145,7 +145,7 @@ export function EmotionTimeline({ refreshInterval = 5000 }: EmotionTimelineProps
                       className="inline-block h-2 w-2 rounded-full"
                       style={{
                         backgroundColor:
-                          EMOTION_COLORS[e.emotion] || "#6b7280",
+                          EMOTION_COLORS[e.emotion] || "#8A8178",
                       }}
                     />
                     {e.emotion}

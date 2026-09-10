@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Script from "next/script"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Manrope, Plus_Jakarta_Sans } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/layout/theme-provider"
 import "./globals.css"
@@ -15,9 +15,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+// Manrope — body / UI. Plus Jakarta Sans — display / headings.
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  display: "swap",
+})
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  display: "swap",
+})
+
 export const metadata: Metadata = {
-  title: "Dreamtalk - Digital Humans",
-  description: "Create digital humans with real AI personalities. For healthcare, business, and personal connection — the future of digital humanity.",
+  title: "DreamTalk Astra — Create your digital twin",
+  description:
+    "DreamTalk Astra transforms your voice and appearance into an interactive digital human — multilingual, expressive, and local-first.",
 }
 
 export default function RootLayout({
@@ -26,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`} suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${jakarta.variable} h-full antialiased dark`} suppressHydrationWarning>
       <head>
         {/* ── Hydration & Console Defense ──────────────────────────────── */}
         {/* This inline script runs synchronously during HTML parsing before */}

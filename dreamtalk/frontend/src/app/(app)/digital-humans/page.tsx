@@ -39,18 +39,18 @@ type AvatarData = {
   description?: string | null
 }
 
-const DEFAULT_COLORS = ["#7C5CFF", "#00E5FF", "#42FFC6", "#FF6B9D", "#FBBF24", "#FF5F73"]
+const DEFAULT_COLORS = ["#CC3A63", "#A2AB73", "#A2AB73", "#CC3A63", "#D6A44C", "#D84C63"]
 const FALLBACK_AVATARS: AvatarData[] = [
-  { id: "demo-1", name: "Dr. Aria", role: "AI Companion", status: "active", emotion: "Calm", memory: 92, relationship: 87, languages: 4, voice: "Natural", model: "GPT-4o", knowledgeSize: "1.2 GB", conversations: 1247, color: "#7C5CFF" },
-  { id: "demo-2", name: "Prof. Orion", role: "Knowledge Expert", status: "active", emotion: "Focused", memory: 78, relationship: 62, languages: 3, voice: "Professional", model: "Claude 3.5", knowledgeSize: "4.8 GB", conversations: 892, color: "#00E5FF" },
-  { id: "demo-3", name: "Luna", role: "Creative Assistant", status: "idle", emotion: "Creative", memory: 65, relationship: 71, languages: 2, voice: "Expressive", model: "GPT-4o", knowledgeSize: "0.8 GB", conversations: 456, color: "#42FFC6" },
-  { id: "demo-4", name: "Sage", role: "Business Analyst", status: "active", emotion: "Analytical", memory: 84, relationship: 55, languages: 5, voice: "Professional", model: "Claude 3.5", knowledgeSize: "3.2 GB", conversations: 2103, color: "#FF6B9D" },
+  { id: "demo-1", name: "Dr. Aria", role: "AI Companion", status: "active", emotion: "Calm", memory: 92, relationship: 87, languages: 4, voice: "Natural", model: "GPT-4o", knowledgeSize: "1.2 GB", conversations: 1247, color: "#CC3A63" },
+  { id: "demo-2", name: "Prof. Orion", role: "Knowledge Expert", status: "active", emotion: "Focused", memory: 78, relationship: 62, languages: 3, voice: "Professional", model: "Claude 3.5", knowledgeSize: "4.8 GB", conversations: 892, color: "#A2AB73" },
+  { id: "demo-3", name: "Luna", role: "Creative Assistant", status: "idle", emotion: "Creative", memory: 65, relationship: 71, languages: 2, voice: "Expressive", model: "GPT-4o", knowledgeSize: "0.8 GB", conversations: 456, color: "#A2AB73" },
+  { id: "demo-4", name: "Sage", role: "Business Analyst", status: "active", emotion: "Analytical", memory: 84, relationship: 55, languages: 5, voice: "Professional", model: "Claude 3.5", knowledgeSize: "3.2 GB", conversations: 2103, color: "#CC3A63" },
 ]
 
 const STATUS_CONFIG = {
-  active: { label: "Active", color: "#42FFC6" },
-  idle: { label: "Idle", color: "#FBBF24" },
-  offline: { label: "Offline", color: "#64748B" },
+  active: { label: "Active", color: "#A2AB73" },
+  idle: { label: "Idle", color: "#D6A44C" },
+  offline: { label: "Offline", color: "#8A8178" },
 }
 
 function mapToAvatarData(item: any, index: number): AvatarData {
@@ -132,15 +132,15 @@ export default function DigitalHumansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#F8FAFC]">Digital Humans</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">
+          <h1 className="text-xl font-bold text-[#F3F4F4]">Digital Humans</h1>
+          <p className="text-sm text-[#B0A79C] mt-1">
             Manage your AI workforce
             {!loading && <span className="ml-1.5">· {avatars.length} total</span>}
           </p>
         </div>
         <Link
           href="/studio"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium shadow-lg shadow-[#7C5CFF]/20 hover:shadow-[#7C5CFF]/30 transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all"
         >
           <Plus className="h-4 w-4" />
           Create New
@@ -151,17 +151,17 @@ export default function DigitalHumansPage() {
       {loading && (
         <div className="flex items-center justify-center py-24">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-[#7C5CFF]" />
-            <p className="text-sm text-[#64748B]">Loading your digital workforce...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-[#CC3A63]" />
+            <p className="text-sm text-[#8A8178]">Loading your digital workforce...</p>
           </div>
         </div>
       )}
 
       {/* Error banner */}
       {error && !loading && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#FF5F73]/10 border border-[#FF5F73]/20">
-          <AlertCircle className="h-4 w-4 text-[#FF5F73] shrink-0" />
-          <p className="text-xs text-[#FF5F73]">{error} — showing sample data</p>
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20">
+          <AlertCircle className="h-4 w-4 text-[#D84C63] shrink-0" />
+          <p className="text-xs text-[#D84C63]">{error} — showing sample data</p>
         </div>
       )}
 
@@ -179,8 +179,8 @@ export default function DigitalHumansPage() {
                 transition={{ delay: i * 0.06 }}
                 onClick={() => setSelectedId(isSelected ? null : avatar.id)}
                 className={cn(
-                  "rounded-xl bg-[#0F172A]/80 border transition-all duration-200 overflow-hidden cursor-pointer",
-                  isSelected ? "border-[#7C5CFF]/40 shadow-lg shadow-[#7C5CFF]/10" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-[#0F172A]"
+                  "rounded-xl bg-[#2C2929]/80 border transition-all duration-200 overflow-hidden cursor-pointer",
+                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-[#2C2929]"
                 )}
               >
                 {/* Card header */}
@@ -198,8 +198,8 @@ export default function DigitalHumansPage() {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-[#F8FAFC]">{avatar.name}</h3>
-                        <p className="text-[11px] text-[#94A3B8]">{avatar.role}</p>
+                        <h3 className="text-sm font-semibold text-[#F3F4F4]">{avatar.name}</h3>
+                        <p className="text-[11px] text-[#B0A79C]">{avatar.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ export default function DigitalHumansPage() {
                         </span>
                         <span className="text-[10px] font-medium" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
                       </div>
-                      <button className="p-1.5 rounded-lg hover:bg-white/[0.06] text-[#64748B] hover:text-[#94A3B8] transition-all">
+                      <button className="p-1.5 rounded-lg hover:bg-white/[0.06] text-[#8A8178] hover:text-[#B0A79C] transition-all">
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -220,38 +220,38 @@ export default function DigitalHumansPage() {
 
                   {/* Emotion */}
                   <div className="flex items-center gap-2 mt-3">
-                    <Heart className="h-3 w-3 text-[#FF6B9D]" />
-                    <span className="text-xs text-[#CBD5E1]">{avatar.emotion}</span>
+                    <Heart className="h-3 w-3 text-[#CC3A63]" />
+                    <span className="text-xs text-[#D8D2C8]">{avatar.emotion}</span>
                   </div>
                 </div>
 
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
                   {[
-                    { label: "Memory", value: `${avatar.memory}%`, icon: Brain, color: "#7C5CFF" },
-                    { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "#FF6B9D" },
-                    { label: "Languages", value: `${avatar.languages}`, icon: Globe, color: "#00E5FF" },
+                    { label: "Memory", value: `${avatar.memory}%`, icon: Brain, color: "#CC3A63" },
+                    { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "#CC3A63" },
+                    { label: "Languages", value: `${avatar.languages}`, icon: Globe, color: "#A2AB73" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-[#0F172A]/60 p-3 text-center">
+                    <div key={stat.label} className="bg-[#2C2929]/60 p-3 text-center">
                       <div className="flex items-center justify-center gap-1 mb-1">
                         <stat.icon className="h-3 w-3" style={{ color: stat.color }} />
                       </div>
                       <p className="text-xs font-bold" style={{ color: stat.color }}>{stat.value}</p>
-                      <p className="text-[9px] text-[#64748B] mt-0.5">{stat.label}</p>
+                      <p className="text-[9px] text-[#8A8178] mt-0.5">{stat.label}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Metadata */}
                 <div className="px-4 py-3 flex items-center justify-between border-t border-white/[0.06]">
-                  <div className="flex items-center gap-2 text-[10px] text-[#64748B]">
+                  <div className="flex items-center gap-2 text-[10px] text-[#8A8178]">
                     <Cpu className="h-3 w-3" />
                     <span>{avatar.model}</span>
                     <span className="text-white/[0.06]">·</span>
                     <BookOpen className="h-3 w-3" />
                     <span>{avatar.knowledgeSize}</span>
                   </div>
-                  <span className="text-[10px] text-[#64748B]">
+                  <span className="text-[10px] text-[#8A8178]">
                     {avatar.conversations.toLocaleString()} chats
                   </span>
                 </div>
@@ -260,19 +260,19 @@ export default function DigitalHumansPage() {
                 <div className="px-4 pb-4 flex gap-2">
                   <Link
                     href={`/conversations?twin=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
                   >
                     <MessageSquare className="h-3 w-3" />
                     Chat
                   </Link>
                   <Link
                     href={`/studio?id=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
                   >
                     <Settings className="h-3 w-3" />
                     Edit
                   </Link>
-                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.08] transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all">
                     <Sparkles className="h-3 w-3" />
                   </button>
                 </div>
@@ -288,13 +288,13 @@ export default function DigitalHumansPage() {
           >
             <Link
               href="/studio"
-              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-white/[0.08] p-8 hover:border-[#7C5CFF]/30 hover:bg-[#7C5CFF]/5 transition-all group"
+              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-white/[0.08] p-8 hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all group"
             >
-              <div className="w-14 h-14 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-[#7C5CFF]/10 transition-all mb-4">
-                <Plus className="h-6 w-6 text-[#64748B] group-hover:text-[#7C5CFF]" />
+              <div className="w-14 h-14 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-[#CC3A63]/10 transition-all mb-4">
+                <Plus className="h-6 w-6 text-[#8A8178] group-hover:text-[#CC3A63]" />
               </div>
-              <p className="text-sm font-semibold text-[#94A3B8] group-hover:text-[#F8FAFC] transition-colors">Create New Avatar</p>
-              <p className="text-xs text-[#64748B] mt-1">Design and train your next AI human</p>
+              <p className="text-sm font-semibold text-[#B0A79C] group-hover:text-[#F3F4F4] transition-colors">Create New Avatar</p>
+              <p className="text-xs text-[#8A8178] mt-1">Design and train your next AI human</p>
             </Link>
           </motion.div>
         </div>

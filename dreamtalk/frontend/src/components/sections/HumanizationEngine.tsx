@@ -12,37 +12,37 @@ const stages = [
     icon: MessageSquare,
     label: "Conversation",
     desc: "Every interaction begins",
-    color: "#7C5CFF",
+    color: "#CC3A63",
   },
   {
     icon: Heart,
     label: "Emotion",
     desc: "Feels the context",
-    color: "#FF5F73",
+    color: "#D84C63",
   },
   {
     icon: Brain,
     label: "Memory",
     desc: "Remembers everything",
-    color: "#42FFC6",
+    color: "#A2AB73",
   },
   {
     icon: BookOpen,
     label: "Knowledge",
     desc: "Learns continuously",
-    color: "#FBBF24",
+    color: "#D6A44C",
   },
   {
     icon: Zap,
     label: "Wisdom",
     desc: "Understands deeply",
-    color: "#22D3EE",
+    color: "#A2AB73",
   },
   {
     icon: User,
     label: "Humanized",
     desc: "A trusted Digital Twin",
-    color: "#7C5CFF",
+    color: "#CC3A63",
   },
 ]
 
@@ -77,7 +77,7 @@ export function HumanizationEngine() {
               {/* Stage icon */}
               <div className="relative mb-3">
                 <motion.div
-                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-white/[0.06] transition-all duration-500 group-hover:border-[#7C5CFF]/30"
+                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-white/[0.06] transition-all duration-500 group-hover:border-[#CC3A63]/30"
                   style={{ background: `${stage.color}10` }}
                   whileHover={{ scale: 1.1, y: -4 }}
                   transition={{ type: "spring", stiffness: 300 }}
@@ -98,13 +98,13 @@ export function HumanizationEngine() {
               </div>
 
               {/* Label */}
-              <h4 className="text-xs lg:text-sm font-semibold text-[#F8FAFC] mb-1">{stage.label}</h4>
-              <p className="text-[10px] lg:text-xs text-[#64748B] leading-tight">{stage.desc}</p>
+              <h4 className="text-xs lg:text-sm font-semibold text-[#F3F4F4] mb-1">{stage.label}</h4>
+              <p className="text-[10px] lg:text-xs text-[#8A8178] leading-tight">{stage.desc}</p>
 
               {/* Arrow (except last) */}
               {i < stages.length - 1 && (
                 <div className="hidden lg:block absolute -right-2.5 top-8">
-                  <ArrowRight className="h-4 w-4 text-[#7C5CFF]/30" />
+                  <ArrowRight className="h-4 w-4 text-[#CC3A63]/30" />
                 </div>
               )}
             </motion.div>
@@ -117,23 +117,23 @@ export function HumanizationEngine() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 1 }}
-          className="mt-16 rounded-2xl bg-[#0F172A]/60 border border-white/[0.06] p-8"
+          className="mt-16 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-lg font-semibold text-[#F8FAFC] mb-3">
+              <h3 className="text-lg font-semibold text-[#F3F4F4] mb-3">
                 Continuous evolution
               </h3>
-              <p className="text-sm text-[#94A3B8] leading-relaxed">
+              <p className="text-sm text-[#B0A79C] leading-relaxed">
                 DreamTalk Digital Humans don&apos;t stay static. Every conversation, every piece of knowledge,
                 every emotional interaction makes them more human. The Humanization Engine continuously
                 learns, adapts, and evolves — so your Digital Twin becomes more valuable over time.
               </p>
               <div className="flex flex-wrap gap-2 mt-4">
                 {[
-                  { label: "+127% Retention", color: "#42FFC6" },
-                  { label: "94% Satisfaction", color: "#7C5CFF" },
-                  { label: "6.2x Engagement", color: "#22D3EE" },
+                  { label: "+127% Retention", color: "#A2AB73" },
+                  { label: "94% Satisfaction", color: "#CC3A63" },
+                  { label: "6.2x Engagement", color: "#A2AB73" },
                 ].map((stat) => (
                   <span
                     key={stat.label}
@@ -161,16 +161,16 @@ export function HumanizationEngine() {
                 />
                 <defs>
                   <linearGradient id="evolutionGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#7C5CFF" />
-                    <stop offset="50%" stopColor="#22D3EE" />
-                    <stop offset="100%" stopColor="#42FFC6" />
+                    <stop offset="0%" stopColor="#CC3A63" />
+                    <stop offset="50%" stopColor="#A2AB73" />
+                    <stop offset="100%" stopColor="#A2AB73" />
                   </linearGradient>
                 </defs>
               </svg>
               <div className="flex justify-between mt-2">
-                <span className="text-[10px] text-[#64748B] font-mono">Day 1</span>
-                <span className="text-[10px] text-[#64748B] font-mono">Week 12</span>
-                <span className="text-[10px] text-[#64748B] font-mono">Month 6</span>
+                <span className="text-[10px] text-[#8A8178] font-mono">Day 1</span>
+                <span className="text-[10px] text-[#8A8178] font-mono">Week 12</span>
+                <span className="text-[10px] text-[#8A8178] font-mono">Month 6</span>
               </div>
             </div>
           </div>

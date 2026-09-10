@@ -8,10 +8,10 @@ import { PrimaryButton, SecondaryButton } from "./CTAButtons"
 
 /* ─── SIMPLIFIED RING CONFIGURATION (4 rings instead of 7) ─── */
 const CHAMBER_RINGS = [
-  { label: "Knowledge", color: "#7C5CFF", radius: 220, speed: 20, orbitDelay: 0 },
-  { label: "Memory", color: "#00E5FF", radius: 170, speed: 24, orbitDelay: 0.5 },
-  { label: "Voice", color: "#42FFC6", radius: 120, speed: 18, orbitDelay: 1.0 },
-  { label: "Reasoning", color: "#8B5CF6", radius: 70, speed: 22, orbitDelay: 1.5 },
+  { label: "Knowledge", color: "#CC3A63", radius: 220, speed: 20, orbitDelay: 0 },
+  { label: "Memory", color: "#A2AB73", radius: 170, speed: 24, orbitDelay: 0.5 },
+  { label: "Voice", color: "#A2AB73", radius: 120, speed: 18, orbitDelay: 1.0 },
+  { label: "Reasoning", color: "#B03A5E", radius: 70, speed: 22, orbitDelay: 1.5 },
 ]
 
 /* ─── DIGITAL CHAMBER — Simplified, CSS-only animated Digital Human environment ─── */
@@ -84,7 +84,7 @@ function DigitalChamber({ colors }: { colors: { primary: string; secondary: stri
                 animation: "breathe 4s ease-in-out infinite",
               }}
             >
-              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#070B14] flex items-center justify-center flex-col gap-1.5">
+              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1.5">
                 {/* Eyes */}
                 <div className="flex gap-4">
                   <div
@@ -186,9 +186,9 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
   }, [])
 
   const emotionColors = [
-    { primary: "#7C5CFF", secondary: "#00E5FF", accent: "#42FFC6" },
-    { primary: "#00E5FF", secondary: "#42FFC6", accent: "#7C5CFF" },
-    { primary: "#FF6B9D", secondary: "#7C5CFF", accent: "#00E5FF" },
+    { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73" },
+    { primary: "#A2AB73", secondary: "#A2AB73", accent: "#CC3A63" },
+    { primary: "#CC3A63", secondary: "#CC3A63", accent: "#A2AB73" },
   ]
   const currentColors = emotionColors[cyclePhase % emotionColors.length]
 
@@ -196,7 +196,7 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
     <section
       ref={heroRef}
       data-hero-section
-      className="relative min-h-dvh flex items-center overflow-hidden bg-[#070B14]"
+      className="relative min-h-dvh flex items-center overflow-hidden bg-[#201D1D]"
     >
       {/* CSS Aurora Backdrop */}
       <AuroraBackdrop />
@@ -217,15 +217,15 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
                 style={{
-                  background: "rgba(124,92,255,0.1)",
-                  border: "1px solid rgba(124,92,255,0.2)",
+                  background: "rgba(204,58,99,0.1)",
+                  border: "1px solid rgba(204,58,99,0.2)",
                 }}
               >
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7C5CFF] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#7C5CFF]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC3A63] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC3A63]" />
                 </span>
-                <span className="text-[10px] font-mono tracking-[0.2em] text-[#7C5CFF] uppercase">
+                <span className="text-[10px] font-mono tracking-[0.2em] text-[#CC3A63] uppercase">
                   Introducing the Digital Twin OS
                 </span>
               </motion.div>
@@ -235,7 +235,7 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                 lines={[
                   {
                     text: "The Operating System",
-                    className: "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight text-[#F8FAFC]",
+                    className: "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight text-[#F3F4F4]",
                     delay: 0.3,
                     revealType: "blur",
                   },
@@ -254,7 +254,7 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                 initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.7, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                className="text-base sm:text-lg text-[#94A3B8] max-w-xl leading-relaxed"
+                className="text-base sm:text-lg text-[#B0A79C] max-w-xl leading-relaxed"
               >
                 Create intelligent digital humans that speak, understand,
                 learn, and evolve across personal, healthcare, and enterprise environments.
@@ -286,10 +286,10 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: stat.delay }}
                     >
-                      <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] bg-clip-text text-transparent">
+                      <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">
                         {stat.value}
                       </div>
-                      <div className="text-xs text-[#64748B] mt-1 tracking-wide">{stat.label}</div>
+                      <div className="text-xs text-[#8A8178] mt-1 tracking-wide">{stat.label}</div>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -310,7 +310,7 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
       </motion.div>
 
       {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#070B14] to-transparent z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#201D1D] to-transparent z-10 pointer-events-none" />
     </section>
   )
 }

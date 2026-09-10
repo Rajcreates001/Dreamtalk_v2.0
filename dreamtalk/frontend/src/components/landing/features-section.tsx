@@ -47,7 +47,7 @@ const features = [
     href: "/conversations",
     cta: "Try it",
     background: (
-      <Particles quantity={40} color="#10b981" className="absolute inset-0 opacity-60" staticity={80} ease={120} />
+      <Particles quantity={40} color="#8F9A5E" className="absolute inset-0 opacity-60" staticity={80} ease={120} />
     ),
     className: "lg:col-span-2 lg:row-span-1",
   },

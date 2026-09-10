@@ -4,12 +4,12 @@ import { motion } from "motion/react"
 import { SectionWrapper } from "./SectionWrapper"
 
 const metrics = [
-  { value: "50K+", label: "Avatars Created", desc: "Digital Humans brought to life", color: "#7C5CFF" },
-  { value: "10M+", label: "Conversations", desc: "Intelligent interactions served", color: "#22D3EE" },
-  { value: "50+", label: "Languages", desc: "Multilingual voice & text", color: "#42FFC6" },
-  { value: "<200ms", label: "Response Time", desc: "Real-time intelligence", color: "#FBBF24" },
-  { value: "99.9%", label: "Uptime", desc: "Enterprise reliability", color: "#FF5F73" },
-  { value: "94%", label: "Satisfaction", desc: "User happiness score", color: "#7C5CFF" },
+  { value: "50K+", label: "Avatars Created", desc: "Digital Humans brought to life", color: "#CC3A63" },
+  { value: "10M+", label: "Conversations", desc: "Intelligent interactions served", color: "#A2AB73" },
+  { value: "50+", label: "Languages", desc: "Multilingual voice & text", color: "#A2AB73" },
+  { value: "<200ms", label: "Response Time", desc: "Real-time intelligence", color: "#D6A44C" },
+  { value: "99.9%", label: "Uptime", desc: "Enterprise reliability", color: "#D84C63" },
+  { value: "94%", label: "Satisfaction", desc: "User happiness score", color: "#CC3A63" },
 ]
 
 export function MetricsCounter() {
@@ -23,7 +23,7 @@ export function MetricsCounter() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.06 }}
-            className="relative text-center p-6 rounded-2xl bg-[#0F172A]/60 border border-white/[0.06] hover:bg-white/[0.03] transition-all group"
+            className="relative text-center p-6 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] hover:bg-white/[0.03] transition-all group"
           >
             {/* Decorative line */}
             <motion.div
@@ -51,8 +51,8 @@ export function MetricsCounter() {
                 {metric.value}
               </motion.span>
             </motion.div>
-            <h4 className="text-sm font-semibold text-[#F8FAFC] mb-0.5">{metric.label}</h4>
-            <p className="text-[11px] text-[#64748B]">{metric.desc}</p>
+            <h4 className="text-sm font-semibold text-[#F3F4F4] mb-0.5">{metric.label}</h4>
+            <p className="text-[11px] text-[#8A8178]">{metric.desc}</p>
           </motion.div>
         ))}
       </div>

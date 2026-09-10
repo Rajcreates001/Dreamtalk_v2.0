@@ -43,12 +43,12 @@ function Eye({ position, blinkPhase }: { position: [number, number, number]; bli
       {/* Eye white */}
       <mesh>
         <sphereGeometry args={[0.08, 16, 16]} />
-        <meshBasicMaterial color="#1a1a2e" />
+        <meshBasicMaterial color="#2C2829" />
       </mesh>
       {/* Iris */}
       <mesh position={[0, 0, 0.04]}>
         <sphereGeometry args={[0.045, 12, 12]} />
-        <meshBasicMaterial color="#7C5CFF" />
+        <meshBasicMaterial color="#CC3A63" />
       </mesh>
       {/* Pupil */}
       <mesh ref={pupilRef} position={[0, 0, 0.06]}>
@@ -136,29 +136,29 @@ export function DigitalHuman() {
         {/* Main torso */}
         <mesh ref={bodyRef} position={[0, 0.2, 0]}>
           <capsuleGeometry args={[0.18, 0.4, 8, 16]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.12} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.12} />
         </mesh>
 
         {/* Chest glow */}
         <mesh position={[0, 0.35, 0.15]}>
           <circleGeometry args={[0.08, 16]} />
-          <meshBasicMaterial color="#00E5FF" transparent opacity={0.15} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#A2AB73" transparent opacity={0.15} depthWrite={false} blending={THREE.AdditiveBlending} />
         </mesh>
 
         {/* Shoulders */}
         <mesh position={[-0.22, 0.4, 0]} rotation={[0, 0, 0.3]}>
           <capsuleGeometry args={[0.04, 0.15, 6, 8]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.08} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.08} />
         </mesh>
         <mesh position={[0.22, 0.4, 0]} rotation={[0, 0, -0.3]}>
           <capsuleGeometry args={[0.04, 0.15, 6, 8]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.08} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.08} />
         </mesh>
 
         {/* Neck */}
         <mesh position={[0, 0.55, 0]}>
           <capsuleGeometry args={[0.05, 0.06, 6, 8]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.1} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.1} />
         </mesh>
       </group>
 
@@ -167,19 +167,19 @@ export function DigitalHuman() {
         {/* Head mesh */}
         <mesh>
           <sphereGeometry args={[0.2, 24, 24]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.15} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.15} />
         </mesh>
 
         {/* Wireframe overlay */}
         <mesh>
           <sphereGeometry args={[0.19, 16, 16]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.06} wireframe />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.06} wireframe />
         </mesh>
 
         {/* Glow ring behind head */}
         <mesh ref={glowRef} position={[0, 0, -0.15]}>
           <circleGeometry args={[0.3, 24]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
         </mesh>
 
         {/* Eyes */}
@@ -189,17 +189,17 @@ export function DigitalHuman() {
         {/* Eyebrows */}
         <mesh position={[-0.07, 0.09, 0.18]}>
           <boxGeometry args={[0.04, 0.005, 0.005]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.2} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.2} />
         </mesh>
         <mesh position={[0.07, 0.09, 0.18]}>
           <boxGeometry args={[0.04, 0.005, 0.005]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.2} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.2} />
         </mesh>
 
         {/* Nose */}
         <mesh position={[0, 0.02, 0.2]}>
           <coneGeometry args={[0.01, 0.02, 6]} />
-          <meshBasicMaterial color="#7C5CFF" transparent opacity={0.1} />
+          <meshBasicMaterial color="#CC3A63" transparent opacity={0.1} />
         </mesh>
 
         {/* Mouth */}
@@ -208,12 +208,12 @@ export function DigitalHuman() {
         {/* Inner glow */}
         <mesh position={[0, 0, 0]}>
           <sphereGeometry args={[0.1, 16, 16]} />
-          <meshBasicMaterial color="#00E5FF" transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#A2AB73" transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
         </mesh>
       </group>
 
       {/* Point light emanating from the being */}
-      <pointLight position={[0, 0.5, 0.5]} color="#7C5CFF" intensity={0.15} distance={3} decay={2} />
+      <pointLight position={[0, 0.5, 0.5]} color="#CC3A63" intensity={0.15} distance={3} decay={2} />
     </group>
   )
 }

@@ -29,7 +29,7 @@ function FallbackHead({ type = "head" }: { type: "head" | "bust" | "sphere" }) {
     }
   })
 
-  const headColor = new THREE.Color("#7C5CFF")
+  const headColor = new THREE.Color("#CC3A63")
   const darkHeadColor = new THREE.Color("#6366f1")
 
   if (type === "sphere") {
@@ -83,13 +83,13 @@ function FallbackHead({ type = "head" }: { type: "head" | "bust" | "sphere" }) {
       <group position={[-0.25, 0.1, 0.65]}>
         <mesh>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshPhysicalMaterial color="#1a1a2e" roughness={0.1} metalness={0} />
+          <meshPhysicalMaterial color="#2C2829" roughness={0.1} metalness={0} />
         </mesh>
       </group>
       <group position={[0.25, 0.1, 0.65]}>
         <mesh>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshPhysicalMaterial color="#1a1a2e" roughness={0.1} metalness={0} />
+          <meshPhysicalMaterial color="#2C2829" roughness={0.1} metalness={0} />
         </mesh>
       </group>
 
@@ -163,7 +163,7 @@ function ObjModel({ url, onLoad, onError }: { url: string; onLoad?: () => void; 
                 // Only apply fallback material if no material was loaded (from MTL or OBJ)
                 if (!child.material) {
                   child.material = new THREE.MeshPhysicalMaterial({
-                    color: "#7C5CFF",
+                    color: "#CC3A63",
                     metalness: 0.05,
                     roughness: 0.4,
                   })
@@ -304,12 +304,12 @@ export function AvatarViewer3D({
   if (!mounted) {
     return (
       <div
-        className={cn("flex items-center justify-center bg-[#0F172A]/40 rounded-2xl", className)}
+        className={cn("flex items-center justify-center bg-[#2C2929]/40 rounded-2xl", className)}
         style={{ height: heightStr }}
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7C5CFF]/30 border-t-[#7C5CFF]" />
-          <span className="text-xs text-[#64748B]">Initializing 3D viewer...</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#CC3A63]/30 border-t-[#CC3A63]" />
+          <span className="text-xs text-[#8A8178]">Initializing 3D viewer...</span>
         </div>
       </div>
     )
@@ -321,7 +321,7 @@ export function AvatarViewer3D({
       style={{ height: heightStr }}
     >
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#7C5CFF]/5 via-transparent to-[#00E5FF]/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#CC3A63]/5 via-transparent to-[#A2AB73]/5 pointer-events-none" />
 
       {/* Grid pattern overlay */}
       <div
@@ -353,15 +353,15 @@ export function AvatarViewer3D({
       </Canvas>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#070B14]/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#201D1D]/80 to-transparent pointer-events-none" />
 
       {/* Controls hint */}
       {showControls && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/[0.06] pointer-events-none">
-          <svg className="w-3 h-3 text-[#94A3B8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3 h-3 text-[#B0A79C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
-          <span className="text-[10px] text-[#94A3B8] font-medium">
+          <span className="text-[10px] text-[#B0A79C] font-medium">
             Drag to rotate &bull; Scroll to zoom
           </span>
         </div>
@@ -369,8 +369,8 @@ export function AvatarViewer3D({
 
       {/* Rotation indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-white/[0.06] pointer-events-none">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#42FFC6]" />
-        <span className="text-[10px] text-[#CBD5E1] font-medium">360°</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-[#A2AB73]" />
+        <span className="text-[10px] text-[#D8D2C8] font-medium">360°</span>
       </div>
     </div>
   )

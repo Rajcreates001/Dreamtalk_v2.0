@@ -11,13 +11,13 @@ import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 /* ── DATA ── */
 
 const FRAGMENTED_TOOLS = [
-  { icon: MessageSquare, label: "Chatbot", desc: "Scripted conversations", limit: "No long-term memory", color: "#FF5F73", solution: "Persistent memory across sessions" },
-  { icon: Mic, label: "Voice AI", desc: "Speech synthesis", limit: "No emotion or tone", color: "#FF8A65", solution: "Emotional voice synthesis" },
-  { icon: Bot, label: "Avatar Gen", desc: "Static 3D models", limit: "No intelligence", color: "#FFB74D", solution: "Living Digital Human brain" },
+  { icon: MessageSquare, label: "Chatbot", desc: "Scripted conversations", limit: "No long-term memory", color: "#D84C63", solution: "Persistent memory across sessions" },
+  { icon: Mic, label: "Voice AI", desc: "Speech synthesis", limit: "No emotion or tone", color: "#C77B54", solution: "Emotional voice synthesis" },
+  { icon: Bot, label: "Avatar Gen", desc: "Static 3D models", limit: "No intelligence", color: "#D6A44C", solution: "Living Digital Human brain" },
   { icon: Search, label: "Search", desc: "Keyword matching", limit: "No understanding", color: "#FFD54F", solution: "Semantic understanding" },
-  { icon: FileText, label: "OCR / Vision", desc: "Text extraction", limit: "No context", color: "#FF5F73", solution: "Context-aware processing" },
-  { icon: Cpu, label: "Automation", desc: "Rule-based flows", limit: "No adaptation", color: "#FF8A65", solution: "Self-adapting AI" },
-  { icon: BarChart3, label: "Analytics", desc: "Dashboard reports", limit: "No action", color: "#FFB74D", solution: "Autonomous decision-making" },
+  { icon: FileText, label: "OCR / Vision", desc: "Text extraction", limit: "No context", color: "#D84C63", solution: "Context-aware processing" },
+  { icon: Cpu, label: "Automation", desc: "Rule-based flows", limit: "No adaptation", color: "#C77B54", solution: "Self-adapting AI" },
+  { icon: BarChart3, label: "Analytics", desc: "Dashboard reports", limit: "No action", color: "#D6A44C", solution: "Autonomous decision-making" },
   { icon: Database, label: "Knowledge Base", desc: "Static documents", limit: "No reasoning", color: "#FFD54F", solution: "Dynamic reasoning engine" },
 ]
 
@@ -42,12 +42,12 @@ const SOLVED_LIMITS = [
 ]
 
 const RING_CONFIGS = [
-  { label: "Knowledge", color: "#7C5CFF", radius: 150 },
-  { label: "Memory", color: "#22D3EE", radius: 128 },
-  { label: "Voice", color: "#42FFC6", radius: 106 },
-  { label: "Reasoning", color: "#FBBF24", radius: 84 },
-  { label: "Personality", color: "#FF5F73", radius: 62 },
-  { label: "Relationship", color: "#EC4899", radius: 40 },
+  { label: "Knowledge", color: "#CC3A63", radius: 150 },
+  { label: "Memory", color: "#A2AB73", radius: 128 },
+  { label: "Voice", color: "#A2AB73", radius: 106 },
+  { label: "Reasoning", color: "#D6A44C", radius: 84 },
+  { label: "Personality", color: "#D84C63", radius: 62 },
+  { label: "Relationship", color: "#CC3A63", radius: 40 },
   { label: "Deployment", color: "#0EA5E9", radius: 20 },
 ]
 
@@ -73,13 +73,13 @@ function FragmentedCard({
       onMouseEnter={() => setHoveredTool(index)}
       onMouseLeave={() => setHoveredTool(null)}
       className={`relative rounded-2xl p-4 transition-all duration-300 cursor-default group
-        ${hoveredTool === index ? "border-red-500/40 shadow-[0_0_30px_rgba(255,95,115,0.08)]" : "border-white/[0.06]"}
+        ${hoveredTool === index ? "border-red-500/40 shadow-[0_0_30px_rgba(216,76,99,0.08)]" : "border-white/[0.06]"}
         ${hoveredTool !== null && hoveredTool !== index ? "opacity-50" : "opacity-100"}
       `}
       style={{
         background: `linear-gradient(145deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7))`,
         border: "1px solid",
-        borderColor: hoveredTool === index ? "rgba(255,95,115,0.4)" : "rgba(255,255,255,0.06)",
+        borderColor: hoveredTool === index ? "rgba(216,76,99,0.4)" : "rgba(255,255,255,0.06)",
       }}
     >
       <div
@@ -94,15 +94,15 @@ function FragmentedCard({
           <tool.icon className="h-4 w-4" style={{ color: tool.color }} />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-semibold text-[#F8FAFC] mb-0.5">{tool.label}</h4>
-          <p className="text-[11px] text-[#64748B]">{tool.desc}</p>
+          <h4 className="text-sm font-semibold text-[#F3F4F4] mb-0.5">{tool.label}</h4>
+          <p className="text-[11px] text-[#8A8178]">{tool.desc}</p>
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: hoveredTool === index ? "auto" : 0, opacity: hoveredTool === index ? 1 : 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="flex items-center gap-1 mt-2 text-[10px] text-[#FF5F73] font-mono">
+            <div className="flex items-center gap-1 mt-2 text-[10px] text-[#D84C63] font-mono">
               <X className="h-2.5 w-2.5 shrink-0" />
               <span>{tool.limit}</span>
             </div>
@@ -140,7 +140,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       <div className="relative flex items-center justify-center shrink-0">
         <div
           className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500
-            ${isLast ? "bg-gradient-to-br from-[#7C5CFF] to-[#00E5FF] text-white shadow-[0_0_12px_rgba(124,92,255,0.3)]" : "bg-white/[0.06] text-[#64748B]"}`}
+            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-white/[0.06] text-[#8A8178]"}`}
           style={{
             animation: isLast ? `chamber-pulse 2s ease-in-out infinite` : `pipeline-pulse 3s ease-in-out infinite`,
             animationDelay: `${index * 0.4}s`,
@@ -154,7 +154,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       </div>
       <span
         className={`text-[11px] font-mono tracking-wider leading-tight transition-all duration-500
-          ${isLast ? "text-[#F8FAFC] font-semibold" : "text-[#64748B] group-hover:text-[#94A3B8]"}`}
+          ${isLast ? "text-[#F3F4F4] font-semibold" : "text-[#8A8178] group-hover:text-[#B0A79C]"}`}
       >
         {stage}
       </span>
@@ -168,9 +168,9 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
   return (
     <div className="relative w-full aspect-square max-w-[480px] mx-auto group">
       {/* Outer glow layers */}
-      <div className="absolute inset-[5%] rounded-full blur-[100px] animate-chamber-glow" style={{ background: "radial-gradient(circle, rgba(124,92,255,0.12), transparent 70%)" }} />
-      <div className="absolute inset-[20%] rounded-full blur-[70px]" style={{ background: "radial-gradient(circle, rgba(0,229,255,0.06), transparent 70%)", animation: "chamber-glow 5s ease-in-out infinite 1.5s" }} />
-      <div className="absolute inset-[35%] rounded-full blur-[50px]" style={{ background: "radial-gradient(circle, rgba(66,255,198,0.04), transparent 70%)", animation: "chamber-glow 7s ease-in-out infinite 3s" }} />
+      <div className="absolute inset-[5%] rounded-full blur-[100px] animate-chamber-glow" style={{ background: "radial-gradient(circle, rgba(204,58,99,0.12), transparent 70%)" }} />
+      <div className="absolute inset-[20%] rounded-full blur-[70px]" style={{ background: "radial-gradient(circle, rgba(162,171,115,0.06), transparent 70%)", animation: "chamber-glow 5s ease-in-out infinite 1.5s" }} />
+      <div className="absolute inset-[35%] rounded-full blur-[50px]" style={{ background: "radial-gradient(circle, rgba(162,171,115,0.04), transparent 70%)", animation: "chamber-glow 7s ease-in-out infinite 3s" }} />
 
       {/* 7 Orbiting Rings */}
       {RING_CONFIGS.map((ring) => (
@@ -230,20 +230,20 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       {/* Digital Human */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-28 h-28">
-          <div className="absolute inset-[10%] rounded-full blur-[25px] animate-body-glow" style={{ background: "radial-gradient(circle, rgba(124,92,255,0.25), transparent 70%)" }} />
+          <div className="absolute inset-[10%] rounded-full blur-[25px] animate-body-glow" style={{ background: "radial-gradient(circle, rgba(204,58,99,0.25), transparent 70%)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16">
-            <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-gradient-to-b from-[#7C5CFF] to-[#00E5FF] p-[1.5px]" style={{ animation: "breathe 4s ease-in-out infinite" }}>
-              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#070B14] flex items-center justify-center flex-col gap-1">
+            <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-gradient-to-b from-[#CC3A63] to-[#A2AB73] p-[1.5px]" style={{ animation: "breathe 4s ease-in-out infinite" }}>
+              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1">
                 <div className="flex gap-3.5">
-                  <div className="w-[3px] h-[3px] rounded-full bg-[#00E5FF] shadow-[0_0_4px_#00E5FF]" style={{ animation: "blink 4s ease-in-out infinite" }} />
-                  <div className="w-[3px] h-[3px] rounded-full bg-[#00E5FF] shadow-[0_0_4px_#00E5FF]" style={{ animation: "blink 4s ease-in-out infinite 0.1s" }} />
+                  <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite" }} />
+                  <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite 0.1s" }} />
                 </div>
-                <div className="w-3 h-[1.5px] rounded-full bg-[#7C5CFF]/40" style={{ animation: "breathe 4s ease-in-out infinite 0.5s" }} />
+                <div className="w-3 h-[1.5px] rounded-full bg-[#CC3A63]/40" style={{ animation: "breathe 4s ease-in-out infinite 0.5s" }} />
               </div>
             </div>
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-0.5">
               {[0, 1, 2].map((d) => (
-                <div key={d} className="w-0.5 h-0.5 rounded-full" style={{ background: "#7C5CFF", animation: `thinking-pulse 1.5s ease-in-out infinite`, animationDelay: `${d * 0.3}s`, opacity: 0.6 }} />
+                <div key={d} className="w-0.5 h-0.5 rounded-full" style={{ background: "#CC3A63", animation: `thinking-pulse 1.5s ease-in-out infinite`, animationDelay: `${d * 0.3}s`, opacity: 0.6 }} />
               ))}
             </div>
           </div>
@@ -258,9 +258,9 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
         className="absolute bottom-[2%] left-1/2 -translate-x-1/2 z-30"
       >
         {solutionText && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0F172A]/90 border border-[#42FFC6]/20 backdrop-blur-xl whitespace-nowrap">
-            <Sparkles className="h-3 w-3 text-[#42FFC6]" />
-            <span className="text-[10px] font-mono text-[#42FFC6] tracking-wider">{solutionText}</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#2C2929]/90 border border-[#A2AB73]/20 backdrop-blur-xl whitespace-nowrap">
+            <Sparkles className="h-3 w-3 text-[#A2AB73]" />
+            <span className="text-[10px] font-mono text-[#A2AB73] tracking-wider">{solutionText}</span>
           </div>
         )}
       </motion.div>
@@ -268,25 +268,25 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       {/* Status badges */}
       <div className="absolute top-[1%] left-[3%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-          <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#42FFC6] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#42FFC6]" /></span>
+          <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#A2AB73]" /></span>
           <span className="text-[7px] font-mono text-white/40 tracking-wider">ACTIVE</span>
         </div>
       </div>
       <div className="absolute top-[12%] right-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-          <Brain className="h-2 w-2 text-[#22D3EE]" />
+          <Brain className="h-2 w-2 text-[#A2AB73]" />
           <span className="text-[7px] font-mono text-white/30 tracking-wider">LEARNING</span>
         </div>
       </div>
       <div className="absolute bottom-[12%] right-[4%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-          <Heart className="h-2 w-2 text-[#FF5F73]" />
+          <Heart className="h-2 w-2 text-[#D84C63]" />
           <span className="text-[7px] font-mono text-white/30 tracking-wider">EMPATHETIC</span>
         </div>
       </div>
       <div className="absolute top-[30%] left-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-          <Users className="h-2 w-2 text-[#EC4899]" />
+          <Users className="h-2 w-2 text-[#CC3A63]" />
           <span className="text-[7px] font-mono text-white/30 tracking-wider">RELATIONSHIP</span>
         </div>
       </div>
@@ -318,9 +318,9 @@ export function ProblemComparison() {
           className="md:col-span-3 lg:col-span-4 relative"
         >
           <div className="mb-4">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#FF5F73]/50 font-mono">TODAY</span>
-            <h3 className="text-lg font-bold text-[#F8FAFC] mt-1">Fragmented AI Ecosystem</h3>
-            <p className="text-xs text-[#64748B] mt-1 max-w-md">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#D84C63]/50 font-mono">TODAY</span>
+            <h3 className="text-lg font-bold text-[#F3F4F4] mt-1">Fragmented AI Ecosystem</h3>
+            <p className="text-xs text-[#8A8178] mt-1 max-w-md">
               Disconnected tools with no shared memory, intelligence, or personality.
             </p>
           </div>
@@ -335,7 +335,7 @@ export function ProblemComparison() {
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.06, zIndex: 0 }}>
             <defs>
               <linearGradient id="broken-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FF5F73" />
+                <stop offset="0%" stopColor="#D84C63" />
                 <stop offset="100%" stopColor="transparent" />
               </linearGradient>
             </defs>
@@ -357,9 +357,9 @@ export function ProblemComparison() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 1.2 }}
-            className="mt-3 p-2.5 rounded-xl bg-[#FF5F73]/[0.04] border border-[#FF5F73]/[0.1]"
+            className="mt-3 p-2.5 rounded-xl bg-[#D84C63]/[0.04] border border-[#D84C63]/[0.1]"
           >
-            <div className="flex items-center gap-2 text-xs text-[#FF5F73]/70">
+            <div className="flex items-center gap-2 text-xs text-[#D84C63]/70">
               <X className="h-3 w-3 shrink-0" />
               <span className="font-mono text-[10px] tracking-wider">8 tools • No context • No integration • No memory</span>
             </div>
@@ -385,7 +385,7 @@ export function ProblemComparison() {
           </div>
 
           <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px overflow-hidden opacity-[0.1]">
-            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, #FF5F73, #7C5CFF, #00E5FF, #42FFC6)", animation: "energy-flow 3s ease-in-out infinite" }} />
+            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, #D84C63, #CC3A63, #A2AB73, #A2AB73)", animation: "energy-flow 3s ease-in-out infinite" }} />
           </div>
 
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -394,7 +394,7 @@ export function ProblemComparison() {
                 key={i}
                 className="absolute w-1 h-1 rounded-full"
                 style={{
-                  background: i < 2 ? "#FF5F73" : i < 4 ? "#7C5CFF" : "#42FFC6",
+                  background: i < 2 ? "#D84C63" : i < 4 ? "#CC3A63" : "#A2AB73",
                   left: `${45 + (i % 3) * 5}%`,
                   top: "-5%",
                   opacity: 0.6,
@@ -409,9 +409,9 @@ export function ProblemComparison() {
         {/* Mobile pipeline separator — visible only on small screens */}
         <div className="md:col-span-3 lg:hidden flex items-center justify-center py-4">
           <div className="flex items-center gap-2">
-            <div className="h-px w-12 bg-gradient-to-r from-[#FF5F73] to-[#7C5CFF]" />
+            <div className="h-px w-12 bg-gradient-to-r from-[#D84C63] to-[#CC3A63]" />
             <span className="text-[8px] uppercase tracking-[0.3em] text-white/20 font-mono">UNIFIED</span>
-            <div className="h-px w-12 bg-gradient-to-l from-[#7C5CFF] to-[#42FFC6]" />
+            <div className="h-px w-12 bg-gradient-to-l from-[#CC3A63] to-[#A2AB73]" />
           </div>
         </div>
 
@@ -424,11 +424,11 @@ export function ProblemComparison() {
           className="md:col-span-3 lg:col-span-6 relative"
         >
           <div className="mb-4 text-right">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#42FFC6]/50 font-mono">DREAMTALK</span>
-            <h3 className="text-lg font-bold text-[#F8FAFC] mt-1">
-              One <span className="bg-gradient-to-r from-[#7C5CFF] via-[#00E5FF] to-[#42FFC6] bg-clip-text text-transparent">Digital Twin OS</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#A2AB73]/50 font-mono">DREAMTALK</span>
+            <h3 className="text-lg font-bold text-[#F3F4F4] mt-1">
+              One <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent">Digital Twin OS</span>
             </h3>
-            <p className="text-xs text-[#64748B] mt-1 max-w-md ml-auto">
+            <p className="text-xs text-[#8A8178] mt-1 max-w-md ml-auto">
               Unified intelligence with persistent memory, emotional awareness, and continuous learning.
             </p>
           </div>
@@ -440,9 +440,9 @@ export function ProblemComparison() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 1.5 }}
-            className="mt-3 p-2.5 rounded-xl bg-[#7C5CFF]/[0.05] border border-[#7C5CFF]/[0.12]"
+            className="mt-3 p-2.5 rounded-xl bg-[#CC3A63]/[0.05] border border-[#CC3A63]/[0.12]"
           >
-            <div className="flex items-center gap-2 text-xs text-[#7C5CFF]/70">
+            <div className="flex items-center gap-2 text-xs text-[#CC3A63]/70">
               <Sparkles className="h-3 w-3 shrink-0" />
               <span className="font-mono text-[10px] tracking-wider">ONE unified OS • Shared memory • Emotional AI • Live reasoning</span>
             </div>

@@ -18,7 +18,7 @@ function KeyLight() {
       ref={ref}
       position={[2, 3, 4]}
       intensity={0.4}
-      color="#7C5CFF"
+      color="#CC3A63"
     />
   )
 }
@@ -37,7 +37,7 @@ function RimLight() {
       ref={ref}
       position={[-3, 1, -2]}
       intensity={0.3}
-      color="#00E5FF"
+      color="#A2AB73"
     />
   )
 }
@@ -48,7 +48,7 @@ function FillLight() {
     <directionalLight
       position={[0, -1, -3]}
       intensity={0.15}
-      color="#42FFC6"
+      color="#A2AB73"
     />
   )
 }
@@ -56,7 +56,7 @@ function FillLight() {
 /* ─── Ambient Glow ─── */
 function AmbientGlow() {
   return (
-    <ambientLight intensity={0.15} color="#7C5CFF" />
+    <ambientLight intensity={0.15} color="#CC3A63" />
   )
 }
 

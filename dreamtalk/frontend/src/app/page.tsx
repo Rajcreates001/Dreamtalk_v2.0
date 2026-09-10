@@ -17,7 +17,7 @@ import dynamic from "next/dynamic"
 // The loading placeholder prevents layout shift while the chunk loads.
 const HeroContainer = dynamic(() => import("@/components/hero/HeroContainer").then(m => ({ default: m.HeroContainer })), {
   ssr: false,
-  loading: () => <div className="relative min-h-dvh bg-[#070B14]" />,
+  loading: () => <div className="relative min-h-dvh bg-[#201D1D]" />,
 })
 
 // ── All section components are DYNAMIC (lazy-loaded, SSR disabled) ──
@@ -70,43 +70,43 @@ const Nav = () => {
       transition={{ duration: 0.6, delay: 0.1 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-[#070B14]/80 backdrop-blur-2xl border-b border-white/[0.06] py-3"
+          ? "bg-[#201D1D]/80 backdrop-blur-2xl border-b border-white/[0.06] py-3"
           : "bg-transparent py-5"
       }`}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="relative w-8 h-8">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#7C5CFF] to-[#00E5FF] animate-breathe" />
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] animate-breathe" />
             <Sparkles className="relative h-4 w-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] bg-clip-text text-transparent">
-            DreamTalk
+          <span className="font-display font-bold text-lg tracking-tight text-[#F3F4F4]">
+            DreamTalk <span className="bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">Astra</span>
           </span>
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">
           {["Platform", "Solutions", "Developers", "Pricing"].map((item) => (
-            <button key={item} className="flex items-center gap-1 text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors">
+            <button key={item} className="flex items-center gap-1 text-sm text-[#B0A79C] hover:text-[#F3F4F4] transition-colors">
               {item} <ChevronDown className="h-3 w-3" />
             </button>
           ))}
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
-          <button className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-[#94A3B8] hover:text-[#F8FAFC] transition-all">
+          <button className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-[#B0A79C] hover:text-[#F3F4F4] transition-all">
             <Search className="h-4 w-4" />
           </button>
           
-          <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-[#CBD5E1] hover:text-[#F8FAFC] hover:bg-white/[0.04] transition-all">
+          <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all">
             Sign In
           </Link>
-          <Link href="/signup" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium shadow-lg shadow-[#7C5CFF]/20 hover:shadow-[#7C5CFF]/30 transition-all">
+          <Link href="/signup" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
             Get Started
           </Link>
         </div>
 
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden text-[#94A3B8]">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden text-[#B0A79C]">
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </nav>
@@ -117,19 +117,19 @@ const Nav = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-[#0F172A]/95 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
+            className="lg:hidden bg-[#2C2929]/95 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
           >
             <div className="px-4 py-6 space-y-4">
               {["Platform", "Solutions", "Developers", "Pricing", "Resources", "Company"].map((item) => (
-                <button key={item} className="block w-full text-left text-sm text-[#CBD5E1] hover:text-[#F8FAFC] py-2 transition-colors">
+                <button key={item} className="block w-full text-left text-sm text-[#D8D2C8] hover:text-[#F3F4F4] py-2 transition-colors">
                   {item}
                 </button>
               ))}
               <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
-                <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-white/[0.06] text-sm font-medium text-[#CBD5E1]">
+                <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-white/[0.06] text-sm font-medium text-[#D8D2C8]">
                   Sign In
                 </Link>
-                <Link href="/signup" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium">
+                <Link href="/signup" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">
                   Get Started
                 </Link>
               </div>
@@ -170,7 +170,7 @@ export default function LandingPage() {
   }, [demoInput, demoLoading])
 
   return (
-    <main className="relative min-h-dvh bg-[#070B14] overflow-x-hidden" style={{ contain: "paint layout" }}>
+    <main className="relative min-h-dvh bg-[#201D1D] overflow-x-hidden" style={{ contain: "paint layout" }}>
       <Nav />
 
       {/* ─── CHAPTER 1: Hero — Digital Human Awakening ─── */}
@@ -194,17 +194,17 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[20px] bg-[#0F172A]/80 backdrop-blur-2xl border border-white/[0.06] overflow-hidden shadow-2xl"
+            className="rounded-[20px] bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] overflow-hidden shadow-2xl"
           >
             <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
               <div className="flex gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#FF5F73]" />
-                <span className="w-3 h-3 rounded-full bg-[#FFB84D]" />
-                <span className="w-3 h-3 rounded-full bg-[#22C55E]" />
+                <span className="w-3 h-3 rounded-full bg-[#D84C63]" />
+                <span className="w-3 h-3 rounded-full bg-[#D6A44C]" />
+                <span className="w-3 h-3 rounded-full bg-[#8F9A5E]" />
               </div>
               <div className="flex items-center gap-2 mx-auto">
-                <Bot className="h-4 w-4 text-[#7C5CFF]" />
-                <span className="text-xs text-[#94A3B8] font-medium">DreamTalk Avatar — Interactive Demo</span>
+                <Bot className="h-4 w-4 text-[#CC3A63]" />
+                <span className="text-xs text-[#B0A79C] font-medium">DreamTalk Avatar — Interactive Demo</span>
               </div>
             </div>
             <div className="p-6 space-y-4 min-h-[300px] max-h-[400px] overflow-y-auto" id="demo-chat">
@@ -216,14 +216,14 @@ export default function LandingPage() {
                   className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${
-                    msg.role === "user" ? "bg-gradient-to-br from-[#00E5FF]/20 to-[#42FFC6]/20" : "bg-gradient-to-br from-[#7C5CFF]/20 to-[#00E5FF]/20"
+                    msg.role === "user" ? "bg-gradient-to-br from-[#A2AB73]/20 to-[#A2AB73]/20" : "bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20"
                   }`}>
-                    {msg.role === "user" ? <Users className="h-4 w-4 text-[#00E5FF]" /> : <Bot className="h-4 w-4 text-[#7C5CFF]" />}
+                    {msg.role === "user" ? <Users className="h-4 w-4 text-[#A2AB73]" /> : <Bot className="h-4 w-4 text-[#CC3A63]" />}
                   </div>
                   <div className={`max-w-[80%] px-4 py-2.5 rounded-xl text-sm ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-[#7C5CFF]/20 to-[#00E5FF]/10 text-[#F8FAFC] rounded-tr-sm"
-                      : "bg-white/[0.04] border border-white/[0.06] text-[#CBD5E1] rounded-tl-sm"
+                      ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-[#F3F4F4] rounded-tr-sm"
+                      : "bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] rounded-tl-sm"
                   }`}>
                     {msg.text}
                   </div>
@@ -231,13 +231,13 @@ export default function LandingPage() {
               ))}
               {demoLoading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7C5CFF]/20 to-[#00E5FF]/20 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-[#7C5CFF]" />
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-[#CC3A63]" />
                   </div>
                   <div className="flex gap-1 items-center px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#7C5CFF]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#7C5CFF]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.15, repeat: Infinity }} />
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#7C5CFF]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.3, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.15, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.3, repeat: Infinity }} />
                   </div>
                 </motion.div>
               )}
@@ -250,12 +250,12 @@ export default function LandingPage() {
                   onChange={(e) => setDemoInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleDemoSend()}
                   placeholder="Type a message... (try: hello, who, what, price)"
-                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-[#F8FAFC] placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#7C5CFF]/30 focus:border-[#7C5CFF]/50 transition-all"
+                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
                 />
                 <button
                   onClick={handleDemoSend}
                   disabled={demoLoading || !demoInput.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white text-sm font-medium disabled:opacity-50 hover:shadow-lg hover:shadow-[#7C5CFF]/20 transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium disabled:opacity-50 hover:shadow-lg hover:shadow-[#CC3A63]/20 transition-all"
                 >
                   Send
                 </button>
@@ -265,7 +265,7 @@ export default function LandingPage() {
                   <button
                     key={s}
                     onClick={() => { setDemoInput(s); setTimeout(handleDemoSend, 100) }}
-                    className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-[#64748B] hover:text-[#94A3B8] hover:bg-white/[0.06] transition-all"
+                    className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-[#8A8178] hover:text-[#B0A79C] hover:bg-white/[0.06] transition-all"
                   >
                     {s}
                   </button>
@@ -351,7 +351,7 @@ function PricingSection() {
       <SectionHeading label="Pricing" title="Choose your plan" description="Start free, scale as you grow. No hidden fees, no surprises." />
 
       <div className="flex justify-center mb-10">
-        <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-[#0F172A]/80 border border-white/[0.06]">
+        <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-[#2C2929]/80 border border-white/[0.06]">
           {[
             { label: "Monthly", active: !yearly, onClick: () => setYearly(false) },
             { label: "Yearly", active: yearly, onClick: () => setYearly(true), badge: "Save 20%" },
@@ -361,12 +361,12 @@ function PricingSection() {
               onClick={opt.onClick}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 opt.active
-                  ? "bg-gradient-to-r from-[#7C5CFF]/20 to-[#00E5FF]/10 text-[#F8FAFC] border border-white/[0.08]"
-                  : "text-[#64748B] hover:text-[#94A3B8]"
+                  ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-[#F3F4F4] border border-white/[0.08]"
+                  : "text-[#8A8178] hover:text-[#B0A79C]"
               }`}
             >
               {opt.label}
-              {opt.badge && <span className="ml-1.5 text-[#42FFC6] text-[10px]">{opt.badge}</span>}
+              {opt.badge && <span className="ml-1.5 text-[#A2AB73] text-[10px]">{opt.badge}</span>}
             </button>
           ))}
         </div>
@@ -376,17 +376,17 @@ function PricingSection() {
         {plans.map((plan) => {
           const price = yearly ? plan.yearly : plan.monthly
           return (
-            <GlassCard key={plan.name} className={plan.highlight ? "border-[#7C5CFF]/30 shadow-xl shadow-[#7C5CFF]/10" : ""}>
-              <h3 className="text-lg font-bold text-[#F8FAFC] mb-1">{plan.name}</h3>
-              <p className="text-sm text-[#94A3B8] mb-4">{plan.desc}</p>
+            <GlassCard key={plan.name} className={plan.highlight ? "border-[#CC3A63]/30 shadow-xl shadow-[#CC3A63]/10" : ""}>
+              <h3 className="text-lg font-bold text-[#F3F4F4] mb-1">{plan.name}</h3>
+              <p className="text-sm text-[#B0A79C] mb-4">{plan.desc}</p>
               <div className="mb-6">
-                <span className="text-3xl font-bold text-[#F8FAFC]">₹{price.toLocaleString()}</span>
-                <span className="text-sm text-[#64748B]">/mo</span>
+                <span className="text-3xl font-bold text-[#F3F4F4]">₹{price.toLocaleString()}</span>
+                <span className="text-sm text-[#8A8178]">/mo</span>
               </div>
               <ul className="space-y-2 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[#CBD5E1]">
-                    <Check className="h-4 w-4 text-[#42FFC6] shrink-0" />
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#D8D2C8]">
+                    <Check className="h-4 w-4 text-[#A2AB73] shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -395,8 +395,8 @@ function PricingSection() {
                 href="/signup"
                 className={`block w-full text-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   plan.highlight
-                    ? "bg-gradient-to-r from-[#7C5CFF] to-[#00E5FF] text-white shadow-lg shadow-[#7C5CFF]/20 hover:shadow-[#7C5CFF]/30"
-                    : "bg-white/[0.04] border border-white/[0.06] text-[#CBD5E1] hover:text-[#F8FAFC] hover:bg-white/[0.06]"
+                    ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30"
+                    : "bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.06]"
                 }`}
               >
                 {plan.cta}

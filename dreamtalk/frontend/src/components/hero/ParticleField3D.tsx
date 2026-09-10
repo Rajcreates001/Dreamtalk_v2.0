@@ -33,7 +33,7 @@ interface ParticleField3DProps {
  */
 export function ParticleField3D({
   count: requestedCount,
-  color = "#7C5CFF",
+  color = "#CC3A63",
   speed = 0.12,
   size = 0.015,
   spread = 12,
@@ -47,7 +47,7 @@ export function ParticleField3D({
     const pos = new Float32Array(count * 3)
     const col = new Float32Array(count * 3)
     const baseColor = new THREE.Color(color)
-    const secondaryColor = new THREE.Color("#00E5FF")
+    const secondaryColor = new THREE.Color("#A2AB73")
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3
