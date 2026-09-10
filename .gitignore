@@ -87,3 +87,6 @@ Thumbs.db
 # ═══════ Tooling state ═══════
 .nanocoder/
 .freebuff/
+
+# Local-only backups (old frontend git history)
+local_backup/
