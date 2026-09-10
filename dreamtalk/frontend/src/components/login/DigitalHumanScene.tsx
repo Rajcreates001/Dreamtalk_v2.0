@@ -81,7 +81,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
                   animation: "breathe 4s ease-in-out infinite",
                 }}
               >
-                <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1.5">
+                <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-background flex items-center justify-center flex-col gap-1.5">
                   <div className="flex gap-4">
                     <div
                       className="w-[3px] h-[3px] rounded-full"

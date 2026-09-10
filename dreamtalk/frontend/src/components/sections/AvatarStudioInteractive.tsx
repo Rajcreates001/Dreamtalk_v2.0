@@ -65,10 +65,10 @@ export function AvatarStudioInteractive() {
                   onClick={() => setActiveStage(i)}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-500 text-left ${
                     isActive
-                      ? "bg-[#2C2929]/90 border border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/5"
+                      ? "bg-card/90 border border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/5"
                       : isCompleted
-                        ? "bg-[#2C2929]/60 border border-[#A2AB73]/20"
-                        : "bg-[#2C2929]/40 border border-white/[0.04] hover:border-white/[0.1]"
+                        ? "bg-card/60 border border-[#A2AB73]/20"
+                        : "bg-card/40 border border-white/[0.04] hover:border-white/[0.1]"
                   }`}
                   whileHover={{ x: 4 }}
                   transition={{ duration: 0.2 }}
@@ -86,7 +86,7 @@ export function AvatarStudioInteractive() {
                     {isCompleted ? (
                       <Check className="h-4 w-4 text-[#A2AB73]" />
                     ) : (
-                      <span className={`text-sm font-bold ${isActive ? "text-white" : "text-[#8A8178]"}`}>
+                      <span className={`text-sm font-bold ${isActive ? "text-white" : "text-foreground-muted"}`}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     )}
@@ -96,11 +96,11 @@ export function AvatarStudioInteractive() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <stage.icon className="h-4 w-4" style={{ color: isActive ? stage.color : "#8A8178" }} />
-                      <span className={`text-sm font-semibold ${isActive ? "text-[#F3F4F4]" : "text-[#D8D2C8]"}`}>
+                      <span className={`text-sm font-semibold ${isActive ? "text-foreground" : "text-foreground"}`}>
                         {stage.label}
                       </span>
                     </div>
-                    <p className="text-xs text-[#8A8178] mt-0.5 line-clamp-1">{stage.desc}</p>
+                    <p className="text-xs text-foreground-muted mt-0.5 line-clamp-1">{stage.desc}</p>
                   </div>
 
                   {/* Active indicator */}
@@ -125,7 +125,7 @@ export function AvatarStudioInteractive() {
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <span className="text-xs text-[#8A8178] font-mono">{completed.length}/{stages.length}</span>
+            <span className="text-xs text-foreground-muted font-mono">{completed.length}/{stages.length}</span>
           </div>
         </motion.div>
 
@@ -149,12 +149,12 @@ export function AvatarStudioInteractive() {
                 })()}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#F3F4F4]">{stages[activeStage].label}</h3>
-                <p className="text-sm text-[#B0A79C]">Step {activeStage + 1} of {stages.length}</p>
+                <h3 className="text-lg font-bold text-foreground">{stages[activeStage].label}</h3>
+                <p className="text-sm text-foreground-muted">Step {activeStage + 1} of {stages.length}</p>
               </div>
             </div>
 
-            <p className="text-[#D8D2C8] leading-relaxed mb-8">
+            <p className="text-foreground leading-relaxed mb-8">
               {stages[activeStage].desc}
             </p>
 
@@ -176,7 +176,7 @@ export function AvatarStudioInteractive() {
                         >
                           <StageIcon className="h-8 w-8" style={{ color: stages[activeStage].color }} />
                         </div>
-                        <span className="text-xs text-[#8A8178]">{stages[activeStage].label} configuration</span>
+                        <span className="text-xs text-foreground-muted">{stages[activeStage].label} configuration</span>
                       </>
                     )
                   })()}
@@ -189,7 +189,7 @@ export function AvatarStudioInteractive() {
               <motion.button
                 onClick={handlePrev}
                 disabled={activeStage === 0}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-[#D8D2C8] border border-white/[0.06] disabled:opacity-30 hover:bg-white/[0.04] transition-all"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-foreground border border-white/[0.06] disabled:opacity-30 hover:bg-white/[0.04] transition-all"
                 whileHover={{ x: activeStage > 0 ? -2 : 0 }}
               >
                 Previous
@@ -224,7 +224,7 @@ export function AvatarStudioInteractive() {
         transition={{ delay: 0.8 }}
         className="text-center mt-12"
       >
-        <p className="text-sm text-[#8A8178]">
+        <p className="text-sm text-foreground-muted">
           <span className="text-[#CC3A63]">Interactive preview</span> — Click through each stage to explore the creation pipeline
         </p>
       </motion.div>

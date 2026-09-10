@@ -116,7 +116,7 @@ export function MemoryVisualization() {
                   style={{ background: node.color }}
                 />
               </motion.div>
-              <span className="text-[9px] text-[#8A8178] mt-1 font-mono">{node.label}</span>
+              <span className="text-[9px] text-foreground-muted mt-1 font-mono">{node.label}</span>
             </motion.div>
           ))}
 
@@ -152,8 +152,8 @@ export function MemoryVisualization() {
             >
               <mem.icon className="h-5 w-5" style={{ color: mem.color }} />
             </div>
-            <h3 className="text-base font-semibold text-[#F3F4F4] mb-2">{mem.title}</h3>
-            <p className="text-sm text-[#B0A79C] leading-relaxed">{mem.desc}</p>
+            <h3 className="text-base font-semibold text-foreground mb-2">{mem.title}</h3>
+            <p className="text-sm text-foreground-muted leading-relaxed">{mem.desc}</p>
             <div className="mt-4 flex items-center gap-2">
               <div className="flex-1 h-1 rounded-full bg-white/[0.06]">
                 <motion.div
@@ -164,7 +164,7 @@ export function MemoryVisualization() {
                   transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
                 />
               </div>
-              <span className="text-[10px] text-[#8A8178] font-mono">Active</span>
+              <span className="text-[10px] text-foreground-muted font-mono">Active</span>
             </div>
           </GlassCard>
         ))}

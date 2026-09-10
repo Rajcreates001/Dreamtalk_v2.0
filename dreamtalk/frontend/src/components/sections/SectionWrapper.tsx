@@ -109,7 +109,7 @@ function SectionInner({
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
         >
-          <span className="text-[10px] uppercase tracking-[0.25em] text-white/20 font-mono">{label}</span>
+          <span className="text-[10px] uppercase tracking-[0.25em] text-foreground/20 font-mono">{label}</span>
         </motion.div>
       )}
 
@@ -214,7 +214,7 @@ export function SectionHeading({
           {label}
         </motion.span>
       )}
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F3F4F4] mb-4 tracking-tight">
+      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
         <RenderTitle title={title} />
       </h2>
       {description && (
@@ -223,7 +223,7 @@ export function SectionHeading({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="text-lg text-[#B0A79C] max-w-2xl mx-auto leading-relaxed"
+          className="text-lg text-foreground-muted max-w-2xl mx-auto leading-relaxed"
         >
           {description}
         </motion.p>
@@ -278,7 +278,7 @@ export function GlassCard({
   return (
     <motion.div
       variants={staggerItem}
-      className={`rounded-[20px] bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-6 ${
+      className={`rounded-[20px] bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-6 ${
         hover
           ? "hover:-translate-y-1 hover:bg-white/[0.04] hover:border-[#CC3A63]/20 transition-all duration-300 ease-out group cursor-default"
           : ""

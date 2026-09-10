@@ -44,13 +44,13 @@ export function PremiumFAQ() {
           viewport={{ once: true }}
           className="relative mb-8"
         >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A8178]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
           <input
             name="faq-search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search questions..."
-            className="w-full bg-[#2C2929]/60 border border-white/[0.06] rounded-xl pl-11 pr-4 py-3 text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
+            className="w-full bg-card/60 border border-white/[0.06] rounded-xl pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
           />
         </motion.div>
 
@@ -65,18 +65,18 @@ export function PremiumFAQ() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="rounded-xl bg-[#2C2929]/60 border border-white/[0.05] overflow-hidden"
+                className="rounded-xl bg-card/60 border border-white/[0.05] overflow-hidden"
               >
                 <button
                   onClick={() => setOpen(open === faq.q ? null : faq.q)}
-                  className="w-full flex items-center justify-between p-4 text-left text-sm font-medium text-[#D8D2C8] hover:text-[#F3F4F4] transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left text-sm font-medium text-foreground hover:text-foreground transition-colors"
                 >
                   <span>{faq.q}</span>
                   <motion.div
                     animate={{ rotate: open === faq.q ? 90 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronRight className="h-4 w-4 text-[#8A8178]" />
+                    <ChevronRight className="h-4 w-4 text-foreground-muted" />
                   </motion.div>
                 </button>
                 <AnimatePresence>
@@ -88,7 +88,7 @@ export function PremiumFAQ() {
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <p className="px-4 pb-4 text-sm text-[#B0A79C] leading-relaxed">{faq.a}</p>
+                      <p className="px-4 pb-4 text-sm text-foreground-muted leading-relaxed">{faq.a}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -101,7 +101,7 @@ export function PremiumFAQ() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-sm text-[#8A8178] py-8"
+            className="text-center text-sm text-foreground-muted py-8"
           >
             No questions found for &ldquo;{searchQuery}&rdquo;
           </motion.p>

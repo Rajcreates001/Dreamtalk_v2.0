@@ -31,8 +31,8 @@ export default function MarketplacePage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#F3F4F4]">Marketplace</h1>
-        <p className="text-sm text-[#B0A79C] mt-1">Discover templates, voices, and integrations</p>
+        <h1 className="text-xl font-bold text-foreground">Marketplace</h1>
+        <p className="text-sm text-foreground-muted mt-1">Discover templates, voices, and integrations</p>
       </div>
 
       {/* Categories */}
@@ -45,7 +45,7 @@ export default function MarketplacePage() {
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               activeCat === cat
                 ? "bg-[#CC3A63]/20 text-[#CC3A63] border border-[#CC3A63]/30"
-                : "bg-white/[0.04] text-[#B0A79C] hover:text-[#D8D2C8] border border-transparent"
+                : "bg-white/[0.04] text-foreground-muted hover:text-foreground border border-transparent"
             )}
           >
             {cat}
@@ -63,7 +63,7 @@ export default function MarketplacePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="p-4 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] hover:bg-[#2C2929] hover:border-white/[0.12] transition-all group"
+              className="p-4 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card hover:border-white/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15`, color: item.color }}>
@@ -71,16 +71,16 @@ export default function MarketplacePage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 text-[#D6A44C]" />
-                  <span className="text-xs text-[#D8D2C8]">{item.rating}</span>
+                  <span className="text-xs text-foreground">{item.rating}</span>
                 </div>
               </div>
-              <h3 className="text-sm font-semibold text-[#F3F4F4]">{item.name}</h3>
+              <h3 className="text-sm font-semibold text-foreground">{item.name}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-[#8A8178] px-2 py-0.5 rounded-md bg-white/[0.04]">{item.type}</span>
-                <span className="text-[10px] text-[#8A8178]">{item.downloads} downloads</span>
+                <span className="text-[10px] text-foreground-muted px-2 py-0.5 rounded-md bg-white/[0.04]">{item.type}</span>
+                <span className="text-[10px] text-foreground-muted">{item.downloads} downloads</span>
               </div>
-              <p className="text-xs text-[#8A8178] mt-2">{item.desc}</p>
-              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all group">
+              <p className="text-xs text-foreground-muted mt-2">{item.desc}</p>
+              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all group">
                 <Download className="h-3 w-3" />
                 Install
               </button>

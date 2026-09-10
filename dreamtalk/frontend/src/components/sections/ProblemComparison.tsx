@@ -94,8 +94,8 @@ function FragmentedCard({
           <tool.icon className="h-4 w-4" style={{ color: tool.color }} />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-semibold text-[#F3F4F4] mb-0.5">{tool.label}</h4>
-          <p className="text-[11px] text-[#8A8178]">{tool.desc}</p>
+          <h4 className="text-sm font-semibold text-foreground mb-0.5">{tool.label}</h4>
+          <p className="text-[11px] text-foreground-muted">{tool.desc}</p>
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: hoveredTool === index ? "auto" : 0, opacity: hoveredTool === index ? 1 : 0 }}
@@ -140,7 +140,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       <div className="relative flex items-center justify-center shrink-0">
         <div
           className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500
-            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-white/[0.06] text-[#8A8178]"}`}
+            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-white/[0.06] text-foreground-muted"}`}
           style={{
             animation: isLast ? `chamber-pulse 2s ease-in-out infinite` : `pipeline-pulse 3s ease-in-out infinite`,
             animationDelay: `${index * 0.4}s`,
@@ -154,7 +154,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       </div>
       <span
         className={`text-[11px] font-mono tracking-wider leading-tight transition-all duration-500
-          ${isLast ? "text-[#F3F4F4] font-semibold" : "text-[#8A8178] group-hover:text-[#B0A79C]"}`}
+          ${isLast ? "text-foreground font-semibold" : "text-foreground-muted group-hover:text-foreground-muted"}`}
       >
         {stage}
       </span>
@@ -233,7 +233,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
           <div className="absolute inset-[10%] rounded-full blur-[25px] animate-body-glow" style={{ background: "radial-gradient(circle, rgba(204,58,99,0.25), transparent 70%)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16">
             <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-gradient-to-b from-[#CC3A63] to-[#A2AB73] p-[1.5px]" style={{ animation: "breathe 4s ease-in-out infinite" }}>
-              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1">
+              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-background flex items-center justify-center flex-col gap-1">
                 <div className="flex gap-3.5">
                   <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite" }} />
                   <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite 0.1s" }} />
@@ -258,7 +258,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
         className="absolute bottom-[2%] left-1/2 -translate-x-1/2 z-30"
       >
         {solutionText && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#2C2929]/90 border border-[#A2AB73]/20 backdrop-blur-xl whitespace-nowrap">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/90 border border-[#A2AB73]/20 backdrop-blur-xl whitespace-nowrap">
             <Sparkles className="h-3 w-3 text-[#A2AB73]" />
             <span className="text-[10px] font-mono text-[#A2AB73] tracking-wider">{solutionText}</span>
           </div>
@@ -269,25 +269,25 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       <div className="absolute top-[1%] left-[3%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
           <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#A2AB73]" /></span>
-          <span className="text-[7px] font-mono text-white/40 tracking-wider">ACTIVE</span>
+          <span className="text-[7px] font-mono text-foreground/40 tracking-wider">ACTIVE</span>
         </div>
       </div>
       <div className="absolute top-[12%] right-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
           <Brain className="h-2 w-2 text-[#A2AB73]" />
-          <span className="text-[7px] font-mono text-white/30 tracking-wider">LEARNING</span>
+          <span className="text-[7px] font-mono text-foreground/30 tracking-wider">LEARNING</span>
         </div>
       </div>
       <div className="absolute bottom-[12%] right-[4%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
           <Heart className="h-2 w-2 text-[#D84C63]" />
-          <span className="text-[7px] font-mono text-white/30 tracking-wider">EMPATHETIC</span>
+          <span className="text-[7px] font-mono text-foreground/30 tracking-wider">EMPATHETIC</span>
         </div>
       </div>
       <div className="absolute top-[30%] left-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
           <Users className="h-2 w-2 text-[#CC3A63]" />
-          <span className="text-[7px] font-mono text-white/30 tracking-wider">RELATIONSHIP</span>
+          <span className="text-[7px] font-mono text-foreground/30 tracking-wider">RELATIONSHIP</span>
         </div>
       </div>
     </div>
@@ -319,8 +319,8 @@ export function ProblemComparison() {
         >
           <div className="mb-4">
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#D84C63]/50 font-mono">TODAY</span>
-            <h3 className="text-lg font-bold text-[#F3F4F4] mt-1">Fragmented AI Ecosystem</h3>
-            <p className="text-xs text-[#8A8178] mt-1 max-w-md">
+            <h3 className="text-lg font-bold text-foreground mt-1">Fragmented AI Ecosystem</h3>
+            <p className="text-xs text-foreground-muted mt-1 max-w-md">
               Disconnected tools with no shared memory, intelligence, or personality.
             </p>
           </div>
@@ -375,7 +375,7 @@ export function ProblemComparison() {
           className="hidden lg:flex lg:col-span-2 flex-col items-center justify-center relative"
         >
           <div className="mb-6 text-center">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-white/20 font-mono">TRANSFORMATION</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] text-foreground/20 font-mono">TRANSFORMATION</span>
           </div>
 
           <div className="space-y-3">
@@ -410,7 +410,7 @@ export function ProblemComparison() {
         <div className="md:col-span-3 lg:hidden flex items-center justify-center py-4">
           <div className="flex items-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-[#D84C63] to-[#CC3A63]" />
-            <span className="text-[8px] uppercase tracking-[0.3em] text-white/20 font-mono">UNIFIED</span>
+            <span className="text-[8px] uppercase tracking-[0.3em] text-foreground/20 font-mono">UNIFIED</span>
             <div className="h-px w-12 bg-gradient-to-l from-[#CC3A63] to-[#A2AB73]" />
           </div>
         </div>
@@ -425,10 +425,10 @@ export function ProblemComparison() {
         >
           <div className="mb-4 text-right">
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#A2AB73]/50 font-mono">DREAMTALK</span>
-            <h3 className="text-lg font-bold text-[#F3F4F4] mt-1">
+            <h3 className="text-lg font-bold text-foreground mt-1">
               One <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent">Digital Twin OS</span>
             </h3>
-            <p className="text-xs text-[#8A8178] mt-1 max-w-md ml-auto">
+            <p className="text-xs text-foreground-muted mt-1 max-w-md ml-auto">
               Unified intelligence with persistent memory, emotional awareness, and continuous learning.
             </p>
           </div>

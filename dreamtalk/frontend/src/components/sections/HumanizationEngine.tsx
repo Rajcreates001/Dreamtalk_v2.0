@@ -98,8 +98,8 @@ export function HumanizationEngine() {
               </div>
 
               {/* Label */}
-              <h4 className="text-xs lg:text-sm font-semibold text-[#F3F4F4] mb-1">{stage.label}</h4>
-              <p className="text-[10px] lg:text-xs text-[#8A8178] leading-tight">{stage.desc}</p>
+              <h4 className="text-xs lg:text-sm font-semibold text-foreground mb-1">{stage.label}</h4>
+              <p className="text-[10px] lg:text-xs text-foreground-muted leading-tight">{stage.desc}</p>
 
               {/* Arrow (except last) */}
               {i < stages.length - 1 && (
@@ -117,14 +117,14 @@ export function HumanizationEngine() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 1 }}
-          className="mt-16 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-8"
+          className="mt-16 rounded-2xl bg-card/60 border border-white/[0.06] p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-lg font-semibold text-[#F3F4F4] mb-3">
+              <h3 className="text-lg font-semibold text-foreground mb-3">
                 Continuous evolution
               </h3>
-              <p className="text-sm text-[#B0A79C] leading-relaxed">
+              <p className="text-sm text-foreground-muted leading-relaxed">
                 DreamTalk Digital Humans don&apos;t stay static. Every conversation, every piece of knowledge,
                 every emotional interaction makes them more human. The Humanization Engine continuously
                 learns, adapts, and evolves — so your Digital Twin becomes more valuable over time.
@@ -168,9 +168,9 @@ export function HumanizationEngine() {
                 </defs>
               </svg>
               <div className="flex justify-between mt-2">
-                <span className="text-[10px] text-[#8A8178] font-mono">Day 1</span>
-                <span className="text-[10px] text-[#8A8178] font-mono">Week 12</span>
-                <span className="text-[10px] text-[#8A8178] font-mono">Month 6</span>
+                <span className="text-[10px] text-foreground-muted font-mono">Day 1</span>
+                <span className="text-[10px] text-foreground-muted font-mono">Week 12</span>
+                <span className="text-[10px] text-foreground-muted font-mono">Month 6</span>
               </div>
             </div>
           </div>

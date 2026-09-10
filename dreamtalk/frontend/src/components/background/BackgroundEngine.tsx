@@ -55,8 +55,9 @@ export function BackgroundEngine({
         }}
       />
 
-      {/* Layer 2: Depth vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgb(7,11,20)_70%)]" />
+      {/* Layer 2: Depth vignette (fades to theme background) */}
+      <div className="absolute inset-0"
+        style={{ background: "radial-gradient(ellipse at center, transparent 0%, var(--background) 72%)" }} />
     </div>
   )
 }
@@ -97,7 +98,7 @@ export function SectionBackground({
           opacity: 0.4,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgb(7,11,20)] opacity-30" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background opacity-30" />
     </div>
   )
 }

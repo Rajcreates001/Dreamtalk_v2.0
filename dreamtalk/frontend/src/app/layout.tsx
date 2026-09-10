@@ -29,9 +29,9 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "DreamTalk Astra — Create your digital twin",
+  title: "DreamTalk — Create your digital twin",
   description:
-    "DreamTalk Astra transforms your voice and appearance into an interactive digital human — multilingual, expressive, and local-first.",
+    "DreamTalk transforms your voice and appearance into an interactive digital human — multilingual, expressive, and local-first.",
 }
 
 export default function RootLayout({
@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${jakarta.variable} h-full antialiased dark`} suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${jakarta.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* ── Hydration & Console Defense ──────────────────────────────── */}
         {/* This inline script runs synchronously during HTML parsing before */}

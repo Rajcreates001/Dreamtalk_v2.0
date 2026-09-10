@@ -36,14 +36,14 @@ export function SecurityIntegrations() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.06 }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-[#2C2929]/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
+              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${feat.color}15` }}>
                 <feat.icon className="h-4 w-4" style={{ color: feat.color }} />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-[#F3F4F4]">{feat.label}</h4>
-                <p className="text-xs text-[#8A8178]">{feat.desc}</p>
+                <h4 className="text-sm font-semibold text-foreground">{feat.label}</h4>
+                <p className="text-xs text-foreground-muted">{feat.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -109,7 +109,7 @@ export function SecurityIntegrations() {
         ].map((item) => (
           <span
             key={item}
-            className="flex items-center gap-1.5 text-xs text-[#8A8178]"
+            className="flex items-center gap-1.5 text-xs text-foreground-muted"
           >
             <CheckCircle className="h-3 w-3 text-[#A2AB73]" />
             {item}
@@ -123,9 +123,9 @@ export function SecurityIntegrations() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.3 }}
-        className="mt-16 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-6 lg:p-8"
+        className="mt-16 rounded-2xl bg-card/60 border border-white/[0.06] p-6 lg:p-8"
       >
-        <h3 className="text-lg font-semibold text-[#F3F4F4] mb-4 text-center">APIs & Integrations</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4 text-center">APIs & Integrations</h3>
         <div className="flex flex-wrap justify-center gap-2">
           {[
             "REST API", "WebSocket", "Streaming", "Python SDK", "Node.js SDK",
@@ -134,7 +134,7 @@ export function SecurityIntegrations() {
           ].map((item) => (
             <span
               key={item}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.06] transition-all"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.06] text-foreground hover:text-foreground hover:bg-white/[0.06] transition-all"
             >
               {item}
             </span>

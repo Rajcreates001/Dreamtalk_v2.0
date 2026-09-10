@@ -74,10 +74,10 @@ type DigitalTwin = {
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
   completed: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Live" },
   processing: { bg: "bg-[#D6A44C]/10", text: "text-[#D6A44C]", dot: "bg-[#D6A44C]", label: "Processing" },
-  draft: { bg: "bg-[#B0A79C]/10", text: "text-[#B0A79C]", dot: "bg-[#B0A79C]", label: "Draft" },
+  draft: { bg: "bg-[#B0A79C]/10", text: "text-foreground-muted", dot: "bg-[#B0A79C]", label: "Draft" },
   published: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Published" },
   failed: { bg: "bg-[#D84C63]/10", text: "text-[#D84C63]", dot: "bg-[#D84C63]", label: "Failed" },
-  default: { bg: "bg-[#B0A79C]/10", text: "text-[#B0A79C]", dot: "bg-[#B0A79C]", label: "Unknown" },
+  default: { bg: "bg-[#B0A79C]/10", text: "text-foreground-muted", dot: "bg-[#B0A79C]", label: "Unknown" },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -94,8 +94,8 @@ function TraitBar({ label, value, color = "#CC3A63" }: { label: string; value: n
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[#B0A79C] capitalize">{label.replace(/_/g, " ")}</span>
-        <span className="text-[10px] text-[#8A8178]">{Math.round(value * 100)}%</span>
+        <span className="text-[11px] text-foreground-muted capitalize">{label.replace(/_/g, " ")}</span>
+        <span className="text-[10px] text-foreground-muted">{Math.round(value * 100)}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
         <motion.div
@@ -118,7 +118,7 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
           "w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all",
           completed
             ? "bg-[#A2AB73]/20 text-[#A2AB73]"
-            : "bg-white/[0.04] text-[#8A8178]"
+            : "bg-white/[0.04] text-foreground-muted"
         )}
       >
         {completed ? (
@@ -127,7 +127,7 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
           <div className="h-2 w-2 rounded-full bg-[#8A8178]/50" />
         )}
       </div>
-      <span className={cn("text-xs", completed ? "text-[#D8D2C8] font-medium" : "text-[#8A8178]")}>
+      <span className={cn("text-xs", completed ? "text-foreground font-medium" : "text-foreground-muted")}>
         {label}
       </span>
     </div>
@@ -219,8 +219,8 @@ export default function DigitalTwinDetailPage() {
     return (
       <div className="max-w-6xl mx-auto py-24 flex flex-col items-center gap-4">
         <AlertCircle className="h-12 w-12 text-red-400" />
-        <h2 className="text-lg font-semibold text-[#F3F4F4]">Avatar Not Found</h2>
-        <p className="text-sm text-[#8A8178]">{error || "This avatar does not exist or has been removed."}</p>
+        <h2 className="text-lg font-semibold text-foreground">Avatar Not Found</h2>
+        <p className="text-sm text-foreground-muted">{error || "This avatar does not exist or has been removed."}</p>
         <button
           onClick={() => router.push("/dashboard/my-avatars")}
           className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium mt-2"
@@ -254,7 +254,7 @@ export default function DigitalTwinDetailPage() {
       >
         <Link
           href="/dashboard/my-avatars"
-          className="inline-flex items-center gap-1.5 text-xs text-[#B0A79C] hover:text-[#F3F4F4] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-foreground-muted hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to My Avatars
@@ -281,21 +281,21 @@ export default function DigitalTwinDetailPage() {
 
           {/* Quick stats row */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
-              <p className="text-[10px] text-[#8A8178] mb-1">Face Quality</p>
-              <p className="text-sm font-bold text-[#F3F4F4]">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+              <p className="text-[10px] text-foreground-muted mb-1">Face Quality</p>
+              <p className="text-sm font-bold text-foreground">
                 {appearance?.quality_score ? `${(appearance.quality_score * 100).toFixed(0)}%` : "—"}
               </p>
             </div>
-            <div className="rounded-xl bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
-              <p className="text-[10px] text-[#8A8178] mb-1">Landmarks</p>
-              <p className="text-sm font-bold text-[#F3F4F4]">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+              <p className="text-[10px] text-foreground-muted mb-1">Landmarks</p>
+              <p className="text-sm font-bold text-foreground">
                 {appearance?.landmarks_count || "—"}
               </p>
             </div>
-            <div className="rounded-xl bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
-              <p className="text-[10px] text-[#8A8178] mb-1">Status</p>
-              <p className="text-sm font-bold text-[#F3F4F4] capitalize">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+              <p className="text-[10px] text-foreground-muted mb-1">Status</p>
+              <p className="text-sm font-bold text-foreground capitalize">
                 {twin.status}
               </p>
             </div>
@@ -310,7 +310,7 @@ export default function DigitalTwinDetailPage() {
           className="lg:col-span-2 space-y-4"
         >
           {/* Header card */}
-          <div className="bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-4">
+          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className={cn(
@@ -322,9 +322,9 @@ export default function DigitalTwinDetailPage() {
                   <Bot className={cn("h-6 w-6", isPublished ? "text-[#A2AB73]" : "text-[#CC3A63]")} />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-[#F3F4F4]">{twin.name}</h1>
+                  <h1 className="text-lg font-bold text-foreground">{twin.name}</h1>
                   {twin.nickname && (
-                    <p className="text-[11px] text-[#8A8178]">aka &ldquo;{twin.nickname}&rdquo;</p>
+                    <p className="text-[11px] text-foreground-muted">aka &ldquo;{twin.nickname}&rdquo;</p>
                   )}
                 </div>
               </div>
@@ -332,38 +332,38 @@ export default function DigitalTwinDetailPage() {
             </div>
 
             {twin.description && (
-              <p className="text-sm text-[#B0A79C] leading-relaxed">{twin.description}</p>
+              <p className="text-sm text-foreground-muted leading-relaxed">{twin.description}</p>
             )}
 
             {twin.greeting && (
               <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
-                <p className="text-[10px] text-[#8A8178] mb-1">Greeting</p>
-                <p className="text-sm text-[#D8D2C8] italic">&ldquo;{twin.greeting}&rdquo;</p>
+                <p className="text-[10px] text-foreground-muted mb-1">Greeting</p>
+                <p className="text-sm text-foreground italic">&ldquo;{twin.greeting}&rdquo;</p>
               </div>
             )}
           </div>
 
           {/* Meta card */}
-          <div className="bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
-            <h2 className="text-xs font-semibold text-[#B0A79C] uppercase tracking-wider">Details</h2>
+          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+            <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Details</h2>
 
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <User className="h-3.5 w-3.5 text-[#8A8178]" />
-                  <span className="text-xs text-[#B0A79C]">Role</span>
+                  <User className="h-3.5 w-3.5 text-foreground-muted" />
+                  <span className="text-xs text-foreground-muted">Role</span>
                 </div>
-                <span className="text-xs text-[#D8D2C8] capitalize">{twin.role}</span>
+                <span className="text-xs text-foreground capitalize">{twin.role}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Globe className="h-3.5 w-3.5 text-[#8A8178]" />
-                  <span className="text-xs text-[#B0A79C]">Languages</span>
+                  <Globe className="h-3.5 w-3.5 text-foreground-muted" />
+                  <span className="text-xs text-foreground-muted">Languages</span>
                 </div>
                 <div className="flex gap-1">
                   {langs.map((lang) => (
-                    <span key={lang} className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-[#B0A79C] uppercase">
+                    <span key={lang} className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-foreground-muted uppercase">
                       {lang === "en" ? "EN" : lang === "ta" ? "TA" : lang === "hi" ? "HI" : lang.slice(0, 2).toUpperCase()}
                     </span>
                   ))}
@@ -373,37 +373,37 @@ export default function DigitalTwinDetailPage() {
               {twin.relationship_type && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Heart className="h-3.5 w-3.5 text-[#8A8178]" />
-                    <span className="text-xs text-[#B0A79C]">Relationship</span>
+                    <Heart className="h-3.5 w-3.5 text-foreground-muted" />
+                    <span className="text-xs text-foreground-muted">Relationship</span>
                   </div>
-                  <span className="text-xs text-[#D8D2C8] capitalize">{twin.relationship_type.replace(/_/g, " ")}</span>
+                  <span className="text-xs text-foreground capitalize">{twin.relationship_type.replace(/_/g, " ")}</span>
                 </div>
               )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-[#8A8178]" />
-                  <span className="text-xs text-[#B0A79C]">Created</span>
+                  <Clock className="h-3.5 w-3.5 text-foreground-muted" />
+                  <span className="text-xs text-foreground-muted">Created</span>
                 </div>
-                <span className="text-xs text-[#D8D2C8]">{createdDate}</span>
+                <span className="text-xs text-foreground">{createdDate}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="h-3.5 w-3.5 text-[#8A8178]" />
-                  <span className="text-xs text-[#B0A79C]">Photo</span>
+                  <ImageIcon className="h-3.5 w-3.5 text-foreground-muted" />
+                  <span className="text-xs text-foreground-muted">Photo</span>
                 </div>
-                <span className={cn("text-xs", twin.avatar_image_url ? "text-[#A2AB73]" : "text-[#8A8178]")}>
+                <span className={cn("text-xs", twin.avatar_image_url ? "text-[#A2AB73]" : "text-foreground-muted")}>
                   {twin.avatar_image_url ? "Uploaded" : "Not uploaded"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Mic className="h-3.5 w-3.5 text-[#8A8178]" />
-                  <span className="text-xs text-[#B0A79C]">Voice</span>
+                  <Mic className="h-3.5 w-3.5 text-foreground-muted" />
+                  <span className="text-xs text-foreground-muted">Voice</span>
                 </div>
-                <span className={cn("text-xs", twin.cloned_voice_id ? "text-[#A2AB73]" : "text-[#8A8178]")}>
+                <span className={cn("text-xs", twin.cloned_voice_id ? "text-[#A2AB73]" : "text-foreground-muted")}>
                   {twin.cloned_voice_id ? "Cloned" : "Not cloned"}
                 </span>
               </div>
@@ -411,8 +411,8 @@ export default function DigitalTwinDetailPage() {
           </div>
 
           {/* Pipeline steps card */}
-          <div className="bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
-            <h2 className="text-xs font-semibold text-[#B0A79C] uppercase tracking-wider">Creation Pipeline</h2>
+          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+            <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Creation Pipeline</h2>
             <div className="space-y-3">
               <StepIndicator label="Appearance" completed={!!appearance?.face_detected} />
               <StepIndicator label="Voice" completed={!!twin.cloned_voice_id} />
@@ -424,8 +424,8 @@ export default function DigitalTwinDetailPage() {
 
           {/* Personality card */}
           {personality && Object.keys(personality).length > 0 && (
-            <div className="bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
-              <h2 className="text-xs font-semibold text-[#B0A79C] uppercase tracking-wider">Personality Traits</h2>
+            <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+              <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Personality Traits</h2>
               <div className="space-y-2.5">
                 {Object.entries(personality).slice(0, 6).map(([trait, value]) => (
                   <TraitBar
@@ -449,25 +449,25 @@ export default function DigitalTwinDetailPage() {
 
           {/* Voice details card */}
           {voice && (
-            <div className="bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
-              <h2 className="text-xs font-semibold text-[#B0A79C] uppercase tracking-wider">Voice Profile</h2>
+            <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+              <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Voice Profile</h2>
               <div className="space-y-2.5">
                 {voice.accent && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#B0A79C]">Accent</span>
-                    <span className="text-xs text-[#D8D2C8] capitalize">{voice.accent}</span>
+                    <span className="text-xs text-foreground-muted">Accent</span>
+                    <span className="text-xs text-foreground capitalize">{voice.accent}</span>
                   </div>
                 )}
                 {voice.speaking_style && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#B0A79C]">Style</span>
-                    <span className="text-xs text-[#D8D2C8] capitalize">{voice.speaking_style.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-foreground-muted">Style</span>
+                    <span className="text-xs text-foreground capitalize">{voice.speaking_style.replace(/_/g, " ")}</span>
                   </div>
                 )}
                 {voice.speech_rate && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#B0A79C]">Speed</span>
-                    <span className="text-xs text-[#D8D2C8]">{voice.speech_rate} WPM</span>
+                    <span className="text-xs text-foreground-muted">Speed</span>
+                    <span className="text-xs text-foreground">{voice.speech_rate} WPM</span>
                   </div>
                 )}
               </div>
@@ -500,7 +500,7 @@ export default function DigitalTwinDetailPage() {
             )}
 
             <button
-              className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
+              className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
               title="Settings"
             >
               <Settings className="h-4 w-4" />

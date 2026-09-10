@@ -93,7 +93,7 @@ export function useCreateTwin() {
     try {
       const twin: any = await digitalTwinApi.create({
         name: name.trim() || "My Twin",
-        description: "Created with DreamTalk Astra",
+        description: "Created with DreamTalk",
       })
       setTwinId(twin.id ?? twin.twin_id)
       setStep("identity")

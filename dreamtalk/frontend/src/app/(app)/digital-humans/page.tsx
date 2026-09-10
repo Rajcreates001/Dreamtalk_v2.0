@@ -132,8 +132,8 @@ export default function DigitalHumansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#F3F4F4]">Digital Humans</h1>
-          <p className="text-sm text-[#B0A79C] mt-1">
+          <h1 className="text-xl font-bold text-foreground">Digital Humans</h1>
+          <p className="text-sm text-foreground-muted mt-1">
             Manage your AI workforce
             {!loading && <span className="ml-1.5">· {avatars.length} total</span>}
           </p>
@@ -152,7 +152,7 @@ export default function DigitalHumansPage() {
         <div className="flex items-center justify-center py-24">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-[#CC3A63]" />
-            <p className="text-sm text-[#8A8178]">Loading your digital workforce...</p>
+            <p className="text-sm text-foreground-muted">Loading your digital workforce...</p>
           </div>
         </div>
       )}
@@ -179,8 +179,8 @@ export default function DigitalHumansPage() {
                 transition={{ delay: i * 0.06 }}
                 onClick={() => setSelectedId(isSelected ? null : avatar.id)}
                 className={cn(
-                  "rounded-xl bg-[#2C2929]/80 border transition-all duration-200 overflow-hidden cursor-pointer",
-                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-[#2C2929]"
+                  "rounded-xl bg-card/80 border transition-all duration-200 overflow-hidden cursor-pointer",
+                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card"
                 )}
               >
                 {/* Card header */}
@@ -198,8 +198,8 @@ export default function DigitalHumansPage() {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-[#F3F4F4]">{avatar.name}</h3>
-                        <p className="text-[11px] text-[#B0A79C]">{avatar.role}</p>
+                        <h3 className="text-sm font-semibold text-foreground">{avatar.name}</h3>
+                        <p className="text-[11px] text-foreground-muted">{avatar.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ export default function DigitalHumansPage() {
                         </span>
                         <span className="text-[10px] font-medium" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
                       </div>
-                      <button className="p-1.5 rounded-lg hover:bg-white/[0.06] text-[#8A8178] hover:text-[#B0A79C] transition-all">
+                      <button className="p-1.5 rounded-lg hover:bg-white/[0.06] text-foreground-muted hover:text-foreground-muted transition-all">
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -221,7 +221,7 @@ export default function DigitalHumansPage() {
                   {/* Emotion */}
                   <div className="flex items-center gap-2 mt-3">
                     <Heart className="h-3 w-3 text-[#CC3A63]" />
-                    <span className="text-xs text-[#D8D2C8]">{avatar.emotion}</span>
+                    <span className="text-xs text-foreground">{avatar.emotion}</span>
                   </div>
                 </div>
 
@@ -232,26 +232,26 @@ export default function DigitalHumansPage() {
                     { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "#CC3A63" },
                     { label: "Languages", value: `${avatar.languages}`, icon: Globe, color: "#A2AB73" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-[#2C2929]/60 p-3 text-center">
+                    <div key={stat.label} className="bg-card/60 p-3 text-center">
                       <div className="flex items-center justify-center gap-1 mb-1">
                         <stat.icon className="h-3 w-3" style={{ color: stat.color }} />
                       </div>
                       <p className="text-xs font-bold" style={{ color: stat.color }}>{stat.value}</p>
-                      <p className="text-[9px] text-[#8A8178] mt-0.5">{stat.label}</p>
+                      <p className="text-[9px] text-foreground-muted mt-0.5">{stat.label}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Metadata */}
                 <div className="px-4 py-3 flex items-center justify-between border-t border-white/[0.06]">
-                  <div className="flex items-center gap-2 text-[10px] text-[#8A8178]">
+                  <div className="flex items-center gap-2 text-[10px] text-foreground-muted">
                     <Cpu className="h-3 w-3" />
                     <span>{avatar.model}</span>
                     <span className="text-white/[0.06]">·</span>
                     <BookOpen className="h-3 w-3" />
                     <span>{avatar.knowledgeSize}</span>
                   </div>
-                  <span className="text-[10px] text-[#8A8178]">
+                  <span className="text-[10px] text-foreground-muted">
                     {avatar.conversations.toLocaleString()} chats
                   </span>
                 </div>
@@ -260,19 +260,19 @@ export default function DigitalHumansPage() {
                 <div className="px-4 pb-4 flex gap-2">
                   <Link
                     href={`/conversations?twin=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
                   >
                     <MessageSquare className="h-3 w-3" />
                     Chat
                   </Link>
                   <Link
                     href={`/studio?id=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
                   >
                     <Settings className="h-3 w-3" />
                     Edit
                   </Link>
-                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all">
                     <Sparkles className="h-3 w-3" />
                   </button>
                 </div>
@@ -291,10 +291,10 @@ export default function DigitalHumansPage() {
               className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-white/[0.08] p-8 hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all group"
             >
               <div className="w-14 h-14 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-[#CC3A63]/10 transition-all mb-4">
-                <Plus className="h-6 w-6 text-[#8A8178] group-hover:text-[#CC3A63]" />
+                <Plus className="h-6 w-6 text-foreground-muted group-hover:text-[#CC3A63]" />
               </div>
-              <p className="text-sm font-semibold text-[#B0A79C] group-hover:text-[#F3F4F4] transition-colors">Create New Avatar</p>
-              <p className="text-xs text-[#8A8178] mt-1">Design and train your next AI human</p>
+              <p className="text-sm font-semibold text-foreground-muted group-hover:text-foreground transition-colors">Create New Avatar</p>
+              <p className="text-xs text-foreground-muted mt-1">Design and train your next AI human</p>
             </Link>
           </motion.div>
         </div>

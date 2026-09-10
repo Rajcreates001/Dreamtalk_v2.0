@@ -1,34 +1,35 @@
 "use client"
 
-import { createContext, useContext, type ReactNode } from "react"
-
-type Theme = "light" | "dark"
-
-interface ThemeContextValue {
-  theme: Theme
-  toggle: () => void
-  setTheme: (t: Theme) => void
-}
-
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
-  toggle: () => {},
-  setTheme: () => {},
-})
-
-export function useTheme() {
-  return useContext(ThemeContext)
-}
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes"
+import type { ReactNode } from "react"
 
 /**
- * ThemeProvider — always provides "dark" theme.
- * All theme toggle buttons have been removed across the app.
- * We keep the context so existing useTheme() calls still compile.
+ * Real theme provider (next-themes). Toggles the `.dark` class on <html>,
+ * which flips the token palette in globals.css. Dark-first (cinematic),
+ * but fully switchable to the warm light theme.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
-    <ThemeContext.Provider value={{ theme: "dark", toggle: () => {}, setTheme: () => {} }}>
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={false}
+      storageKey="dreamtalk-theme"
+      disableTransitionOnChange={false}
+    >
       {children}
-    </ThemeContext.Provider>
+    </NextThemesProvider>
   )
+}
+
+/** Back-compat wrapper: `{ theme, resolvedTheme, setTheme, toggle }`. */
+export function useTheme() {
+  const { theme, resolvedTheme, setTheme } = useNextTheme()
+  const current = (resolvedTheme || theme || "dark") as "light" | "dark"
+  return {
+    theme: current,
+    resolvedTheme: current,
+    setTheme,
+    toggle: () => setTheme(current === "dark" ? "light" : "dark"),
+  }
 }

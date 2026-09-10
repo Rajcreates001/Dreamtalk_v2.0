@@ -136,8 +136,8 @@ export function SecondaryButton() {
         }}
       />
 
-      <Play className="relative z-10 h-4 w-4 text-[#D8D2C8] group-hover:text-white transition-colors" />
-      <span className="relative z-10 text-[#D8D2C8] group-hover:text-white font-medium text-sm tracking-wide transition-colors">
+      <Play className="relative z-10 h-4 w-4 text-foreground group-hover:text-white transition-colors" />
+      <span className="relative z-10 text-foreground group-hover:text-white font-medium text-sm tracking-wide transition-colors">
         Watch Demo
       </span>
 
@@ -147,7 +147,7 @@ export function SecondaryButton() {
         animate={{ x: hovered ? 3 : 0, opacity: hovered ? 1 : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
-        <ArrowRight className="h-3.5 w-3.5 text-white/60" />
+        <ArrowRight className="h-3.5 w-3.5 text-foreground/60" />
       </motion.div>
     </motion.button>
   )

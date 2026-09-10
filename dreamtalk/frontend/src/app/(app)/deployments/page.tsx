@@ -22,8 +22,8 @@ export default function DeploymentsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#F3F4F4]">Deployments</h1>
-          <p className="text-sm text-[#B0A79C] mt-1">Manage your AI workforce deployment status</p>
+          <h1 className="text-xl font-bold text-foreground">Deployments</h1>
+          <p className="text-sm text-foreground-muted mt-1">Manage your AI workforce deployment status</p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20">
           <Rocket className="h-4 w-4" />
@@ -40,7 +40,7 @@ export default function DeploymentsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="p-5 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] hover:bg-[#2C2929] transition-all"
+              className="p-5 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card transition-all"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -49,25 +49,25 @@ export default function DeploymentsPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-[#F3F4F4]">{dep.name}</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{dep.name}</h3>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ background: `${STATUS_CFG[dep.status].color}15`, color: STATUS_CFG[dep.status].color }}>
                         {STATUS_CFG[dep.status].label}
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-[#8A8178]">{dep.env}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-foreground-muted">{dep.env}</span>
                     </div>
-                    <p className="text-xs text-[#8A8178] mt-0.5">{dep.url}</p>
+                    <p className="text-xs text-foreground-muted mt-0.5">{dep.url}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-xs text-[#8A8178]">Uptime</p>
+                    <p className="text-xs text-foreground-muted">Uptime</p>
                     <p className="text-sm font-semibold text-[#A2AB73]">{dep.uptime}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-[#8A8178]">Requests</p>
-                    <p className="text-sm font-semibold text-[#F3F4F4]">{dep.requests}</p>
+                    <p className="text-xs text-foreground-muted">Requests</p>
+                    <p className="text-sm font-semibold text-foreground">{dep.requests}</p>
                   </div>
-                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                     <Eye className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -84,12 +84,12 @@ export default function DeploymentsPage() {
           { label: "Total Requests", value: "102.7K", icon: Cpu, color: "#CC3A63" },
           { label: "Avg Uptime", value: "99.4%", icon: CheckCircle, color: "#A2AB73" },
         ].map((stat) => (
-          <div key={stat.label} className="p-4 rounded-xl bg-[#2C2929]/80 border border-white/[0.06]">
+          <div key={stat.label} className="p-4 rounded-xl bg-card/80 border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon className="h-4 w-4" style={{ color: stat.color }} />
-              <span className="text-xs text-[#8A8178]">{stat.label}</span>
+              <span className="text-xs text-foreground-muted">{stat.label}</span>
             </div>
-            <p className="text-xl font-bold text-[#F3F4F4]">{stat.value}</p>
+            <p className="text-xl font-bold text-foreground">{stat.value}</p>
           </div>
         ))}
       </div>

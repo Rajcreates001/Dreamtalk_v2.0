@@ -44,10 +44,10 @@ export function ReasoningEngine() {
                 style={{ background: `${step.color}08` }}
               >
                 <step.icon className="h-4 w-4" style={{ color: step.color }} />
-                <span className="text-xs font-medium text-[#D8D2C8]">{step.label}</span>
+                <span className="text-xs font-medium text-foreground">{step.label}</span>
               </div>
               {i < steps.length - 1 && (
-                <ArrowRight className="h-3.5 w-3.5 text-[#8A8178]/40 hidden sm:block" />
+                <ArrowRight className="h-3.5 w-3.5 text-foreground-muted/40 hidden sm:block" />
               )}
             </motion.div>
           ))}
@@ -59,12 +59,12 @@ export function ReasoningEngine() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6 }}
-          className="rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-6 lg:p-8"
+          className="rounded-2xl bg-card/60 border border-white/[0.06] p-6 lg:p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#F3F4F4]">Transparent reasoning</h3>
-              <p className="text-sm text-[#B0A79C] leading-relaxed">
+              <h3 className="text-lg font-semibold text-foreground">Transparent reasoning</h3>
+              <p className="text-sm text-foreground-muted leading-relaxed">
                 Every response your Digital Twin generates is the result of a sophisticated reasoning process.
                 DreamTalk combines short-term context, long-term memory, structured knowledge, and emotional
                 awareness to produce responses that feel genuinely intelligent.

@@ -42,7 +42,7 @@ export function VoiceIntelligence() {
 
       <div className="grid lg:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
         {/* Voice visualization */}
-        <div className="relative h-64 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] overflow-hidden">
+        <div className="relative h-64 rounded-2xl bg-card/60 border border-white/[0.06] overflow-hidden">
           {/* Waveform — CSS animated, no JS per frame */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex items-end gap-1 h-32">
@@ -74,7 +74,7 @@ export function VoiceIntelligence() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A2AB73]" />
             </span>
-            <span className="text-[10px] text-[#8A8178] font-mono">Voice Active</span>
+            <span className="text-[10px] text-foreground-muted font-mono">Voice Active</span>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function VoiceIntelligence() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 + i * 0.08 }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-[#2C2929]/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
+              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -101,8 +101,8 @@ export function VoiceIntelligence() {
                 <feat.icon className="h-4 w-4" style={{ color: feat.color }} />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-[#F3F4F4]">{feat.label}</h4>
-                <p className="text-xs text-[#8A8178]">{feat.desc}</p>
+                <h4 className="text-sm font-semibold text-foreground">{feat.label}</h4>
+                <p className="text-xs text-foreground-muted">{feat.desc}</p>
               </div>
             </motion.div>
           ))}

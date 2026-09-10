@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { STEP_ORDER, useCreateTwin, type Step } from "./useCreateTwin"
 import { useVoiceRecorder } from "./useVoiceRecorder"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const STEP_META: Record<Exclude<Step, "consent">, { n: string; label: string }> = {
   identity: { n: "01", label: "Identity" },
@@ -40,10 +41,13 @@ export function CreateTwinFlow() {
               <Sparkles className="h-4 w-4 text-white" />
             </span>
             <span className="font-display font-bold tracking-tight">
-              DreamTalk <span className="text-primary">Astra</span>
+              Dream<span className="text-primary">Talk</span>
             </span>
           </Link>
-          <Link href="/" className="text-sm text-foreground-muted hover:text-foreground transition-colors">Exit</Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link href="/" className="text-sm text-foreground-muted hover:text-foreground transition-colors">Exit</Link>
+          </div>
         </div>
       </header>
 
@@ -91,7 +95,7 @@ export function CreateTwinFlow() {
             ) : c.step === "preview" ? (
               <Link href="/studio"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all">
-                Enter Astra Studio <ArrowRight className="h-4 w-4" />
+                Enter Studio <ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
               <button onClick={c.goNext} disabled={!c.canProceed[c.step]}
@@ -541,7 +545,7 @@ function PreviewStep({ c }: { c: C }) {
             })}
           </div>
           <div className="mt-6 flex gap-3">
-            <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-all">Enter Astra Studio <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/studio" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-all">Enter Studio <ArrowRight className="h-4 w-4" /></Link>
             <Link href="/dashboard/my-avatars" className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-2.5 text-sm font-medium hover:border-primary/40 transition-colors"><RotateCcw className="h-4 w-4" /> My avatars</Link>
           </div>
         </div>

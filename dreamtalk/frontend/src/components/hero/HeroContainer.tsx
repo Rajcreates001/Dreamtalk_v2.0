@@ -5,145 +5,43 @@ import { motion, useScroll, useTransform } from "motion/react"
 import { AuroraBackdrop } from "./AuroraBackground"
 import { CinematicText } from "./CinematicText"
 import { PrimaryButton, SecondaryButton } from "./CTAButtons"
+import { AvatarStage } from "@/components/avatar3d/AvatarStage"
+import { useTheme } from "@/components/layout/theme-provider"
 
-/* ─── SIMPLIFIED RING CONFIGURATION (4 rings instead of 7) ─── */
-const CHAMBER_RINGS = [
-  { label: "Knowledge", color: "#CC3A63", radius: 220, speed: 20, orbitDelay: 0 },
-  { label: "Memory", color: "#A2AB73", radius: 170, speed: 24, orbitDelay: 0.5 },
-  { label: "Voice", color: "#A2AB73", radius: 120, speed: 18, orbitDelay: 1.0 },
-  { label: "Reasoning", color: "#B03A5E", radius: 70, speed: 22, orbitDelay: 1.5 },
-]
-
-/* ─── DIGITAL CHAMBER — Simplified, CSS-only animated Digital Human environment ─── */
+/* ─── DIGITAL HUMAN — real 3D avatar centerpiece ─── */
 function DigitalChamber({ colors }: { colors: { primary: string; secondary: string; accent: string } }) {
+  const { theme } = useTheme()
+  const base = theme === "dark" ? "#3a2f33" : "#e4d4bf"
+
   return (
-    <div className="relative w-full max-w-[650px] aspect-square">
-      {/* Outer glow layer */}
+    <div className="relative w-full max-w-[620px] aspect-square">
+      {/* Ambient bloom behind the avatar */}
       <div
-        className="absolute inset-[5%] rounded-full blur-[80px] animate-pulse-glow"
-        style={{
-          background: `radial-gradient(circle, ${colors.primary}15, transparent 70%)`,
-        }}
+        className="absolute inset-[8%] rounded-full blur-[90px] animate-pulse-glow"
+        style={{ background: `radial-gradient(circle, ${colors.primary}22, transparent 70%)` }}
       />
 
-      {/* Orbiting Rings (4 rings, CSS-only) */}
-      {CHAMBER_RINGS.map((ring) => (
-        <div
-          key={ring.label}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{
-            animation: `orbit-ring ${ring.speed}s linear infinite`,
-            animationDirection: ring.radius % 2 === 0 ? "normal" : "reverse",
-            animationDelay: `${ring.orbitDelay}s`,
-            zIndex: 10 - Math.floor(ring.radius / 30),
-          }}
-        >
-          {/* Ring circle */}
-          <div
-            className="absolute rounded-full border"
-            style={{
-              width: ring.radius * 2,
-              height: ring.radius * 2,
-              borderColor: `${ring.color}10`,
-              borderWidth: "1px",
-            }}
-          />
-          {/* Orbiting node */}
-          <div
-            className="absolute w-1.5 h-1.5 rounded-full"
-            style={{
-              background: ring.color,
-              left: `calc(50% + ${ring.radius - 1}px)`,
-              top: "50%",
-              marginTop: -3,
-              boxShadow: `0 0 6px ${ring.color}50`,
-            }}
-          />
-        </div>
-      ))}
+      {/* 3D avatar */}
+      <AvatarStage
+        className="absolute inset-0"
+        colors={{ primary: colors.primary, secondary: colors.secondary, base, glow: colors.primary }}
+        autoSpeak
+        interactive
+      />
 
-      {/* Digital Human avatar (CSS-only) */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative w-28 h-28">
-          {/* Inner glow */}
-          <div
-            className="absolute inset-[10%] rounded-full blur-[25px]"
-            style={{
-              background: `radial-gradient(circle, ${colors.primary}20, transparent 70%)`,
-              animation: "body-glow 4s ease-in-out infinite",
-            }}
-          />
-
-          {/* Avatar body */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60px] h-[60px]">
-            {/* Head */}
-            <div
-              className="w-full h-full rounded-[40%_40%_45%_45%] p-[2px]"
-              style={{
-                background: `linear-gradient(to bottom, ${colors.primary}, ${colors.secondary})`,
-                animation: "breathe 4s ease-in-out infinite",
-              }}
-            >
-              <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-[#201D1D] flex items-center justify-center flex-col gap-1.5">
-                {/* Eyes */}
-                <div className="flex gap-4">
-                  <div
-                    className="w-[3px] h-[3px] rounded-full"
-                    style={{
-                      background: colors.secondary,
-                      boxShadow: `0 0 4px ${colors.secondary}`,
-                      animation: "blink 4s ease-in-out infinite",
-                    }}
-                  />
-                  <div
-                    className="w-[3px] h-[3px] rounded-full"
-                    style={{
-                      background: colors.secondary,
-                      boxShadow: `0 0 4px ${colors.secondary}`,
-                      animation: "blink 4s ease-in-out infinite 0.1s",
-                    }}
-                  />
-                </div>
-                {/* Mouth */}
-                <div
-                  className="w-3 h-[1.5px] rounded-full"
-                  style={{
-                    background: colors.primary,
-                    opacity: 0.4,
-                    animation: "breathe 4s ease-in-out infinite 0.5s",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chamber status indicator — single subtle label */}
-      <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 z-20">
+      {/* Status label */}
+      <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-20">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2.5, duration: 0.5 }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-          style={{
-            background: "rgba(15,23,42,0.4)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
+          transition={{ delay: 1.6, duration: 0.5 }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card/50 backdrop-blur-md"
         >
           <span className="relative flex h-1.5 w-1.5">
-            <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-              style={{ backgroundColor: colors.accent }}
-            />
-            <span
-              className="relative inline-flex rounded-full h-1.5 w-1.5"
-              style={{ backgroundColor: colors.accent }}
-            />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: colors.accent }} />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: colors.accent }} />
           </span>
-          <span className="text-[10px] font-mono text-white/40 tracking-[0.15em] uppercase">
-            Digital Human Chamber — Active
-          </span>
+          <span className="label-mono !text-[10px]">Digital Human — Live</span>
         </motion.div>
       </div>
     </div>
@@ -161,7 +59,7 @@ const METRICS = [
 /* ─── MAIN HERO CONTAINER ─── */
 export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
   const heroRef = useRef<HTMLDivElement>(null)
-  const [mounted, setMounted] = useState(false)
+  const [, setMounted] = useState(false)
   const cyclePhaseRef = useRef(0)
   const [cyclePhase, setCyclePhase] = useState(0)
 
@@ -173,22 +71,22 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.88])
   const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
   const contentY = useTransform(scrollYProgress, [0, 1], [0, -80])
+  const avatarY = useTransform(scrollYProgress, [0, 1], [0, 120])
+  const avatarRotate = useTransform(scrollYProgress, [0, 1], [0, 10])
 
   useEffect(() => {
     setMounted(true)
     const interval = setInterval(() => {
       cyclePhaseRef.current = (cyclePhaseRef.current + 1) % 12
-      if (cyclePhaseRef.current % 2 === 0) {
-        setCyclePhase(cyclePhaseRef.current)
-      }
+      if (cyclePhaseRef.current % 2 === 0) setCyclePhase(cyclePhaseRef.current)
     }, 4000)
     return () => clearInterval(interval)
   }, [])
 
   const emotionColors = [
     { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73" },
-    { primary: "#A2AB73", secondary: "#A2AB73", accent: "#CC3A63" },
-    { primary: "#CC3A63", secondary: "#CC3A63", accent: "#A2AB73" },
+    { primary: "#A2AB73", secondary: "#CC3A63", accent: "#CC3A63" },
+    { primary: "#CC3A63", secondary: "#853953", accent: "#A2AB73" },
   ]
   const currentColors = emotionColors[cyclePhase % emotionColors.length]
 
@@ -196,46 +94,35 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
     <section
       ref={heroRef}
       data-hero-section
-      className="relative min-h-dvh flex items-center overflow-hidden bg-[#201D1D]"
+      className="relative min-h-dvh flex items-center overflow-hidden bg-background"
     >
-      {/* CSS Aurora Backdrop */}
       <AuroraBackdrop />
 
-      {/* Main Content */}
-      <motion.div
-        style={{ scale: heroScale, opacity: heroOpacity }}
-        className="relative z-10 w-full"
-      >
+      <motion.div style={{ scale: heroScale, opacity: heroOpacity }} className="relative z-10 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-28">
           <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-center">
-            {/* ─── LEFT: Content (2/5) ─── */}
+            {/* LEFT: Content */}
             <motion.div style={{ y: contentY }} className="lg:col-span-2 space-y-6 lg:space-y-8">
-              {/* Tagline */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-                style={{
-                  background: "rgba(204,58,99,0.1)",
-                  border: "1px solid rgba(204,58,99,0.2)",
-                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/25 bg-primary/10"
               >
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC3A63] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC3A63]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
                 </span>
-                <span className="text-[10px] font-mono tracking-[0.2em] text-[#CC3A63] uppercase">
+                <span className="text-[10px] font-mono tracking-[0.2em] text-primary uppercase">
                   Introducing the Digital Twin OS
                 </span>
               </motion.div>
 
-              {/* Cinematic Headline */}
               <CinematicText
                 lines={[
                   {
                     text: "The Operating System",
-                    className: "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight text-[#F3F4F4]",
+                    className: "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight text-foreground",
                     delay: 0.3,
                     revealType: "blur",
                   },
@@ -249,18 +136,16 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                 ]}
               />
 
-              {/* Subheadline */}
               <motion.p
                 initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.7, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                className="text-base sm:text-lg text-[#B0A79C] max-w-xl leading-relaxed"
+                className="text-base sm:text-lg text-foreground-muted max-w-xl leading-relaxed"
               >
                 Create intelligent digital humans that speak, understand,
                 learn, and evolve across personal, healthcare, and enterprise environments.
               </motion.p>
 
-              {/* CTAs */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -271,7 +156,6 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                 <SecondaryButton />
               </motion.div>
 
-              {/* Live Metrics */}
               {showStats && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -286,18 +170,19 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: stat.delay }}
                     >
-                      <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">
+                      <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         {stat.value}
                       </div>
-                      <div className="text-xs text-[#8A8178] mt-1 tracking-wide">{stat.label}</div>
+                      <div className="text-xs text-foreground-muted mt-1 tracking-wide">{stat.label}</div>
                     </motion.div>
                   ))}
                 </motion.div>
               )}
             </motion.div>
 
-            {/* ─── RIGHT: Digital Chamber (3/5) ─── */}
+            {/* RIGHT: 3D avatar */}
             <motion.div
+              style={{ y: avatarY, rotateZ: avatarRotate }}
               initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -309,8 +194,7 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
         </div>
       </motion.div>
 
-      {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#201D1D] to-transparent z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
     </section>
   )
 }

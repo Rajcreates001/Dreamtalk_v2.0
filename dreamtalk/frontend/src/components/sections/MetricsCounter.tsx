@@ -23,7 +23,7 @@ export function MetricsCounter() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.06 }}
-            className="relative text-center p-6 rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] hover:bg-white/[0.03] transition-all group"
+            className="relative text-center p-6 rounded-2xl bg-card/60 border border-white/[0.06] hover:bg-white/[0.03] transition-all group"
           >
             {/* Decorative line */}
             <motion.div
@@ -51,8 +51,8 @@ export function MetricsCounter() {
                 {metric.value}
               </motion.span>
             </motion.div>
-            <h4 className="text-sm font-semibold text-[#F3F4F4] mb-0.5">{metric.label}</h4>
-            <p className="text-[11px] text-[#8A8178]">{metric.desc}</p>
+            <h4 className="text-sm font-semibold text-foreground mb-0.5">{metric.label}</h4>
+            <p className="text-[11px] text-foreground-muted">{metric.desc}</p>
           </motion.div>
         ))}
       </div>

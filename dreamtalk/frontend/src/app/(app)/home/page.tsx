@@ -168,10 +168,10 @@ export default function HomePage() {
           <div className="flex items-start justify-between">
             <div className="space-y-4">
               <div className="space-y-1">
-                <h1 className="text-3xl sm:text-4xl font-bold text-[#F3F4F4] tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                   {greeting}, {data.userName || "there"}
                 </h1>
-                <p className="text-sm text-[#B0A79C]">
+                <p className="text-sm text-foreground-muted">
                   {loading ? "Loading..." : "Your digital humans are ready."}
                 </p>
               </div>
@@ -211,7 +211,7 @@ export default function HomePage() {
         transition={{ delay: 0.1 }}
         className="space-y-4"
       >
-        <h2 className="text-sm font-semibold text-[#F3F4F4] tracking-wide">Quick Actions</h2>
+        <h2 className="text-sm font-semibold text-foreground tracking-wide">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon
@@ -222,7 +222,7 @@ export default function HomePage() {
               <Link
                 key={action.label}
                 href={dynamicHref}
-                className="group relative overflow-hidden rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-4 hover:bg-[#2C2929] hover:border-white/[0.12] transition-all duration-200 hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-xl bg-card/80 border border-white/[0.06] p-4 hover:bg-card hover:border-white/[0.12] transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-all duration-200"
@@ -230,8 +230,8 @@ export default function HomePage() {
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <h3 className="text-xs font-semibold text-[#F3F4F4] mb-1">{action.label}</h3>
-                <p className="text-[10px] text-[#8A8178] leading-relaxed">{action.desc}</p>
+                <h3 className="text-xs font-semibold text-foreground mb-1">{action.label}</h3>
+                <p className="text-[10px] text-foreground-muted leading-relaxed">{action.desc}</p>
               </Link>
             )
           })}
@@ -247,14 +247,14 @@ export default function HomePage() {
           className="lg:col-span-3"
         >
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-[#F3F4F4] tracking-wide">Current Avatar</h2>
+            <h2 className="text-sm font-semibold text-foreground tracking-wide">Current Avatar</h2>
 
             {loading ? (
-              <div className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-8 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-[#8A8178]" />
+              <div className="rounded-xl bg-card/80 border border-white/[0.06] p-8 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-foreground-muted" />
               </div>
             ) : data.activeAvatar ? (
-              <div className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] overflow-hidden">
+              <div className="rounded-xl bg-card/80 border border-white/[0.06] overflow-hidden">
                 <div className="flex items-center gap-4 p-5 border-b border-white/[0.06]">
                   <div className="relative w-16 h-16 shrink-0">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-lg">
@@ -264,14 +264,14 @@ export default function HomePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-[#F3F4F4]">{data.activeAvatar.name}</h3>
+                      <h3 className="text-base font-semibold text-foreground">{data.activeAvatar.name}</h3>
                       <span className="px-2 py-0.5 rounded-md bg-[#A2AB73]/10 text-[10px] text-[#A2AB73] font-medium">{data.activeAvatar.status}</span>
                     </div>
-                    <p className="text-xs text-[#B0A79C] mt-0.5">{data.activeAvatar.role}</p>
+                    <p className="text-xs text-foreground-muted mt-0.5">{data.activeAvatar.role}</p>
                   </div>
                   <Link
                     href={firstTwinId ? `/dh/${firstTwinId}` : "/create"}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-white/[0.08] transition-all"
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
                   >
                     Open
                   </Link>
@@ -284,9 +284,9 @@ export default function HomePage() {
                     { label: "Languages", value: `${data.activeAvatar.languages}`, color: "#A2AB73" },
                     { label: "Response Style", value: data.activeAvatar.role, color: "#CC3A63" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-[#2C2929]/60 p-4">
-                      <p className="text-[10px] text-[#8A8178] tracking-wide uppercase">{stat.label}</p>
-                      <p className="text-lg font-bold text-[#F3F4F4] mt-1" style={{ color: stat.color }}>
+                    <div key={stat.label} className="bg-card/60 p-4">
+                      <p className="text-[10px] text-foreground-muted tracking-wide uppercase">{stat.label}</p>
+                      <p className="text-lg font-bold text-foreground mt-1" style={{ color: stat.color }}>
                         {stat.value}
                       </p>
                     </div>
@@ -294,9 +294,9 @@ export default function HomePage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl bg-[#2C2929]/80 border border-white/[0.06] p-8 text-center">
-                <p className="text-sm text-[#8A8178]">No digital humans yet</p>
-                <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#CC3A63] hover:text-[#F3F4F4] transition-all">
+              <div className="rounded-xl bg-card/80 border border-white/[0.06] p-8 text-center">
+                <p className="text-sm text-foreground-muted">No digital humans yet</p>
+                <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#CC3A63] hover:text-foreground transition-all">
                   <Plus className="h-3 w-3" />
                   Create your first digital human
                 </Link>
@@ -313,7 +313,7 @@ export default function HomePage() {
           className="lg:col-span-2"
         >
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-[#F3F4F4] tracking-wide">Activity</h2>
+            <h2 className="text-sm font-semibold text-foreground tracking-wide">Activity</h2>
 
             <div className="space-y-2">
               {[
@@ -325,14 +325,14 @@ export default function HomePage() {
                 return (
                   <div
                     key={insight.label}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-[#2C2929]/80 border border-white/[0.06] hover:bg-[#2C2929] transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card transition-all"
                   >
                     <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
-                      <Icon className="h-4 w-4 text-[#B0A79C]" />
+                      <Icon className="h-4 w-4 text-foreground-muted" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#D8D2C8]">{insight.label}</p>
-                      <p className="text-lg font-bold text-[#F3F4F4]">{insight.value}</p>
+                      <p className="text-xs text-foreground">{insight.label}</p>
+                      <p className="text-lg font-bold text-foreground">{insight.value}</p>
                     </div>
                     {insight.change && (
                       <span

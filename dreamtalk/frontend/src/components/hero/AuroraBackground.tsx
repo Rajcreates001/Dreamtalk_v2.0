@@ -9,8 +9,8 @@
 export function AuroraBackdrop() {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[#201D1D]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#201D1D] via-[#232020] to-[#201D1D]" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background-secondary to-background" />
 
       {/* Animated radial gradient blob — primary */}
       <div
@@ -35,8 +35,11 @@ export function AuroraBackdrop() {
         }}
       />
 
-      {/* Deep vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#201D1D_70%)]" />
+      {/* Deep vignette — fades to the theme background (invisible in light) */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "radial-gradient(ellipse at center, transparent 0%, var(--background) 78%)" }}
+      />
     </div>
   )
 }

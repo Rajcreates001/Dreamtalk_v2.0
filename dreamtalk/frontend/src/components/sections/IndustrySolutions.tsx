@@ -102,15 +102,15 @@ export function IndustrySolutions() {
             onClick={() => setActive(ind.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               active === ind.id
-                ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 border border-[#CC3A63]/30 text-[#F3F4F4] shadow-lg shadow-[#CC3A63]/5"
-                : "bg-white/[0.04] border border-white/[0.06] text-[#B0A79C] hover:text-[#D8D2C8]"
+                ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 border border-[#CC3A63]/30 text-foreground shadow-lg shadow-[#CC3A63]/5"
+                : "bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <ind.icon className="h-4 w-4" style={{ color: ind.color }} />
             {ind.label}
-            <span className="text-[10px] text-[#8A8178] font-mono">{ind.solutions.length}</span>
+            <span className="text-[10px] text-foreground-muted font-mono">{ind.solutions.length}</span>
           </motion.button>
         ))}
       </div>
@@ -131,16 +131,16 @@ export function IndustrySolutions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] p-6 hover:border-[#CC3A63]/20 transition-all group"
+                className="rounded-2xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-6 hover:border-[#CC3A63]/20 transition-all group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div
                     className="w-3 h-3 rounded-full"
                     style={{ background: current.color }}
                   />
-                  <h3 className="text-base font-semibold text-[#F3F4F4]">{sol.title}</h3>
+                  <h3 className="text-base font-semibold text-foreground">{sol.title}</h3>
                 </div>
-                <p className="text-sm text-[#B0A79C] leading-relaxed">{sol.desc}</p>
+                <p className="text-sm text-foreground-muted leading-relaxed">{sol.desc}</p>
                 <motion.div
                   className="mt-4 flex items-center gap-2 text-xs text-[#CC3A63]"
                   whileHover={{ x: 4 }}

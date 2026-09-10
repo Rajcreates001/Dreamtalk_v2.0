@@ -105,9 +105,9 @@ export function DreamTalkSolution() {
           animate={{ boxShadow: ["0 0 40px rgba(204,58,99,0.3)", "0 0 60px rgba(204,58,99,0.5)", "0 0 40px rgba(204,58,99,0.3)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
-          <div className="w-full h-full rounded-full bg-[#201D1D] flex items-center justify-center flex-col">
+          <div className="w-full h-full rounded-full bg-background flex items-center justify-center flex-col">
             <Bot className="h-8 w-8 text-[#CC3A63] mb-1" />
-            <span className="text-[10px] font-bold text-[#F3F4F4]">DreamTalk</span>
+            <span className="text-[10px] font-bold text-foreground">DreamTalk</span>
             <span className="text-[8px] text-[#A2AB73]">● Live</span>
           </div>
         </motion.div>
@@ -123,8 +123,8 @@ export function DreamTalkSolution() {
             >
               <feature.icon className="h-5 w-5" style={{ color: feature.color }} />
             </div>
-            <h3 className="text-base font-semibold text-[#F3F4F4] mb-2">{feature.title}</h3>
-            <p className="text-sm text-[#B0A79C] leading-relaxed">{feature.desc}</p>
+            <h3 className="text-base font-semibold text-foreground mb-2">{feature.title}</h3>
+            <p className="text-sm text-foreground-muted leading-relaxed">{feature.desc}</p>
             <motion.div
               className="mt-4 h-px w-0 bg-gradient-to-r from-transparent via-[#CC3A63]/30 to-transparent"
               whileInView={{ width: "100%" }}

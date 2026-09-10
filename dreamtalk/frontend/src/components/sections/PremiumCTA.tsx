@@ -34,7 +34,7 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#F3F4F4] mb-6 tracking-tight"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight"
           >
             Create your
             <br />
@@ -54,7 +54,7 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-lg text-[#B0A79C] max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-lg text-foreground-muted max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Join thousands of creators, healthcare providers, and enterprises building the future of AI interaction.
           </motion.p>
@@ -82,7 +82,7 @@ export function PremiumCTA() {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/[0.08] text-[#D8D2C8] text-sm font-medium hover:bg-white/[0.04] hover:text-[#F3F4F4] transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/[0.08] text-foreground text-sm font-medium hover:bg-white/[0.04] hover:text-foreground transition-all"
             >
               <Play className="h-4 w-4" />
               Watch Demo
@@ -95,7 +95,7 @@ export function PremiumCTA() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
-            className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-[#8A8178]"
+            className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-foreground-muted"
           >
             <span>No credit card required</span>
             <span className="w-px h-4 bg-white/[0.06]" />

@@ -54,7 +54,7 @@ export function DeploymentNetwork() {
           animate={{ boxShadow: ["0 0 30px rgba(204,58,99,0.3)", "0 0 50px rgba(204,58,99,0.5)", "0 0 30px rgba(204,58,99,0.3)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
-          <div className="w-full h-full rounded-full bg-[#201D1D] flex items-center justify-center">
+          <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
             <Globe className="h-8 w-8 text-[#CC3A63]" />
           </div>
         </motion.div>
@@ -119,7 +119,7 @@ export function DeploymentNetwork() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 + i * 0.06 }}
-            className="rounded-xl bg-[#2C2929]/60 border border-white/[0.06] p-4 text-center hover:bg-white/[0.03] transition-all group"
+            className="rounded-xl bg-card/60 border border-white/[0.06] p-4 text-center hover:bg-white/[0.03] transition-all group"
             whileHover={{ y: -4 }}
           >
             <div
@@ -128,8 +128,8 @@ export function DeploymentNetwork() {
             >
               <platform.icon className="h-5 w-5" style={{ color: platform.color }} />
             </div>
-            <h4 className="text-sm font-semibold text-[#F3F4F4] mb-0.5">{platform.label}</h4>
-            <p className="text-[10px] text-[#8A8178]">{platform.desc}</p>
+            <h4 className="text-sm font-semibold text-foreground mb-0.5">{platform.label}</h4>
+            <p className="text-[10px] text-foreground-muted">{platform.desc}</p>
           </motion.div>
         ))}
       </div>

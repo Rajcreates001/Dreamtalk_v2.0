@@ -17,7 +17,7 @@ import dynamic from "next/dynamic"
 // The loading placeholder prevents layout shift while the chunk loads.
 const HeroContainer = dynamic(() => import("@/components/hero/HeroContainer").then(m => ({ default: m.HeroContainer })), {
   ssr: false,
-  loading: () => <div className="relative min-h-dvh bg-[#201D1D]" />,
+  loading: () => <div className="relative min-h-dvh bg-background" />,
 })
 
 // ── All section components are DYNAMIC (lazy-loaded, SSR disabled) ──
@@ -42,6 +42,8 @@ const PremiumFooter = dynamic(() => import("@/components/sections/PremiumFooter"
 
 import { SectionWrapper, SectionHeading, StaggerGrid, staggerItem, GlassCard } from "@/components/sections/SectionWrapper"
 import { Splash } from "@/components/splash/Splash"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { AvatarStage } from "@/components/avatar3d/AvatarStage"
 
 const Nav = () => {
   const [scrolled, setScrolled] = useState(false)
@@ -71,7 +73,7 @@ const Nav = () => {
       transition={{ duration: 0.6, delay: 0.1 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-[#201D1D]/80 backdrop-blur-2xl border-b border-white/[0.06] py-3"
+          ? "bg-background/80 backdrop-blur-2xl border-b border-white/[0.06] py-3"
           : "bg-transparent py-5"
       }`}
     >
@@ -81,25 +83,27 @@ const Nav = () => {
             <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] animate-breathe" />
             <Sparkles className="relative h-4 w-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="font-display font-bold text-lg tracking-tight text-[#F3F4F4]">
-            DreamTalk <span className="bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">Astra</span>
+          <span className="font-display font-bold text-lg tracking-tight text-foreground">
+            Dream<span className="bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">Talk</span>
           </span>
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">
           {["Platform", "Solutions", "Developers", "Pricing"].map((item) => (
-            <button key={item} className="flex items-center gap-1 text-sm text-[#B0A79C] hover:text-[#F3F4F4] transition-colors">
+            <button key={item} className="flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground transition-colors">
               {item} <ChevronDown className="h-3 w-3" />
             </button>
           ))}
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
-          <button className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-[#B0A79C] hover:text-[#F3F4F4] transition-all">
+          <button className="w-9 h-9 rounded-xl bg-card/60 border border-border flex items-center justify-center text-foreground-muted hover:text-foreground transition-all">
             <Search className="h-4 w-4" />
           </button>
-          
-          <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all">
+
+          <ThemeToggle />
+
+          <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-card/60 transition-all">
             Sign In
           </Link>
           <Link href="/create-twin" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
@@ -107,7 +111,7 @@ const Nav = () => {
           </Link>
         </div>
 
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden text-[#B0A79C]">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden text-foreground-muted">
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </nav>
@@ -118,16 +122,16 @@ const Nav = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-[#2C2929]/95 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
+            className="lg:hidden bg-card/95 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
           >
             <div className="px-4 py-6 space-y-4">
               {["Platform", "Solutions", "Developers", "Pricing", "Resources", "Company"].map((item) => (
-                <button key={item} className="block w-full text-left text-sm text-[#D8D2C8] hover:text-[#F3F4F4] py-2 transition-colors">
+                <button key={item} className="block w-full text-left text-sm text-foreground hover:text-foreground py-2 transition-colors">
                   {item}
                 </button>
               ))}
               <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
-                <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-white/[0.06] text-sm font-medium text-[#D8D2C8]">
+                <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-white/[0.06] text-sm font-medium text-foreground">
                   Sign In
                 </Link>
                 <Link href="/signup" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">
@@ -171,7 +175,7 @@ export default function LandingPage() {
   }, [demoInput, demoLoading])
 
   return (
-    <main className="relative min-h-dvh bg-[#201D1D] overflow-x-hidden" style={{ contain: "paint layout" }}>
+    <main className="relative min-h-dvh bg-background overflow-x-hidden" style={{ contain: "paint layout" }}>
       <Splash />
       <Nav />
 
@@ -190,13 +194,27 @@ export default function LandingPage() {
           <SectionHeading
             label="Live Demo"
             title="Talk to an AI Avatar"
-            description="Type a message and see how DreamTalk avatars respond with real-time intelligence."
+            description="Type a message and watch a digital human respond — it speaks as it replies."
           />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="mx-auto mb-8 h-56 w-56"
+          >
+            <AvatarStage
+              className="h-full w-full"
+              speaking={demoLoading}
+              autoSpeak={false}
+              interactive
+              colors={{ primary: "#CC3A63", secondary: "#A2AB73", base: "#3a2f33", glow: "#CC3A63" }}
+            />
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[20px] bg-[#2C2929]/80 backdrop-blur-2xl border border-white/[0.06] overflow-hidden shadow-2xl"
+            className="rounded-[20px] bg-card/80 backdrop-blur-2xl border border-border overflow-hidden shadow-2xl"
           >
             <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
               <div className="flex gap-1.5">
@@ -206,7 +224,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-2 mx-auto">
                 <Bot className="h-4 w-4 text-[#CC3A63]" />
-                <span className="text-xs text-[#B0A79C] font-medium">DreamTalk Avatar — Interactive Demo</span>
+                <span className="text-xs text-foreground-muted font-medium">DreamTalk Avatar — Interactive Demo</span>
               </div>
             </div>
             <div className="p-6 space-y-4 min-h-[300px] max-h-[400px] overflow-y-auto" id="demo-chat">
@@ -224,8 +242,8 @@ export default function LandingPage() {
                   </div>
                   <div className={`max-w-[80%] px-4 py-2.5 rounded-xl text-sm ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-[#F3F4F4] rounded-tr-sm"
-                      : "bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] rounded-tl-sm"
+                      ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-foreground rounded-tr-sm"
+                      : "bg-white/[0.04] border border-white/[0.06] text-foreground rounded-tl-sm"
                   }`}>
                     {msg.text}
                   </div>
@@ -252,7 +270,7 @@ export default function LandingPage() {
                   onChange={(e) => setDemoInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleDemoSend()}
                   placeholder="Type a message... (try: hello, who, what, price)"
-                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
+                  className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
                 />
                 <button
                   onClick={handleDemoSend}
@@ -267,7 +285,7 @@ export default function LandingPage() {
                   <button
                     key={s}
                     onClick={() => { setDemoInput(s); setTimeout(handleDemoSend, 100) }}
-                    className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-[#8A8178] hover:text-[#B0A79C] hover:bg-white/[0.06] transition-all"
+                    className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-foreground-muted hover:text-foreground-muted hover:bg-white/[0.06] transition-all"
                   >
                     {s}
                   </button>
@@ -353,7 +371,7 @@ function PricingSection() {
       <SectionHeading label="Pricing" title="Choose your plan" description="Start free, scale as you grow. No hidden fees, no surprises." />
 
       <div className="flex justify-center mb-10">
-        <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-[#2C2929]/80 border border-white/[0.06]">
+        <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-card/80 border border-white/[0.06]">
           {[
             { label: "Monthly", active: !yearly, onClick: () => setYearly(false) },
             { label: "Yearly", active: yearly, onClick: () => setYearly(true), badge: "Save 20%" },
@@ -363,8 +381,8 @@ function PricingSection() {
               onClick={opt.onClick}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 opt.active
-                  ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-[#F3F4F4] border border-white/[0.08]"
-                  : "text-[#8A8178] hover:text-[#B0A79C]"
+                  ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-foreground border border-white/[0.08]"
+                  : "text-foreground-muted hover:text-foreground-muted"
               }`}
             >
               {opt.label}
@@ -379,15 +397,15 @@ function PricingSection() {
           const price = yearly ? plan.yearly : plan.monthly
           return (
             <GlassCard key={plan.name} className={plan.highlight ? "border-[#CC3A63]/30 shadow-xl shadow-[#CC3A63]/10" : ""}>
-              <h3 className="text-lg font-bold text-[#F3F4F4] mb-1">{plan.name}</h3>
-              <p className="text-sm text-[#B0A79C] mb-4">{plan.desc}</p>
+              <h3 className="text-lg font-bold text-foreground mb-1">{plan.name}</h3>
+              <p className="text-sm text-foreground-muted mb-4">{plan.desc}</p>
               <div className="mb-6">
-                <span className="text-3xl font-bold text-[#F3F4F4]">₹{price.toLocaleString()}</span>
-                <span className="text-sm text-[#8A8178]">/mo</span>
+                <span className="text-3xl font-bold text-foreground">₹{price.toLocaleString()}</span>
+                <span className="text-sm text-foreground-muted">/mo</span>
               </div>
               <ul className="space-y-2 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[#D8D2C8]">
+                  <li key={f} className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-[#A2AB73] shrink-0" />
                     {f}
                   </li>
@@ -398,7 +416,7 @@ function PricingSection() {
                 className={`block w-full text-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   plan.highlight
                     ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30"
-                    : "bg-white/[0.04] border border-white/[0.06] text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.06]"
+                    : "bg-white/[0.04] border border-white/[0.06] text-foreground hover:text-foreground hover:bg-white/[0.06]"
                 }`}
               >
                 {plan.cta}

@@ -68,7 +68,7 @@ export function LoginExperience() {
 
   if (!mounted) {
     return (
-      <main className="min-h-dvh flex bg-[#201D1D]" suppressHydrationWarning>
+      <main className="min-h-dvh flex bg-background" suppressHydrationWarning>
         <div className="flex-1 flex items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8A8178]/30 border-t-[#CC3A63]" />
         </div>
@@ -77,7 +77,7 @@ export function LoginExperience() {
   }
 
   return (
-    <main className="relative min-h-dvh bg-[#201D1D] overflow-hidden flex flex-col">
+    <main className="relative min-h-dvh bg-background overflow-hidden flex flex-col">
       {/* ─── Aurora Background ─── */}
       <AuroraBackdrop />
 
@@ -170,7 +170,7 @@ export function LoginExperience() {
               }}>
                 Enter the Future
               </h1>
-              <p className="text-xs text-[#B0A79C] mt-1">Your Digital Twin Operating System</p>
+              <p className="text-xs text-foreground-muted mt-1">Your Digital Twin Operating System</p>
             </motion.div>
 
             <motion.div
@@ -213,12 +213,12 @@ export function LoginExperience() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-center text-[10px] text-[#8A8178] mt-6"
+              className="text-center text-[10px] text-foreground-muted mt-6"
             >
               By continuing, you agree to DreamTalk&apos;s{" "}
-              <a href="#" className="hover:text-[#F3F4F4] transition-colors" style={{ color: accentColor }}>Terms</a>
+              <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Terms</a>
               {" "}and{" "}
-              <a href="#" className="hover:text-[#F3F4F4] transition-colors" style={{ color: accentColor }}>Privacy Policy</a>
+              <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Privacy Policy</a>
             </motion.p>
           </div>
         </motion.div>

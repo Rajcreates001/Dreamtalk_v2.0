@@ -52,8 +52,8 @@ export function KnowledgeEngine() {
                 style={{ background: `${stage.color}08` }}
               >
                 <stage.icon className="h-6 w-6 mx-auto mb-2" style={{ color: stage.color }} />
-                <h4 className="text-sm font-semibold text-[#F3F4F4]">{stage.label}</h4>
-                <p className="text-[10px] text-[#8A8178] mt-1">{stage.desc}</p>
+                <h4 className="text-sm font-semibold text-foreground">{stage.label}</h4>
+                <p className="text-[10px] text-foreground-muted mt-1">{stage.desc}</p>
               </div>
               {i < 3 && (
                 <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2">
@@ -73,11 +73,11 @@ export function KnowledgeEngine() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 + i * 0.03 }}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#2C2929]/40 border border-white/[0.04] hover:border-white/[0.1] transition-all group"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card/40 border border-white/[0.04] hover:border-white/[0.1] transition-all group"
               whileHover={{ y: -2 }}
             >
               <source.icon className="h-4 w-4" style={{ color: source.color }} />
-              <span className="text-[9px] text-[#8A8178] font-medium">{source.label}</span>
+              <span className="text-[9px] text-foreground-muted font-medium">{source.label}</span>
             </motion.div>
           ))}
         </div>
@@ -108,11 +108,11 @@ export function KnowledgeEngine() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 + i * 0.1 }}
-            className="rounded-2xl bg-[#2C2929]/60 border border-white/[0.06] p-6 hover:bg-white/[0.03] transition-all"
+            className="rounded-2xl bg-card/60 border border-white/[0.06] p-6 hover:bg-white/[0.03] transition-all"
           >
             <div className="w-3 h-3 rounded-full mb-4" style={{ background: item.color }} />
-            <h3 className="text-base font-semibold text-[#F3F4F4] mb-2">{item.title}</h3>
-            <p className="text-sm text-[#B0A79C] leading-relaxed">{item.desc}</p>
+            <h3 className="text-base font-semibold text-foreground mb-2">{item.title}</h3>
+            <p className="text-sm text-foreground-muted leading-relaxed">{item.desc}</p>
           </motion.div>
         ))}
       </div>
