@@ -41,6 +41,7 @@ const PremiumCTA = dynamic(() => import("@/components/sections/PremiumCTA").then
 const PremiumFooter = dynamic(() => import("@/components/sections/PremiumFooter").then(m => ({ default: m.PremiumFooter })), { ssr: false })
 
 import { SectionWrapper, SectionHeading, StaggerGrid, staggerItem, GlassCard } from "@/components/sections/SectionWrapper"
+import { Splash } from "@/components/splash/Splash"
 
 const Nav = () => {
   const [scrolled, setScrolled] = useState(false)
@@ -101,7 +102,7 @@ const Nav = () => {
           <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-[#D8D2C8] hover:text-[#F3F4F4] hover:bg-white/[0.04] transition-all">
             Sign In
           </Link>
-          <Link href="/signup" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
+          <Link href="/create-twin" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
             Get Started
           </Link>
         </div>
@@ -171,6 +172,7 @@ export default function LandingPage() {
 
   return (
     <main className="relative min-h-dvh bg-[#201D1D] overflow-x-hidden" style={{ contain: "paint layout" }}>
+      <Splash />
       <Nav />
 
       {/* ─── CHAPTER 1: Hero — Digital Human Awakening ─── */}

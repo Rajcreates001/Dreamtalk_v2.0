@@ -26,7 +26,7 @@ export function PrimaryButton() {
   return (
     <Link
       ref={btnRef}
-      href="/signup"
+      href="/create-twin"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={handleClick}
@@ -79,7 +79,7 @@ export function PrimaryButton() {
 
       {/* Text */}
       <span className="relative z-10 text-white font-semibold text-sm tracking-wide">
-        Get Started Free
+        Create Your Digital Twin
       </span>
 
       {/* Arrow */}
