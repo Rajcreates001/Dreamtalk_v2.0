@@ -23,7 +23,7 @@ export function MetricsCounter() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.06 }}
-            className="relative text-center p-6 rounded-2xl bg-card/60 border border-white/[0.06] hover:bg-white/[0.03] transition-all group"
+            className="relative text-center p-6 rounded-2xl bg-card/60 border border-foreground/[0.06] hover:bg-foreground/[0.03] transition-all group"
           >
             {/* Decorative line */}
             <motion.div

@@ -103,7 +103,7 @@ export function SignupExperience() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="relative rounded-[24px] p-6 sm:p-8"
               style={{
-                background: "rgba(15,23,42,0.75)",
+                background: "var(--card)",
                 backdropFilter: "blur(32px)",
                 WebkitBackdropFilter: "blur(32px)",
                 border: "1px solid rgba(255,255,255,0.06)",

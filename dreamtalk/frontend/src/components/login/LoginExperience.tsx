@@ -124,7 +124,7 @@ export function LoginExperience() {
                     }}
                   />
                   {i < PROGRESS_STEPS.length - 1 && (
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-px h-6 bg-white/[0.06]" />
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-px h-6 bg-foreground/[0.06]" />
                   )}
                 </div>
                 <span
@@ -179,7 +179,7 @@ export function LoginExperience() {
               transition={{ delay: 0.3 }}
               className="relative rounded-[24px] p-6 sm:p-8"
               style={{
-                background: "rgba(15,23,42,0.75)",
+                background: "var(--card)",
                 backdropFilter: "blur(32px)",
                 WebkitBackdropFilter: "blur(32px)",
                 border: "1px solid",
@@ -195,7 +195,7 @@ export function LoginExperience() {
                       <div className="w-1.5 h-1.5 rounded-full transition-all duration-300" style={{ background: progressIndex >= i ? accentColor : "rgba(255,255,255,0.1)" }} />
                       <span className="text-[8px] font-mono tracking-wider hidden sm:inline" style={{ color: progressIndex >= i ? `${accentColor}99` : "rgba(255,255,255,0.15)" }}>{label}</span>
                     </div>
-                    {i < PROGRESS_STEPS.length - 1 && <div className="w-6 h-px bg-white/[0.06]" />}
+                    {i < PROGRESS_STEPS.length - 1 && <div className="w-6 h-px bg-foreground/[0.06]" />}
                   </div>
                 ))}
               </div>

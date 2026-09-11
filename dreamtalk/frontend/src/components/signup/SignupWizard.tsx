@@ -180,7 +180,7 @@ export function SignupWizard() {
                       onClick={() => handleRoleSelect(role.id)}
                       className="relative w-full text-left p-4 rounded-2xl transition-all duration-300 group"
                       style={{
-                        background: isSelected ? `${rc}15` : "rgba(15,23,42,0.8)",
+                        background: isSelected ? `${rc}15` : "var(--card)",
                         border: "1px solid",
                         borderColor: isSelected ? `${rc}50` : "rgba(255,255,255,0.06)",
                         backdropFilter: "blur(20px)",
@@ -223,13 +223,13 @@ export function SignupWizard() {
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">Full Name</label>
                     <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" required
-                      className="w-full h-11 px-3 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
+                      className="w-full h-11 px-3 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">Email</label>
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
-                      className="w-full h-11 px-3 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
+                      className="w-full h-11 px-3 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
                     />
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export function SignupWizard() {
                   <label className="text-xs font-medium text-foreground">Password</label>
                   <div className="relative">
                     <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a strong password" required minLength={8}
-                      className="w-full h-11 pl-3 pr-9 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
+                      className="w-full h-11 pl-3 pr-9 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground">
                       {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -276,7 +276,7 @@ export function SignupWizard() {
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground-muted" />
                     <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required
-                      className="w-full h-11 pl-9 pr-9 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
+                      className="w-full h-11 pl-9 pr-9 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 transition-all"
                     />
                     <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground">
                       {showConfirm ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -289,11 +289,11 @@ export function SignupWizard() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="rounded border-white/[0.06] bg-white/[0.04] accent-[#CC3A63]" />
+                  <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="rounded border-foreground/[0.06] bg-foreground/[0.04] accent-[#CC3A63]" />
                   <label htmlFor="terms" className="text-[11px] text-foreground-muted cursor-pointer">I accept the <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Terms</a> and <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Privacy Policy</a></label>
                 </div>
                 <div className="flex gap-3 pt-1">
-                  <button onClick={() => setStep("account")} className="flex-1 h-11 rounded-[14px] bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-foreground-muted hover:text-foreground transition-all">Back</button>
+                  <button onClick={() => setStep("account")} className="flex-1 h-11 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs font-medium text-foreground-muted hover:text-foreground transition-all">Back</button>
                   <button onClick={handleSubmit} disabled={loading || !confirmPassword || !acceptedTerms}
                     className="flex-[2] h-11 rounded-[14px] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50"
                     style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)` }}
@@ -321,19 +321,19 @@ export function SignupWizard() {
         <div className="mt-4">
           <div className="relative text-center text-[10px] text-foreground-muted mb-3">
             <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or sign up with</span>
-            <div className="absolute inset-x-0 top-1/2 h-px bg-white/[0.06]" />
+            <div className="absolute inset-x-0 top-1/2 h-px bg-foreground/[0.06]" />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={loginWithGoogle} className="py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-white/[0.04] transition-all bg-white/[0.04]">Google</button>
-            <button onClick={loginWithGitHub} className="py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-white/[0.04] transition-all bg-white/[0.04]">GitHub</button>
-            <button onClick={loginWithMicrosoft} className="py-2.5 rounded-xl border border-white/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-white/[0.04] transition-all bg-white/[0.04]">Microsoft</button>
+            <button onClick={loginWithGoogle} className="py-2.5 rounded-xl border border-foreground/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04] transition-all bg-foreground/[0.04]">Google</button>
+            <button onClick={loginWithGitHub} className="py-2.5 rounded-xl border border-foreground/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04] transition-all bg-foreground/[0.04]">GitHub</button>
+            <button onClick={loginWithMicrosoft} className="py-2.5 rounded-xl border border-foreground/[0.06] text-[11px] font-medium text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04] transition-all bg-foreground/[0.04]">Microsoft</button>
           </div>
         </div>
       )}
 
       {/* Sign in link */}
       {step !== "welcome" && (
-        <p className="text-center text-[10px] text-foreground-muted mt-4 pt-4 border-t border-white/[0.06]">
+        <p className="text-center text-[10px] text-foreground-muted mt-4 pt-4 border-t border-foreground/[0.06]">
           Already have an account?{" "}<Link href="/login" className="font-medium transition-colors" style={{ color: accentColor }}>Sign in</Link>
         </p>
       )}

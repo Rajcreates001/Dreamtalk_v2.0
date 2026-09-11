@@ -119,7 +119,7 @@ export function DeploymentNetwork() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 + i * 0.06 }}
-            className="rounded-xl bg-card/60 border border-white/[0.06] p-4 text-center hover:bg-white/[0.03] transition-all group"
+            className="rounded-xl bg-card/60 border border-foreground/[0.06] p-4 text-center hover:bg-foreground/[0.03] transition-all group"
             whileHover={{ y: -4 }}
           >
             <div

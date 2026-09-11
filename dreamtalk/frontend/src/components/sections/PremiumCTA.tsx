@@ -82,7 +82,7 @@ export function PremiumCTA() {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/[0.08] text-foreground text-sm font-medium hover:bg-white/[0.04] hover:text-foreground transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-foreground/[0.08] text-foreground text-sm font-medium hover:bg-foreground/[0.04] hover:text-foreground transition-all"
             >
               <Play className="h-4 w-4" />
               Watch Demo
@@ -98,11 +98,11 @@ export function PremiumCTA() {
             className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-foreground-muted"
           >
             <span>No credit card required</span>
-            <span className="w-px h-4 bg-white/[0.06]" />
+            <span className="w-px h-4 bg-foreground/[0.06]" />
             <span>Free plan available</span>
-            <span className="w-px h-4 bg-white/[0.06]" />
+            <span className="w-px h-4 bg-foreground/[0.06]" />
             <span>Enterprise ready</span>
-            <span className="w-px h-4 bg-white/[0.06]" />
+            <span className="w-px h-4 bg-foreground/[0.06]" />
             <span>Cancel anytime</span>
           </motion.div>
         </div>

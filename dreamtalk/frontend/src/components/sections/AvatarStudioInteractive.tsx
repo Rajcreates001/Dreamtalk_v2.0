@@ -68,7 +68,7 @@ export function AvatarStudioInteractive() {
                       ? "bg-card/90 border border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/5"
                       : isCompleted
                         ? "bg-card/60 border border-[#A2AB73]/20"
-                        : "bg-card/40 border border-white/[0.04] hover:border-white/[0.1]"
+                        : "bg-card/40 border border-foreground/[0.04] hover:border-foreground/[0.1]"
                   }`}
                   whileHover={{ x: 4 }}
                   transition={{ duration: 0.2 }}
@@ -80,7 +80,7 @@ export function AvatarStudioInteractive() {
                         ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] shadow-lg shadow-[#CC3A63]/20"
                         : isCompleted
                           ? "bg-[#A2AB73]/20 border border-[#A2AB73]/30"
-                          : "bg-white/[0.04] border border-white/[0.06]"
+                          : "bg-foreground/[0.04] border border-foreground/[0.06]"
                     }`}
                   >
                     {isCompleted ? (
@@ -117,7 +117,7 @@ export function AvatarStudioInteractive() {
 
           {/* Progress bar */}
           <div className="mt-6 flex items-center gap-3">
-            <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-[#CC3A63] to-[#A2AB73]"
                 initial={{ width: "0%" }}
@@ -137,7 +137,7 @@ export function AvatarStudioInteractive() {
           transition={{ duration: 0.4 }}
           className="relative"
         >
-          <div className="rounded-[24px] bg-gradient-to-b from-[#2C2929]/90 to-[#2C2929]/60 backdrop-blur-2xl border border-white/[0.06] p-8">
+          <div className="rounded-[24px] bg-gradient-to-b from-card/90 to-card/60 backdrop-blur-2xl border border-foreground/[0.06] p-8">
             <div className="flex items-center gap-3 mb-6">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center"
@@ -159,7 +159,7 @@ export function AvatarStudioInteractive() {
             </p>
 
             {/* Stage preview visualization */}
-            <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-6 mb-6">
+            <div className="rounded-xl bg-foreground/[0.02] border border-foreground/[0.06] p-6 mb-6">
               <div className="flex items-center justify-center h-32">
                 <motion.div
                   className="flex flex-col items-center gap-2"
@@ -189,7 +189,7 @@ export function AvatarStudioInteractive() {
               <motion.button
                 onClick={handlePrev}
                 disabled={activeStage === 0}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-foreground border border-white/[0.06] disabled:opacity-30 hover:bg-white/[0.04] transition-all"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-foreground border border-foreground/[0.06] disabled:opacity-30 hover:bg-foreground/[0.04] transition-all"
                 whileHover={{ x: activeStage > 0 ? -2 : 0 }}
               >
                 Previous

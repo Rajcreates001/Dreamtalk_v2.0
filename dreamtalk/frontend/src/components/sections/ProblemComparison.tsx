@@ -73,7 +73,7 @@ function FragmentedCard({
       onMouseEnter={() => setHoveredTool(index)}
       onMouseLeave={() => setHoveredTool(null)}
       className={`relative rounded-2xl p-4 transition-all duration-300 cursor-default group
-        ${hoveredTool === index ? "border-red-500/40 shadow-[0_0_30px_rgba(216,76,99,0.08)]" : "border-white/[0.06]"}
+        ${hoveredTool === index ? "border-red-500/40 shadow-[0_0_30px_rgba(216,76,99,0.08)]" : "border-foreground/[0.06]"}
         ${hoveredTool !== null && hoveredTool !== index ? "opacity-50" : "opacity-100"}
       `}
       style={{
@@ -140,7 +140,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       <div className="relative flex items-center justify-center shrink-0">
         <div
           className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500
-            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-white/[0.06] text-foreground-muted"}`}
+            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-foreground/[0.06] text-foreground-muted"}`}
           style={{
             animation: isLast ? `chamber-pulse 2s ease-in-out infinite` : `pipeline-pulse 3s ease-in-out infinite`,
             animationDelay: `${index * 0.4}s`,
@@ -267,25 +267,25 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
 
       {/* Status badges */}
       <div className="absolute top-[1%] left-[3%] z-20">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
           <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#A2AB73]" /></span>
           <span className="text-[7px] font-mono text-foreground/40 tracking-wider">ACTIVE</span>
         </div>
       </div>
       <div className="absolute top-[12%] right-[0%] z-20">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
           <Brain className="h-2 w-2 text-[#A2AB73]" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">LEARNING</span>
         </div>
       </div>
       <div className="absolute bottom-[12%] right-[4%] z-20">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
           <Heart className="h-2 w-2 text-[#D84C63]" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">EMPATHETIC</span>
         </div>
       </div>
       <div className="absolute top-[30%] left-[0%] z-20">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
           <Users className="h-2 w-2 text-[#CC3A63]" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">RELATIONSHIP</span>
         </div>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { useGLTF, OrbitControls, Bounds } from "@react-three/drei"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { useGLTF, OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
 
 export interface GLBAvatarProps {
@@ -14,17 +14,19 @@ export interface GLBAvatarProps {
   glow?: string
   /** apply a skin tone to any material that has no colour texture (raw heads) */
   skinColor?: string
-  /** slow auto-rotate so the whole avatar is visible from all sides */
   autoRotate?: boolean
 }
 
 const DEFAULT_URL = "/models/angelica.glb"
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
+function Model({ url, speaking, autoSpeak, skinColor, reduced, onFit }: {
   url: string; speaking: boolean; autoSpeak: boolean; skinColor?: string; reduced: boolean
+  onFit: (center: THREE.Vector3, radius: number) => void
 }) {
   const { scene } = useGLTF(url, true) as any
+  const root = useRef<THREE.Group>(null)
+  const headMesh = useRef<THREE.Object3D | null>(null)
   const mouth = useRef<THREE.Object3D | null>(null)
   const eyes = useRef<THREE.Object3D[]>([])
   const mouthBase = useRef({ y: 0, sy: 1 })
@@ -33,11 +35,12 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
 
   const model = useMemo(() => {
     const c = scene.clone(true)
-    eyes.current = []
+    eyes.current = []; headMesh.current = null; mouth.current = null
     const strip: any[] = []
     c.traverse((o: any) => {
       if (o.isCamera || o.isLight || /camera|sun|light/i.test(o.name)) { strip.push(o); return }
       o.frustumCulled = false
+      if (/Head/.test(o.name) && o.isMesh && !headMesh.current) headMesh.current = o
       if (o.name === "Mouth" || o.name === "Mouth_Mouth_0") mouth.current = o
       if (/^(Eye|Eyelashes|EyeScleraReflect|MeniscusEye)/.test(o.name)) eyes.current.push(o)
       if (o.isMesh) {
@@ -47,9 +50,6 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
           if (!m) return
           if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
           if (skinColor && !m.map) m.color = new THREE.Color(skinColor)
-          // Skin/hair are non-metallic; leftover metalness (from the
-          // spec-gloss -> metal-rough conversion) renders black without an
-          // env map, so force it off and keep a soft roughness.
           if ("metalness" in m) m.metalness = 0
           if ("roughness" in m && (m.roughness === undefined || m.roughness > 0.9)) m.roughness = 0.7
           m.needsUpdate = true
@@ -57,9 +57,22 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
       }
     })
     strip.forEach((o) => o.removeFromParent())
-    if (mouth.current) mouthBase.current = { y: mouth.current.position.y, sy: mouth.current.scale.y }
+    const mc = mouth.current as any
+    if (mc) mouthBase.current = { y: mc.position.y, sy: mc.scale.y }
     return c
   }, [scene, skinColor])
+
+  // Frame on the HEAD (so the face is prominent; long hair flows off-frame).
+  useLayoutEffect(() => {
+    if (!root.current) return
+    root.current.updateWorldMatrix(true, true)
+    const target = headMesh.current || model
+    const box = new THREE.Box3().setFromObject(target)
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
+    const radius = Math.max(size.x, size.y) * 0.5
+    onFit(center, radius)
+  }, [model, onFit])
 
   useFrame((state, delta) => {
     if (reduced) return
@@ -77,7 +90,7 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
       mouth.current.position.y = mouthBase.current.y - k.open * 0.012
     }
 
-    // Blink — briefly flatten the eye group (no eyelid rig on this mesh)
+    // Blink
     const b = blink.current
     if (t > b.next && b.closing <= 0) { b.closing = 0.13; b.next = t + 2.8 + Math.random() * 3.5 }
     let eyeSy = 1
@@ -85,22 +98,59 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
     eyes.current.forEach((e) => { e.scale.y = eyeSy })
   })
 
-  return <primitive object={model} />
+  return <group ref={root}><primitive object={model} /></group>
+}
+
+function Rig({ center, radius, interactive }: {
+  center: THREE.Vector3 | null; radius: number; interactive: boolean
+}) {
+  const { camera } = useThree()
+  const controls = useRef<any>(null)
+  useEffect(() => {
+    if (!center || radius <= 0) return
+    const cam = camera as THREE.PerspectiveCamera
+    const fov = (cam.fov * Math.PI) / 180
+    const dist = (radius / Math.sin(fov / 2)) * 1.35 // head fills most of the frame
+    cam.position.set(center.x, center.y, center.z + dist)
+    cam.near = dist * 0.05
+    cam.far = dist * 8
+    cam.updateProjectionMatrix()
+    cam.lookAt(center)
+    if (controls.current) { controls.current.target.copy(center); controls.current.update() }
+  }, [center, radius, camera])
+
+  if (!center) return null
+  return (
+    <OrbitControls
+      ref={controls}
+      target={[center.x, center.y, center.z]}
+      makeDefault
+      enablePan={false}
+      enableZoom={false}
+      autoRotate={false}
+      enabled={interactive}
+      // Lock vertical (eye level); allow full horizontal 360° drag.
+      minPolarAngle={Math.PI / 2}
+      maxPolarAngle={Math.PI / 2}
+      rotateSpeed={0.7}
+    />
+  )
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
- * Realistic GLB avatar — auto-framed to fit (never cropped) via <Bounds>,
- * drag-to-rotate + slow 360° auto-rotate, mouth lip-sync + blink. PERF: the
+ * Realistic GLB avatar — framed on the head (large, upright, standard base),
+ * horizontal 360° drag with vertical locked, mouth lip-sync + blink. PERF: the
  * render loop pauses when the avatar is off-screen or the tab is hidden.
  */
 export function GLBAvatar({
   url = DEFAULT_URL, speaking = false, autoSpeak = true, interactive = true,
-  className = "", glow = "#CC3A63", skinColor, autoRotate = true,
+  className = "", glow = "#CC3A63", skinColor,
 }: GLBAvatarProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const [onScreen, setOnScreen] = useState(true)
   const [docVisible, setDocVisible] = useState(true)
+  const [fit, setFit] = useState<{ center: THREE.Vector3; radius: number } | null>(null)
   const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
 
   useEffect(() => {
@@ -110,8 +160,6 @@ export function GLBAvatar({
     io.observe(el)
     const onVis = () => setDocVisible(!document.hidden)
     document.addEventListener("visibilitychange", onVis)
-    // R3F sometimes measures the canvas before layout settles (stale size).
-    // Nudge it to re-measure once things are laid out, and on any resize.
     const fire = () => window.dispatchEvent(new Event("resize"))
     const ro = new ResizeObserver(fire)
     ro.observe(el)
@@ -128,11 +176,11 @@ export function GLBAvatar({
 
   return (
     <div ref={wrap} className={className} style={{ position: "relative" }}>
-      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(48% 48% at 50% 46%, ${glow}26, transparent 72%)` }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(50% 50% at 50% 46%, ${glow}22, transparent 72%)` }} />
       <Canvas
         frameloop={active ? "always" : "never"}
         dpr={[1, 1.6]}
-        camera={{ position: [0, 0, 3], fov: 30, near: 0.01, far: 1000 }}
+        camera={{ position: [0, 0, 3], fov: 28, near: 0.01, far: 1000 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
@@ -141,20 +189,9 @@ export function GLBAvatar({
         <directionalLight position={[-3, 1, 2]} intensity={1.0} color={glow} />
         <directionalLight position={[0, 2, -4]} intensity={0.9} color="#ffffff" />
         <hemisphereLight args={["#ffffff", "#5a4a44", 0.8]} />
-        <Bounds fit clip observe margin={0.95}>
-          <Model url={url} speaking={speaking} autoSpeak={autoSpeak} skinColor={skinColor} reduced={!!reduced} />
-        </Bounds>
-        <OrbitControls
-          makeDefault
-          enablePan={false}
-          enableZoom={false}
-          autoRotate={autoRotate && !reduced}
-          autoRotateSpeed={0.7}
-          enabled={interactive}
-          minPolarAngle={Math.PI * 0.36}
-          maxPolarAngle={Math.PI * 0.6}
-          rotateSpeed={0.6}
-        />
+        <Model url={url} speaking={speaking} autoSpeak={autoSpeak} skinColor={skinColor} reduced={!!reduced}
+          onFit={(center, radius) => setFit({ center, radius })} />
+        <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />
       </Canvas>
     </div>
   )

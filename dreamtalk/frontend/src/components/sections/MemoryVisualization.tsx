@@ -147,7 +147,7 @@ export function MemoryVisualization() {
         {memoryTypes.map((mem) => (
           <GlassCard key={mem.title}>
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-white/[0.06]"
+              className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-foreground/[0.06]"
               style={{ background: `${mem.color}15` }}
             >
               <mem.icon className="h-5 w-5" style={{ color: mem.color }} />
@@ -155,7 +155,7 @@ export function MemoryVisualization() {
             <h3 className="text-base font-semibold text-foreground mb-2">{mem.title}</h3>
             <p className="text-sm text-foreground-muted leading-relaxed">{mem.desc}</p>
             <div className="mt-4 flex items-center gap-2">
-              <div className="flex-1 h-1 rounded-full bg-white/[0.06]">
+              <div className="flex-1 h-1 rounded-full bg-foreground/[0.06]">
                 <motion.div
                   className="h-full rounded-full"
                   style={{ background: mem.color }}

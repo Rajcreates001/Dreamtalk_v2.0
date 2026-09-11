@@ -40,7 +40,7 @@ export function ReasoningEngine() {
               className="flex items-center gap-2"
             >
               <div
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.06]"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-foreground/[0.06]"
                 style={{ background: `${step.color}08` }}
               >
                 <step.icon className="h-4 w-4" style={{ color: step.color }} />
@@ -59,7 +59,7 @@ export function ReasoningEngine() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6 }}
-          className="rounded-2xl bg-card/60 border border-white/[0.06] p-6 lg:p-8"
+          className="rounded-2xl bg-card/60 border border-foreground/[0.06] p-6 lg:p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
@@ -82,7 +82,7 @@ export function ReasoningEngine() {
             </div>
 
             {/* Reasoning animation */}
-            <div className="relative h-40 rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
+            <div className="relative h-40 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06] overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-center">
                 <motion.div
                   className="flex items-center gap-4"

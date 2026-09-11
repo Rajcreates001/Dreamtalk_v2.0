@@ -28,7 +28,7 @@ export function PremiumFooter() {
   const [email, setEmail] = useState("")
 
   return (
-    <footer className="relative z-10 border-t border-white/[0.04] bg-background">
+    <footer className="relative z-10 border-t border-foreground/[0.04] bg-background">
       {/* Top divider glow */}
       <div className="h-px bg-gradient-to-r from-transparent via-[#CC3A63]/30 to-transparent" />
 
@@ -59,7 +59,7 @@ export function PremiumFooter() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Get product updates"
-                  className="w-full bg-card/60 border border-white/[0.06] rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-1 focus:ring-[#CC3A63]/30 transition-all"
+                  className="w-full bg-card/60 border border-foreground/[0.06] rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-1 focus:ring-[#CC3A63]/30 transition-all"
                 />
               </div>
               <motion.button
@@ -88,7 +88,7 @@ export function PremiumFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-white/[0.04]">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-foreground/[0.04]">
           <p className="text-xs text-foreground-muted flex items-center gap-1.5">
             © 2026 DreamTalk. Built with <Heart className="h-3 w-3 text-[#D84C63]" /> for Digital Humans
           </p>
@@ -100,7 +100,7 @@ export function PremiumFooter() {
             ))}
             <motion.button
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="w-8 h-8 rounded-lg bg-card/80 border border-white/[0.06] flex items-center justify-center text-foreground-muted hover:text-foreground transition-all"
+              className="w-8 h-8 rounded-lg bg-card/80 border border-foreground/[0.06] flex items-center justify-center text-foreground-muted hover:text-foreground transition-all"
               whileHover={{ y: -2 }}
             >
               <ArrowUp className="h-4 w-4" />

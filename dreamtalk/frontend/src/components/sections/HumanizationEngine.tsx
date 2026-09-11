@@ -77,7 +77,7 @@ export function HumanizationEngine() {
               {/* Stage icon */}
               <div className="relative mb-3">
                 <motion.div
-                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-white/[0.06] transition-all duration-500 group-hover:border-[#CC3A63]/30"
+                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-foreground/[0.06] transition-all duration-500 group-hover:border-[#CC3A63]/30"
                   style={{ background: `${stage.color}10` }}
                   whileHover={{ scale: 1.1, y: -4 }}
                   transition={{ type: "spring", stiffness: 300 }}
@@ -117,7 +117,7 @@ export function HumanizationEngine() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 1 }}
-          className="mt-16 rounded-2xl bg-card/60 border border-white/[0.06] p-8"
+          className="mt-16 rounded-2xl bg-card/60 border border-foreground/[0.06] p-8"
         >
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
@@ -147,7 +147,7 @@ export function HumanizationEngine() {
             </div>
 
             {/* Evolution graph */}
-            <div className="relative h-32 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 overflow-hidden">
+            <div className="relative h-32 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06] p-4 overflow-hidden">
               <svg className="w-full h-full" viewBox="0 0 200 60">
                 <motion.path
                   d="M0,50 Q25,45 50,35 Q75,40 100,20 Q125,25 150,10 Q175,15 200,5"

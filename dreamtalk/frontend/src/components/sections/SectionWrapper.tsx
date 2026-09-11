@@ -57,7 +57,7 @@ function SectionInner({
   // Per-section Aurora color identity
   const bgClasses: Record<string, string> = {
     default: "bg-transparent",
-    alt: "bg-white/[0.01] border-y border-white/[0.04]",
+    alt: "bg-foreground/[0.01] border-y border-foreground/[0.04]",
     dark: "bg-[#050816]",
     aurora: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] to-transparent",
     problem: "bg-gradient-to-b from-transparent via-[#D84C63]/[0.015] to-transparent",
@@ -278,9 +278,9 @@ export function GlassCard({
   return (
     <motion.div
       variants={staggerItem}
-      className={`rounded-[20px] bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-6 ${
+      className={`rounded-[20px] bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 ${
         hover
-          ? "hover:-translate-y-1 hover:bg-white/[0.04] hover:border-[#CC3A63]/20 transition-all duration-300 ease-out group cursor-default"
+          ? "hover:-translate-y-1 hover:bg-foreground/[0.04] hover:border-[#CC3A63]/20 transition-all duration-300 ease-out group cursor-default"
           : ""
       } ${className}`}
     >

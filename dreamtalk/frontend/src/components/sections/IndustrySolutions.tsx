@@ -103,7 +103,7 @@ export function IndustrySolutions() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               active === ind.id
                 ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 border border-[#CC3A63]/30 text-foreground shadow-lg shadow-[#CC3A63]/5"
-                : "bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground"
+                : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -131,7 +131,7 @@ export function IndustrySolutions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-6 hover:border-[#CC3A63]/20 transition-all group"
+                className="rounded-2xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 hover:border-[#CC3A63]/20 transition-all group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div

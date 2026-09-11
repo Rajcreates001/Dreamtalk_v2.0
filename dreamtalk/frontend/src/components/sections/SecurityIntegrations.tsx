@@ -36,7 +36,7 @@ export function SecurityIntegrations() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.06 }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
+              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-foreground/[0.04] hover:bg-foreground/[0.03] transition-all"
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${feat.color}15` }}>
                 <feat.icon className="h-4 w-4" style={{ color: feat.color }} />
@@ -123,7 +123,7 @@ export function SecurityIntegrations() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.3 }}
-        className="mt-16 rounded-2xl bg-card/60 border border-white/[0.06] p-6 lg:p-8"
+        className="mt-16 rounded-2xl bg-card/60 border border-foreground/[0.06] p-6 lg:p-8"
       >
         <h3 className="text-lg font-semibold text-foreground mb-4 text-center">APIs & Integrations</h3>
         <div className="flex flex-wrap justify-center gap-2">
@@ -134,7 +134,7 @@ export function SecurityIntegrations() {
           ].map((item) => (
             <span
               key={item}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.06] text-foreground hover:text-foreground hover:bg-white/[0.06] transition-all"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-foreground/[0.04] border border-foreground/[0.06] text-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-all"
             >
               {item}
             </span>

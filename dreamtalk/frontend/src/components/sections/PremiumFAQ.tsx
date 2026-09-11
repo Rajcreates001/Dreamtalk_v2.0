@@ -50,7 +50,7 @@ export function PremiumFAQ() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search questions..."
-            className="w-full bg-card/60 border border-white/[0.06] rounded-xl pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
+            className="w-full bg-card/60 border border-foreground/[0.06] rounded-xl pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
           />
         </motion.div>
 
@@ -65,7 +65,7 @@ export function PremiumFAQ() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="rounded-xl bg-card/60 border border-white/[0.05] overflow-hidden"
+                className="rounded-xl bg-card/60 border border-foreground/[0.05] overflow-hidden"
               >
                 <button
                   onClick={() => setOpen(open === faq.q ? null : faq.q)}

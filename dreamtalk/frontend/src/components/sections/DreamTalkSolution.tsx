@@ -118,7 +118,7 @@ export function DreamTalkSolution() {
         {features.map((feature) => (
           <GlassCard key={feature.title}>
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-white/[0.06] transition-all duration-500 group-hover:scale-110"
+              className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-foreground/[0.06] transition-all duration-500 group-hover:scale-110"
               style={{ background: `linear-gradient(135deg, ${feature.color}20, transparent)` }}
             >
               <feature.icon className="h-5 w-5" style={{ color: feature.color }} />

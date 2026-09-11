@@ -42,7 +42,7 @@ export function VoiceIntelligence() {
 
       <div className="grid lg:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
         {/* Voice visualization */}
-        <div className="relative h-64 rounded-2xl bg-card/60 border border-white/[0.06] overflow-hidden">
+        <div className="relative h-64 rounded-2xl bg-card/60 border border-foreground/[0.06] overflow-hidden">
           {/* Waveform — CSS animated, no JS per frame */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex items-end gap-1 h-32">
@@ -92,7 +92,7 @@ export function VoiceIntelligence() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 + i * 0.08 }}
-              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-white/[0.04] hover:bg-white/[0.03] transition-all"
+              className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-foreground/[0.04] hover:bg-foreground/[0.03] transition-all"
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
