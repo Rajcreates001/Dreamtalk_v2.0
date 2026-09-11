@@ -39,6 +39,31 @@ export function sampleLipsync(keyframes: VisemeKeyframe[] | undefined, t: number
   }
 }
 
+/** VRM/ARKit-style viseme influences (0..1) for a rigged head. */
+export interface VisemeWeights { aa: number; ih: number; ou: number; ee: number; oh: number }
+
+const VISEMES_CLOSED: VisemeWeights = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 }
+
+/**
+ * Map a continuous {@link MouthShape} onto the five standard VRM mouth
+ * blendshapes. `mouth_open`/`jaw_drop` open the jaw, `lip_round` pulls toward
+ * the rounded shapes (oh/ou), `mouth_width` toward the spread ones (ih/ee).
+ */
+export function mouthToVisemes(s: MouthShape): VisemeWeights {
+  const open = Math.min(1, s.mouth_open + s.jaw_drop * 0.5)
+  const round = Math.min(1, s.lip_round)
+  const wide = Math.min(1, s.mouth_width)
+  return {
+    aa: open * (1 - round) * (0.6 + wide * 0.4),       // wide-open vowel
+    oh: open * round * 0.75,                            // open + rounded
+    ou: round * (1 - open) * 0.8 + open * round * 0.25, // pursed
+    ee: wide * (1 - round) * (1 - open) * 0.7,          // spread, near-closed
+    ih: wide * (1 - round) * (0.35 + open * 0.35),      // slight-open spread
+  }
+}
+
+export { VISEMES_CLOSED }
+
 /**
  * Drive `onFrame(shape, currentTime)` off an <audio>/<video> element's clock
  * while it plays. This is the single source of truth for lip-sync timing —

@@ -235,7 +235,7 @@ export default function CreateDigitalHumanPage() {
                 setTraits([])
                 setError(null)
               }}
-              className="px-6 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground transition-all"
+              className="px-6 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground transition-all"
             >
               Create Another
             </button>
@@ -271,7 +271,7 @@ export default function CreateDigitalHumanPage() {
                   ? "bg-[#CC3A63]/15 text-[#CC3A63] border border-[#CC3A63]/20"
                   : i < step
                     ? "bg-[#A2AB73]/10 text-[#A2AB73] border border-[#A2AB73]/20 cursor-pointer"
-                    : "bg-white/[0.04] text-foreground-muted border border-transparent"
+                    : "bg-foreground/[0.04] text-foreground-muted border border-transparent"
               )}
             >
               {i < step ? <Check className="h-3 w-3" /> : <span>{i + 1}</span>}
@@ -281,7 +281,7 @@ export default function CreateDigitalHumanPage() {
               <div
                 className={cn(
                   "w-8 h-px",
-                  i < step ? "bg-[#A2AB73]/40" : "bg-white/[0.06]"
+                  i < step ? "bg-[#A2AB73]/40" : "bg-foreground/[0.06]"
                 )}
               />
             )}
@@ -326,7 +326,7 @@ export default function CreateDigitalHumanPage() {
                   "relative border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer mx-auto max-w-md",
                   photoPreview
                     ? "border-[#A2AB73]/30 bg-[#A2AB73]/5"
-                    : "border-white/[0.08] hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5"
+                    : "border-foreground/[0.08] hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5"
                 )}
               >
                 {photoPreview ? (
@@ -339,7 +339,7 @@ export default function CreateDigitalHumanPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center">
                       <Camera className="h-8 w-8 text-foreground-muted" />
                     </div>
                     <div>
@@ -361,12 +361,12 @@ export default function CreateDigitalHumanPage() {
               <div className="flex justify-center gap-3">
                 <button
                   onClick={() => cameraInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all"
                 >
                   <Video className="h-3.5 w-3.5" />
                   Use Camera
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+                <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                   <Upload className="h-3.5 w-3.5" />
                   Upload Video
                 </button>
@@ -393,7 +393,7 @@ export default function CreateDigitalHumanPage() {
                     "p-6 rounded-2xl border text-center transition-all",
                     voiceMethod === "upload"
                       ? "bg-[#CC3A63]/15 border-[#CC3A63]/20"
-                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
+                      : "bg-foreground/[0.04] border-foreground/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
                   <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "#CC3A63" : "#8A8178" }} />
@@ -406,7 +406,7 @@ export default function CreateDigitalHumanPage() {
                     "p-6 rounded-2xl border text-center transition-all",
                     voiceMethod === "generate"
                       ? "bg-[#CC3A63]/15 border-[#CC3A63]/20"
-                      : "bg-white/[0.04] border-white/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
+                      : "bg-foreground/[0.04] border-foreground/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
                   <Wand2 className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "generate" ? "#CC3A63" : "#8A8178" }} />
@@ -447,7 +447,7 @@ export default function CreateDigitalHumanPage() {
 
               {/* Generate form */}
               {voiceMethod === "generate" && (
-                <div className="max-w-lg mx-auto space-y-4 p-6 rounded-2xl bg-card/80 border border-white/[0.06]">
+                <div className="max-w-lg mx-auto space-y-4 p-6 rounded-2xl bg-card/80 border border-foreground/[0.06]">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] text-foreground-muted mb-1 block">Gender</label>
@@ -460,7 +460,7 @@ export default function CreateDigitalHumanPage() {
                               "flex-1 px-3 py-2 rounded-lg text-xs transition-all border",
                               voiceGender === g
                                 ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
-                                : "bg-white/[0.04] border-white/[0.06] text-foreground-muted"
+                                : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted"
                             )}
                           >
                             {g}
@@ -473,7 +473,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceAge}
                         onChange={(e) => setVoiceAge(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
                       >
                         {AGE_GROUPS.map((a) => (
                           <option key={a}>{a}</option>
@@ -492,7 +492,7 @@ export default function CreateDigitalHumanPage() {
                             "px-2.5 py-1.5 rounded-lg text-[10px] transition-all border",
                             voiceRegion === r
                               ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
-                              : "bg-white/[0.04] border-white/[0.06] text-foreground-muted"
+                              : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted"
                           )}
                         >
                           {r}
@@ -506,7 +506,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceAccent}
                         onChange={(e) => setVoiceAccent(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
                       >
                         {ACCENTS.map((a) => (
                           <option key={a}>{a}</option>
@@ -518,7 +518,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceEmotion}
                         onChange={(e) => setVoiceEmotion(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
                       >
                         {EMOTION_BIASES.map((e) => (
                           <option key={e}>{e}</option>
@@ -556,7 +556,7 @@ export default function CreateDigitalHumanPage() {
                         "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border",
                         brainTab === tab.id
                           ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
-                          : "bg-white/[0.04] border-white/[0.06] text-foreground-muted"
+                          : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted"
                       )}
                     >
                       <Icon className="h-3.5 w-3.5" />
@@ -568,7 +568,7 @@ export default function CreateDigitalHumanPage() {
 
               {brainTab === "documents" && (
                 <div className="max-w-lg mx-auto space-y-3">
-                  <div className="border-2 border-dashed border-white/[0.08] rounded-2xl p-8 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer">
+                  <div className="border-2 border-dashed border-foreground/[0.08] rounded-2xl p-8 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer">
                     <Upload className="h-8 w-8 mx-auto mb-3 text-foreground-muted" />
                     <p className="text-sm text-foreground-muted font-medium mb-1">Drop files here</p>
                     <p className="text-xs text-foreground-muted">PDF, DOCX, TXT, CSV, Markdown</p>
@@ -582,7 +582,7 @@ export default function CreateDigitalHumanPage() {
                       return (
                         <button
                           key={item.label}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-foreground-muted hover:text-foreground transition-all"
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-[10px] text-foreground-muted hover:text-foreground transition-all"
                         >
                           <Icon className="h-3 w-3" />
                           {item.label}
@@ -600,7 +600,7 @@ export default function CreateDigitalHumanPage() {
                     onChange={(e) => setDescribeText(e.target.value)}
                     placeholder="My grandfather was a retired teacher. He loved helping students, gardening, and reading history books. He always spoke calmly and believed everyone deserved respect..."
                     rows={8}
-                    className="w-full px-4 py-3 rounded-xl bg-card/80 border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
+                    className="w-full px-4 py-3 rounded-xl bg-card/80 border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
                   />
                   <p className="text-[10px] text-foreground-muted mt-1">
                     Write naturally. The AI will understand.
@@ -628,7 +628,7 @@ export default function CreateDigitalHumanPage() {
                       "px-4 py-2.5 rounded-xl text-sm transition-all border",
                       relationship === r
                         ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#CC3A63]/20 border-[#CC3A63]/30 text-foreground shadow-lg shadow-[#CC3A63]/10"
-                        : "bg-white/[0.04] border-white/[0.06] text-foreground-muted hover:text-foreground hover:bg-white/[0.08]"
+                        : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08]"
                     )}
                   >
                     {r}
@@ -656,7 +656,7 @@ export default function CreateDigitalHumanPage() {
                       "px-4 py-2.5 rounded-xl text-sm transition-all border",
                       traits.includes(trait)
                         ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/15 border-[#CC3A63]/30 text-foreground shadow-lg shadow-[#CC3A63]/10"
-                        : "bg-white/[0.04] border-white/[0.06] text-foreground-muted hover:text-foreground hover:bg-white/[0.08]"
+                        : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08]"
                     )}
                   >
                     {trait}
@@ -682,7 +682,7 @@ export default function CreateDigitalHumanPage() {
             "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm transition-all",
             step === 0 || generating
               ? "text-foreground-muted opacity-30 cursor-not-allowed"
-              : "text-foreground-muted hover:text-foreground bg-white/[0.04]"
+              : "text-foreground-muted hover:text-foreground bg-foreground/[0.04]"
           )}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -697,7 +697,7 @@ export default function CreateDigitalHumanPage() {
               "flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-medium transition-all",
               canProceed()
                 ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20"
-                : "bg-white/[0.04] text-foreground-muted cursor-not-allowed"
+                : "bg-foreground/[0.04] text-foreground-muted cursor-not-allowed"
             )}
           >
             Continue
@@ -726,7 +726,7 @@ export default function CreateDigitalHumanPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-lg mx-auto mt-8 space-y-4"
         >
-          <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]"
               initial={{ width: "0%" }}
@@ -758,7 +758,7 @@ export default function CreateDigitalHumanPage() {
                         ? "bg-[#A2AB73]/10"
                         : isCurrent
                           ? "bg-[#CC3A63]/10"
-                          : "bg-white/[0.04]"
+                          : "bg-foreground/[0.04]"
                     )}
                   >
                     {isDone ? (

@@ -39,7 +39,7 @@ export default function IntegrationsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="p-4 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card hover:border-white/[0.12] transition-all group"
+              className="p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card hover:border-foreground/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15` }}>
@@ -49,7 +49,7 @@ export default function IntegrationsPage() {
                   "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
                   item.status === "connected"
                     ? "bg-[#A2AB73]/10 text-[#A2AB73]"
-                    : "bg-white/[0.04] text-foreground-muted hover:text-foreground"
+                    : "bg-foreground/[0.04] text-foreground-muted hover:text-foreground"
                 )}>
                   {item.status === "connected" ? <CheckCircle className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                   {status.label}

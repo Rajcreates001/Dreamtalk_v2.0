@@ -142,7 +142,7 @@ export default function StudioPage() {
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all disabled:opacity-50"
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -169,7 +169,7 @@ export default function StudioPage() {
       {/* ─── Main Content ─── */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Left: Vertical Tab Bar */}
-        <div className="w-[180px] shrink-0 overflow-y-auto rounded-xl bg-card/80 border border-white/[0.06] p-1.5 space-y-0.5 scrollbar-thin">
+        <div className="w-[180px] shrink-0 overflow-y-auto rounded-xl bg-card/80 border border-foreground/[0.06] p-1.5 space-y-0.5 scrollbar-thin">
           {STUDIO_TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -181,7 +181,7 @@ export default function StudioPage() {
                   "w-full text-left px-3 py-2.5 rounded-lg transition-all group",
                   isActive
                     ? "bg-[#CC3A63]/15 border border-[#CC3A63]/20"
-                    : "hover:bg-white/[0.04] border border-transparent"
+                    : "hover:bg-foreground/[0.04] border border-transparent"
                 )}
               >
                 <div className="flex items-center gap-2.5">
@@ -201,7 +201,7 @@ export default function StudioPage() {
         </div>
 
         {/* Center: Tab Content Panel */}
-        <div className="w-[400px] xl:w-[440px] shrink-0 overflow-y-auto rounded-xl bg-card/80 border border-white/[0.06] p-5 scrollbar-thin">
+        <div className="w-[400px] xl:w-[440px] shrink-0 overflow-y-auto rounded-xl bg-card/80 border border-foreground/[0.06] p-5 scrollbar-thin">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -230,11 +230,11 @@ export default function StudioPage() {
         </div>
 
         {/* Right: 3D Preview */}
-        <div className="flex-1 rounded-xl bg-gradient-to-br from-[#2C2929] to-[#0a0e1a] border border-white/[0.06] flex items-center justify-center relative overflow-hidden">
+        <div className="flex-1 rounded-xl bg-gradient-to-br from-[#2C2929] to-[#0a0e1a] border border-foreground/[0.06] flex items-center justify-center relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-[#CC3A63]/8 blur-[100px]" />
 
           <div className="relative text-center">
-            <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 border border-white/[0.06] flex items-center justify-center">
+            <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 border border-foreground/[0.06] flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] opacity-60 animate-breathe" />
             </div>
             <p className="text-sm text-foreground-muted">3D Preview</p>
@@ -242,11 +242,11 @@ export default function StudioPage() {
           </div>
 
           {/* Bottom toolbar */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-xl bg-card/80 border border-white/[0.06]">
-            <button className="px-3 py-1.5 rounded-lg bg-white/[0.04] text-xs text-foreground-muted hover:text-foreground transition-all">Reset</button>
-            <div className="w-px h-4 bg-white/[0.06]" />
-            <button className="px-3 py-1.5 rounded-lg bg-white/[0.04] text-xs text-foreground-muted hover:text-foreground transition-all">Auto-rotate</button>
-            <div className="w-px h-4 bg-white/[0.06]" />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-xl bg-card/80 border border-foreground/[0.06]">
+            <button className="px-3 py-1.5 rounded-lg bg-foreground/[0.04] text-xs text-foreground-muted hover:text-foreground transition-all">Reset</button>
+            <div className="w-px h-4 bg-foreground/[0.06]" />
+            <button className="px-3 py-1.5 rounded-lg bg-foreground/[0.04] text-xs text-foreground-muted hover:text-foreground transition-all">Auto-rotate</button>
+            <div className="w-px h-4 bg-foreground/[0.06]" />
             <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-xs text-white font-medium shadow-lg shadow-[#CC3A63]/20">
               <Play className="h-3 w-3" />
               Preview
@@ -268,31 +268,31 @@ function AppearanceTab() {
     <TabShell title="Appearance" desc="Name, style, and visual identity">
       <div className="space-y-3">
         <Field label="Avatar Name">
-          <input type="text" placeholder="Enter name..." className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+          <input type="text" placeholder="Enter name..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Gender">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
               <option>Neutral</option>
               <option>Male</option>
               <option>Female</option>
             </select>
           </Field>
           <Field label="Age">
-            <input type="number" min={18} max={80} defaultValue={30} className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+            <input type="number" min={18} max={80} defaultValue={30} className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
           </Field>
         </div>
         <Field label="Style">
           <div className="grid grid-cols-3 gap-2">
             {["Realistic", "Stylized", "Cartoon"].map((s) => (
-              <button key={s} className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{s}</button>
+              <button key={s} className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{s}</button>
             ))}
           </div>
         </Field>
         <Field label="Color Scheme">
           <div className="flex flex-wrap gap-2">
             {["#CC3A63", "#A2AB73", "#A2AB73", "#CC3A63", "#D6A44C", "#D84C63"].map((c) => (
-              <button key={c} className="w-7 h-7 rounded-lg border border-white/[0.1] hover:scale-110 transition-transform" style={{ background: c }} />
+              <button key={c} className="w-7 h-7 rounded-lg border border-foreground/[0.1] hover:scale-110 transition-transform" style={{ background: c }} />
             ))}
           </div>
         </Field>
@@ -315,7 +315,7 @@ function VoiceTab() {
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Language">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
               <option>English</option>
               <option>Spanish</option>
               <option>French</option>
@@ -324,7 +324,7 @@ function VoiceTab() {
             </select>
           </Field>
           <Field label="Accent">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
               <option>American</option>
               <option>British</option>
               <option>Indian</option>
@@ -342,12 +342,12 @@ function VoiceTab() {
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all",
                   selectedVoice === v.id
                     ? "bg-[#CC3A63]/15 border border-[#CC3A63]/20 text-foreground"
-                    : "bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground"
+                    : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground"
                 )}
               >
                 <span>{v.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04]">{v.lang}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.04]">{v.lang}</span>
                   {selectedVoice === v.id && <Check className="h-3 w-3 text-[#CC3A63]" />}
                 </div>
               </button>
@@ -355,11 +355,11 @@ function VoiceTab() {
           </div>
         </Field>
         <div className="flex items-center gap-2 pt-1">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
             <Play className="h-3 w-3" />
             Test Voice
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
             <Upload className="h-3 w-3" />
             Upload Sample
           </button>
@@ -388,7 +388,7 @@ function PersonalityTab() {
                     "px-3 py-1.5 rounded-lg text-xs transition-all border",
                     isSelected
                       ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
-                      : "bg-white/[0.04] border-white/[0.06] text-foreground-muted hover:text-foreground"
+                      : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground"
                   )}
                 >
                   {t}
@@ -398,10 +398,10 @@ function PersonalityTab() {
           </div>
         </Field>
         <Field label="Description">
-          <textarea rows={3} placeholder="Describe how your avatar should behave..." className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
+          <textarea rows={3} placeholder="Describe how your avatar should behave..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
         </Field>
         <Field label="Interaction Style">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>Friendly & Casual</option>
             <option>Professional & Formal</option>
             <option>Academic & Detailed</option>
@@ -424,13 +424,13 @@ function KnowledgeTab() {
   return (
     <TabShell title="Knowledge" desc="Documents, data sources, and training material">
       <div className="space-y-3">
-        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-white/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all">
+        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all">
           <Upload className="h-4 w-4" />
           Upload Documents
         </button>
         <div className="space-y-1.5">
           {sources.map((src) => (
-            <div key={src.name} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <div key={src.name} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
               <div className="min-w-0">
                 <p className="text-xs text-foreground truncate">{src.name}</p>
                 <p className="text-[10px] text-foreground-muted">{src.size} · {src.chunks} chunks</p>
@@ -469,9 +469,9 @@ function MemoryTab() {
               { id: "facts", label: "Learned Facts", on: true },
               { id: "emotions", label: "Emotional Context", on: false },
             ].map((m) => (
-              <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+              <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-foreground/[0.03]">
                 <span className="text-xs text-foreground-muted">{m.label}</span>
-                <div className={cn("w-8 h-4 rounded-full transition-colors relative cursor-pointer", m.on ? "bg-[#CC3A63]" : "bg-white/[0.08]")}>
+                <div className={cn("w-8 h-4 rounded-full transition-colors relative cursor-pointer", m.on ? "bg-[#CC3A63]" : "bg-foreground/[0.08]")}>
                   <div className={cn("absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform", m.on ? "left-4" : "left-0.5")} />
                 </div>
               </div>
@@ -493,7 +493,7 @@ function EmotionTab() {
         <SliderField label="Expression Intensity" value={70} unit="%" />
         <SliderField label="Recovery Speed" value={50} unit="%" />
         <Field label="Base Emotion">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>Calm</option>
             <option>Neutral</option>
             <option>Friendly</option>
@@ -519,7 +519,7 @@ function ExpressionsTab() {
     <TabShell title="Expressions" desc="Facial expressions and gesture animations">
       <div className="space-y-3">
         <Field label="Default Expression">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>Neutral</option>
             <option>Gentle Smile</option>
             <option>Friendly</option>
@@ -530,9 +530,9 @@ function ExpressionsTab() {
         <Field label="Triggered Expressions">
           <div className="grid grid-cols-2 gap-1.5">
             {exprs.map((e) => (
-              <div key={e.name} className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              <div key={e.name} className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-foreground/[0.03] border border-foreground/[0.06]">
                 <span className="text-xs text-foreground-muted">{e.name}</span>
-                <span className="text-[9px] px-1 py-0.5 rounded bg-white/[0.04] text-foreground-muted">{e.shortcut}</span>
+                <span className="text-[9px] px-1 py-0.5 rounded bg-foreground/[0.04] text-foreground-muted">{e.shortcut}</span>
               </div>
             ))}
           </div>
@@ -548,13 +548,13 @@ function RelationshipsTab() {
   return (
     <TabShell title="Relationships" desc="Bonding, rapport, and interaction dynamics">
       <div className="space-y-3">
-        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 text-center">
+        <div className="rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] p-4 text-center">
           <div className="text-3xl font-bold text-[#CC3A63] mb-1">{bondLevel}%</div>
           <p className="text-xs text-foreground-muted">Current Bond Level</p>
           <input type="range" min={0} max={100} value={bondLevel} onChange={(e) => setBondLevel(Number(e.target.value))} className="w-full mt-2 accent-[#CC3A63]" />
         </div>
         <Field label="Bonding Speed">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>Slow & Natural</option>
             <option>Balanced</option>
             <option>Fast & Warm</option>
@@ -568,7 +568,7 @@ function RelationshipsTab() {
               { type: "Inside Jokes", count: 3 },
               { type: "Milestones", count: 2 },
             ].map((item) => (
-              <div key={item.type} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03]">
+              <div key={item.type} className="flex items-center justify-between px-3 py-2 rounded-lg bg-foreground/[0.03]">
                 <span className="text-xs text-foreground-muted">{item.type}</span>
                 <span className="text-xs font-medium text-foreground">{item.count}</span>
               </div>
@@ -586,7 +586,7 @@ function MotionTab() {
     <TabShell title="Motion" desc="Idle animations, movement style, and body language">
       <div className="space-y-3">
         <Field label="Idle Animation">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>Gentle Breathing</option>
             <option>Standing Still</option>
             <option>Subtle Sway</option>
@@ -599,7 +599,7 @@ function MotionTab() {
         <Field label="Gestures">
           <div className="flex flex-wrap gap-1.5">
             {["Hand Wave", "Nod", "Point", "Shrug", "Lean In", "Cross Arms"].map((g) => (
-              <button key={g} className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-foreground-muted hover:text-foreground transition-all">{g}</button>
+              <button key={g} className="px-2.5 py-1.5 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-[10px] text-foreground-muted hover:text-foreground transition-all">{g}</button>
             ))}
           </div>
         </Field>
@@ -619,7 +619,7 @@ function CameraTab() {
         <Field label="Camera Angle">
           <div className="grid grid-cols-3 gap-2">
             {["Front", "Three-Quarter", "Side", "Low Angle", "Eye Level", "High Angle"].map((a) => (
-              <button key={a} className="px-2.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{a}</button>
+              <button key={a} className="px-2.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-[10px] text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{a}</button>
             ))}
           </div>
         </Field>
@@ -642,19 +642,19 @@ function ActionsTab() {
   return (
     <TabShell title="Actions" desc="Custom triggers, responses, and automated behaviors">
       <div className="space-y-3">
-        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-white/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 transition-all">
+        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 transition-all">
           <Plus className="h-3.5 w-3.5" />
           Add Action
         </button>
         <div className="space-y-1.5">
           {actionsList.map((action, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
               <GripVertical className="h-3 w-3 text-foreground-muted shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] text-foreground truncate">{action.trigger}</p>
                 <p className="text-[9px] text-foreground-muted truncate">→ {action.response}</p>
               </div>
-              <div className={cn("w-7 h-3.5 rounded-full transition-colors relative cursor-pointer shrink-0", action.active ? "bg-[#CC3A63]" : "bg-white/[0.08]")}>
+              <div className={cn("w-7 h-3.5 rounded-full transition-colors relative cursor-pointer shrink-0", action.active ? "bg-[#CC3A63]" : "bg-foreground/[0.08]")}>
                 <div className={cn("absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-transform", action.active ? "left-4" : "left-0.5")} />
               </div>
             </div>
@@ -671,7 +671,7 @@ function FineTuningTab() {
     <TabShell title="Fine Tuning" desc="Model parameters, training data, and optimization">
       <div className="space-y-3">
         <Field label="Base Model">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
             <option>GPT-4o</option>
             <option>Claude 3.5 Sonnet</option>
             <option>Gemini 1.5 Pro</option>
@@ -682,7 +682,7 @@ function FineTuningTab() {
         <SliderField label="Top P" value={0.9} min={0} max={1} step={0.1} unit="" />
         <SliderField label="Max Tokens" value={2048} min={256} max={8192} step={256} unit="" />
         <Field label="Training Data">
-          <div className="px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+          <div className="px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
             <p className="text-xs text-foreground-muted">No custom training data uploaded</p>
             <button className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs text-[#CC3A63] hover:bg-[#CC3A63]/20 transition-all">
               <Upload className="h-3 w-3" />
@@ -714,14 +714,14 @@ function TestingTab() {
               value={testInput}
               onChange={(e) => setTestInput(e.target.value)}
               placeholder="Type a test message..."
-              className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
+              className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
             />
             <div className="flex gap-2">
               <button disabled={!testInput.trim()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-xs text-white font-medium disabled:opacity-50 transition-all">
                 <Play className="h-3 w-3" />
                 Send
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+              <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                 <RefreshCw className="h-3 w-3" />
                 Reset
               </button>
@@ -731,7 +731,7 @@ function TestingTab() {
         <Field label="Validation Results">
           <div className="space-y-1.5">
             {testResults.map((r) => (
-              <div key={r.type} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              <div key={r.type} className="flex items-center justify-between px-3 py-2 rounded-lg bg-foreground/[0.03] border border-foreground/[0.06]">
                 <span className="text-xs text-foreground-muted">{r.label}</span>
                 <span className={cn(
                   "text-[10px] font-medium",
@@ -762,7 +762,7 @@ function PreviewTab() {
             {["Standing", "Sitting", "Casual"].map((pose) => (
               <button
                 key={pose}
-                className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all"
+                className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all"
               >
                 {pose}
               </button>
@@ -774,7 +774,7 @@ function PreviewTab() {
             {["#2C2929", "#1a1f35", "#8F9A5E", "#CC3A63"].map((bg) => (
               <button
                 key={bg}
-                className="aspect-video rounded-lg border border-white/[0.1] hover:scale-105 transition-transform"
+                className="aspect-video rounded-lg border border-foreground/[0.1] hover:scale-105 transition-transform"
                 style={{ background: bg }}
               />
             ))}
@@ -806,7 +806,7 @@ function DeployTab() {
               { id: "staging", label: "Staging", color: "#A2AB73" },
               { id: "prod", label: "Production", color: "#A2AB73" },
             ].map((env) => (
-              <button key={env.id} className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-[#CC3A63]/10 transition-all">
+              <button key={env.id} className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] hover:bg-[#CC3A63]/10 transition-all">
                 <div className="w-2 h-2 rounded-full" style={{ background: env.color }} />
                 <span className="text-[10px] text-foreground-muted">{env.label}</span>
               </button>
@@ -814,7 +814,7 @@ function DeployTab() {
           </div>
         </Field>
         <Field label="Version">
-          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
             <span className="text-xs text-foreground font-mono">v1.0.0</span>
             <button className="text-[10px] text-[#CC3A63] hover:text-foreground transition-all">Change</button>
           </div>
@@ -828,8 +828,8 @@ function DeployTab() {
               { item: "Personality traits defined", done: true },
               { item: "Tests passed", done: false },
             ].map((c) => (
-              <div key={c.item} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03]">
-                <div className={cn("w-3.5 h-3.5 rounded border flex items-center justify-center", c.done ? "bg-[#A2AB73] border-[#A2AB73]" : "border-white/[0.12]")}>
+              <div key={c.item} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-foreground/[0.03]">
+                <div className={cn("w-3.5 h-3.5 rounded border flex items-center justify-center", c.done ? "bg-[#A2AB73] border-[#A2AB73]" : "border-foreground/[0.12]")}>
                   {c.done && <Check className="h-2.5 w-2.5 text-[#2C2929]" />}
                 </div>
                 <span className={cn("text-[11px]", c.done ? "text-foreground" : "text-foreground-muted")}>{c.item}</span>

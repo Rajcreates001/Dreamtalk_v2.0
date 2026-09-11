@@ -45,7 +45,7 @@ export default function MarketplacePage() {
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               activeCat === cat
                 ? "bg-[#CC3A63]/20 text-[#CC3A63] border border-[#CC3A63]/30"
-                : "bg-white/[0.04] text-foreground-muted hover:text-foreground border border-transparent"
+                : "bg-foreground/[0.04] text-foreground-muted hover:text-foreground border border-transparent"
             )}
           >
             {cat}
@@ -63,7 +63,7 @@ export default function MarketplacePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="p-4 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card hover:border-white/[0.12] transition-all group"
+              className="p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card hover:border-foreground/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15`, color: item.color }}>
@@ -76,11 +76,11 @@ export default function MarketplacePage() {
               </div>
               <h3 className="text-sm font-semibold text-foreground">{item.name}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-foreground-muted px-2 py-0.5 rounded-md bg-white/[0.04]">{item.type}</span>
+                <span className="text-[10px] text-foreground-muted px-2 py-0.5 rounded-md bg-foreground/[0.04]">{item.type}</span>
                 <span className="text-[10px] text-foreground-muted">{item.downloads} downloads</span>
               </div>
               <p className="text-xs text-foreground-muted mt-2">{item.desc}</p>
-              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all group">
+              <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all group">
                 <Download className="h-3 w-3" />
                 Install
               </button>

@@ -81,7 +81,7 @@ export function AppSidebar() {
       layout
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
-        "hidden lg:flex flex-col border-r border-white/[0.06] bg-[#2C2929]/60 backdrop-blur-2xl relative shrink-0 h-dvh",
+        "hidden lg:flex flex-col border-r border-foreground/[0.06] bg-[#2C2929]/60 backdrop-blur-2xl relative shrink-0 h-dvh",
         collapsed ? "w-[68px]" : "w-[240px]"
       )}
     >
@@ -89,7 +89,7 @@ export function AppSidebar() {
       <Link
         href="/"
         className={cn(
-          "flex items-center border-b border-white/[0.06] px-4 h-16 shrink-0 group",
+          "flex items-center border-b border-foreground/[0.06] px-4 h-16 shrink-0 group",
           collapsed ? "justify-center" : "gap-3"
         )}
       >
@@ -139,7 +139,7 @@ export function AppSidebar() {
                 collapsed ? "justify-center py-2.5" : "px-3 py-2",
                 active
                   ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-[#F3F4F4]"
-                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-white/[0.04]"
+                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-foreground/[0.04]"
               )}
             >
               <div
@@ -175,7 +175,7 @@ export function AppSidebar() {
         })}
 
         {/* Divider */}
-        <div className="border-t border-white/[0.06] my-3" />
+        <div className="border-t border-foreground/[0.06] my-3" />
 
         {/* Create CTA */}
         <div className={cn(collapsed && "flex justify-center")}>
@@ -239,7 +239,7 @@ export function AppSidebar() {
                 collapsed ? "px-0 justify-center py-2.5" : "px-3 py-2",
                 active
                   ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-[#F3F4F4]"
-                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-white/[0.04]"
+                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-foreground/[0.04]"
               )}
             >
               <div
@@ -276,7 +276,7 @@ export function AppSidebar() {
       </nav>
 
       {/* ── User + Logout ── */}
-      <div className="border-t border-white/[0.06] p-3 space-y-2">
+      <div className="border-t border-foreground/[0.06] p-3 space-y-2">
         {user && (
           <div className={cn("flex items-center gap-3 px-3 py-2 rounded-xl", collapsed && "justify-center px-0")}>
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-xs shrink-0">
@@ -301,7 +301,7 @@ export function AppSidebar() {
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-[#8A8178] hover:text-[#B0A79C] hover:bg-white/[0.04]",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-[#8A8178] hover:text-[#B0A79C] hover:bg-foreground/[0.04]",
             collapsed && "justify-center px-0"
           )}
         >

@@ -191,6 +191,29 @@ This alone makes the hero and studio show *the user's real twin speaking*.
 4. **Phase 2** (rigged 3D) — once a rigged asset is chosen.
 5. **Phase 3** (studio) → **Phase 5** (design).
 
+## 4b. Delivery status
+
+- **Phase 0** ✅ typed `/api/v1/avatar` client + hooks (`services/avatar/*`).
+- **Phase 1** ✅ `AvatarRenderer` + `TalkingHeadVideo` (2D, media-clock lip-sync).
+- **Phase 2** ✅ `VRMAvatar` — rigged VRM head driving the five standard mouth
+  visemes from `lipsync` off the cloned-voice audio clock, plus idle blink,
+  breathing and an emotion overlay; horizontal-only orbit. Ships behind the
+  studio's 3D toggle. _Asset note:_ uses the bundled `utsuwa.vrm` as the rigged
+  placeholder — swap `VRMAvatar`'s `url` for a realistic Ready Player Me export
+  (ARKit + visemes) when one is chosen; no code change needed.
+- **Phase 3-lite** ✅ create-twin now registers an avatar-runtime profile so
+  `/talk` has a digital human to converse with.
+- **Phase 4** ✅ (partial) `content-visibility:auto` + `contain-intrinsic-size`
+  on every marketing section (skips off-screen layout/paint — the big win and it
+  also parks off-screen CSS animations for free); WebGL frameloop already pauses
+  off-screen/hidden. _Deferred:_ single shared canvas and `frameloop="demand"`
+  (our avatars sway/blink every frame, so demand needs a throttled invalidate —
+  low marginal gain once off-screen pausing is in place).
+- **Phase 5** ✅ (parity) full light/dark sweep: ~360 `*-white/[α]` hairlines →
+  `*-foreground/[α]` so borders/fills read in both themes. _Deferred by intent:_
+  collapsing 16 → 8 sections — the user asked for richer per-section 3D scroll
+  choreography, so the section count is kept and made cheaper instead of cut.
+
 ## 5. Open questions for the team
 
 1. **Avatar asset**: OK to drop the stock angelica model and use a rigged

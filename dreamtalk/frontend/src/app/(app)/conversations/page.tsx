@@ -164,9 +164,9 @@ export default function ConversationsPage() {
       <SpatialScene intensity={0.3} isDark={isDark} interactive reduced />
 
       {/* ─── Left: Conversation History ─── */}
-      <div className="w-56 lg:w-64 shrink-0 border-r border-white/[0.06] flex flex-col bg-card/30 relative z-10">
-        <div className="p-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-foreground-muted text-sm">
+      <div className="w-56 lg:w-64 shrink-0 border-r border-foreground/[0.06] flex flex-col bg-card/30 relative z-10">
+        <div className="p-3 border-b border-foreground/[0.06]">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted text-sm">
             <Search className="h-3.5 w-3.5 shrink-0" />
             <input
               type="text"
@@ -202,7 +202,7 @@ export default function ConversationsPage() {
                 "w-full text-left p-2.5 rounded-xl transition-all",
                 activeConv === conv.id
                   ? "bg-[#CC3A63]/10 border border-[#CC3A63]/20"
-                  : "hover:bg-white/[0.04] border border-transparent"
+                  : "hover:bg-foreground/[0.04] border border-transparent"
               )}
             >
               <p className="text-xs font-semibold text-foreground truncate">{conv.title}</p>
@@ -218,12 +218,12 @@ export default function ConversationsPage() {
         layout
         transition={{ duration: 0.4, ease: "easeInOut" }}
         className={cn(
-          "relative flex flex-col border-r border-white/[0.06] bg-card/20 shrink-0 relative z-10",
+          "relative flex flex-col border-r border-foreground/[0.06] bg-card/20 shrink-0 relative z-10",
           avatarExpanded ? "w-[300px] xl:w-[340px]" : "w-[0px] overflow-hidden",
           "hidden lg:flex"
         )}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/[0.06] shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-400/20 to-blue-400/20 flex items-center justify-center">
               <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
@@ -236,7 +236,7 @@ export default function ConversationsPage() {
           <button
             type="button"
             onClick={() => setAvatarExpanded(false)}
-            className="h-6 w-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition-colors flex items-center justify-center"
+            className="h-6 w-6 rounded-lg bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center"
           >
             <ArrowLeft className="h-3 w-3 text-foreground-muted" />
           </button>
@@ -259,7 +259,7 @@ export default function ConversationsPage() {
         <button
           type="button"
           onClick={() => setAvatarExpanded(true)}
-          className="hidden lg:flex items-center justify-center w-6 h-12 self-center bg-card/40 border border-white/[0.06] rounded-r-lg text-foreground-muted hover:text-foreground-muted relative z-10 cursor-pointer"
+          className="hidden lg:flex items-center justify-center w-6 h-12 self-center bg-card/40 border border-foreground/[0.06] rounded-r-lg text-foreground-muted hover:text-foreground-muted relative z-10 cursor-pointer"
         >
           <ChevronRight className="h-3 w-3" />
         </button>
@@ -276,7 +276,7 @@ export default function ConversationsPage() {
         />
 
         {/* Chat header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-card/30">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/[0.06] bg-card/30">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400/20 to-blue-400/20 flex items-center justify-center">
               <Bot className="h-3.5 w-3.5 text-emerald-500" />
@@ -302,7 +302,7 @@ export default function ConversationsPage() {
             <button
               type="button"
               onClick={() => setShowPanel(!showPanel)}
-              className="p-1.5 rounded-lg hover:bg-white/[0.06] text-foreground-muted hover:text-foreground-muted transition-all"
+              className="p-1.5 rounded-lg hover:bg-foreground/[0.06] text-foreground-muted hover:text-foreground-muted transition-all"
             >
               {showPanel ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
             </button>
@@ -334,7 +334,7 @@ export default function ConversationsPage() {
                   <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-emerald-600">D</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] rounded-tl-md">
+                  <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-foreground/[0.04] border border-foreground/[0.06] rounded-tl-md">
                     <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "0ms" }} />
                     <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "150ms" }} />
                     <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -346,7 +346,7 @@ export default function ConversationsPage() {
         </ScrollArea>
 
         {/* Input */}
-        <div className="border-t border-white/[0.06] bg-card/20">
+        <div className="border-t border-foreground/[0.06] bg-card/20">
           <ChatInput onSend={sendMessage} onStop={stopGeneration} isLoading={isLoading} />
         </div>
       </div>
@@ -358,7 +358,7 @@ export default function ConversationsPage() {
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 260, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="border-l border-white/[0.06] bg-card/30 overflow-hidden shrink-0 relative z-10"
+            className="border-l border-foreground/[0.06] bg-card/30 overflow-hidden shrink-0 relative z-10"
           >
             <div className="w-[260px] p-4 space-y-4">
               <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
@@ -367,7 +367,7 @@ export default function ConversationsPage() {
               </h3>
 
               {/* Emotion */}
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+              <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
                     <Heart className="h-3 w-3 text-[#CC3A63]" />
@@ -376,7 +376,7 @@ export default function ConversationsPage() {
                   <span className="text-[10px] text-[#CC3A63] font-medium">{THINKING_DATA.emotionScore}%</span>
                 </div>
                 <p className="text-xs text-foreground">{emotion || THINKING_DATA.emotion}</p>
-                <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-foreground/[0.04] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${THINKING_DATA.emotionScore}%` }}
@@ -404,7 +404,7 @@ export default function ConversationsPage() {
               </div>
 
               {/* Reasoning */}
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06]">
                 <span className="text-[10px] text-foreground-muted flex items-center gap-1.5 mb-1.5">
                   <Cpu className="h-3 w-3 text-[#D6A44C]" />
                   Reasoning
@@ -424,7 +424,7 @@ export default function ConversationsPage() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.06]">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-foreground/[0.06]">
                 <div>
                   <p className="text-[9px] text-foreground-muted">Confidence</p>
                   <p className="text-xs font-semibold text-[#A2AB73]">{THINKING_DATA.confidence}%</p>

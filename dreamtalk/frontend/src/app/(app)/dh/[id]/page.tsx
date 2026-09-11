@@ -271,7 +271,7 @@ export default function DigitalHumanWorkspacePage() {
       </motion.div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-1 p-1 rounded-xl bg-card/80 border border-white/[0.06] mb-6 w-fit">
+      <div className="flex gap-1 p-1 rounded-xl bg-card/80 border border-foreground/[0.06] mb-6 w-fit">
         {WORKSPACE_TABS.map((tab) => {
           const Icon = tab.icon
           return (
@@ -306,7 +306,7 @@ export default function DigitalHumanWorkspacePage() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                 {/* Avatar card */}
-                <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-6 relative overflow-hidden">
+                <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-6 relative overflow-hidden">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-[#CC3A63]/5 blur-[80px]" />
                   <div className="relative z-10 flex items-start gap-6">
                     <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] flex items-center justify-center text-white font-bold text-2xl shrink-0">
@@ -331,13 +331,13 @@ export default function DigitalHumanWorkspacePage() {
                 </div>
 
                 {/* Memories */}
-                <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-5">
+                <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                     <Brain className="h-4 w-4 text-[#CC3A63]" /> Recent Memories
                   </h3>
                   <div className="space-y-2">
                     {dhMemories.map((mem: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                      <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06]">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#CC3A63] mt-1.5 shrink-0" />
                         <p className="text-xs text-foreground-muted">{mem}</p>
                       </div>
@@ -358,7 +358,7 @@ export default function DigitalHumanWorkspacePage() {
                       <button
                         key={action.label}
                         onClick={() => setActiveTab(action.tab)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all"
                       >
                         <Icon className="h-3.5 w-3.5" />
                         {action.label}
@@ -378,7 +378,7 @@ export default function DigitalHumanWorkspacePage() {
                 ].map((stat) => {
                   const Icon = stat.icon
                   return (
-                    <div key={stat.label} className="rounded-xl bg-card/80 border border-white/[0.06] p-4">
+                    <div key={stat.label} className="rounded-xl bg-card/80 border border-foreground/[0.06] p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <Icon className="h-3.5 w-3.5" style={{ color: stat.color }} />
                         <span className="text-[10px] text-foreground-muted">{stat.label}</span>
@@ -395,8 +395,8 @@ export default function DigitalHumanWorkspacePage() {
           {activeTab === "talk" && (
             <div className="grid lg:grid-cols-4 gap-6">
               <div className="lg:col-span-3">
-                <div className="rounded-2xl bg-card/80 border border-white/[0.06] flex flex-col h-[500px]">
-                  <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
+                <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] flex flex-col h-[500px]">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-foreground/[0.06]">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-[#A2AB73]" />
                       <h3 className="text-sm font-semibold text-foreground">Live Conversation</h3>
@@ -429,7 +429,7 @@ export default function DigitalHumanWorkspacePage() {
                             "max-w-[75%] px-4 py-2.5 rounded-2xl text-sm",
                             msg.role === "user"
                               ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white rounded-tr-md"
-                              : "bg-white/[0.04] border border-white/[0.06] text-foreground rounded-tl-md"
+                              : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground rounded-tl-md"
                           )}>{msg.text}</div>
                         </div>
                       ))
@@ -439,13 +439,13 @@ export default function DigitalHumanWorkspacePage() {
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 flex items-center justify-center">
                           <Brain className="h-3.5 w-3.5 text-[#CC3A63]" />
                         </div>
-                        <div className="px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.06] rounded-tl-md">
+                        <div className="px-4 py-2.5 rounded-2xl bg-foreground/[0.04] border border-foreground/[0.06] rounded-tl-md">
                           <Loader2 className="h-4 w-4 animate-spin text-[#CC3A63]" />
                         </div>
                       </div>
                     )}
                   </div>
-                  <div className="border-t border-white/[0.06] p-3">
+                  <div className="border-t border-foreground/[0.06] p-3">
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -453,7 +453,7 @@ export default function DigitalHumanWorkspacePage() {
                         onChange={(e) => setTalkInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleTalkSend()}
                         placeholder={`Speak in ${INDIAN_LANGUAGES.find(l => l.code === talkLang)?.name}...`}
-                        className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
                       />
                       <button onClick={handleTalkSend} disabled={!talkInput.trim() || isThinking} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white disabled:opacity-50">
                         <Send className="h-4 w-4" />
@@ -465,7 +465,7 @@ export default function DigitalHumanWorkspacePage() {
 
               {/* Talk sidebar */}
               <div className="space-y-3">
-                <div className="rounded-xl bg-card/80 border border-white/[0.06] p-4">
+                <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-4">
                   <h4 className="text-xs font-semibold text-foreground mb-3">Language</h4>
                   <div className="space-y-1">
                     {INDIAN_LANGUAGES.map((lang) => (
@@ -476,7 +476,7 @@ export default function DigitalHumanWorkspacePage() {
                           "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all border",
                           talkLang === lang.code
                             ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
-                            : "bg-white/[0.04] border-white/[0.06] text-foreground-muted"
+                            : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted"
                         )}
                       >
                         <span>{lang.native}</span>
@@ -485,7 +485,7 @@ export default function DigitalHumanWorkspacePage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-xl bg-card/80 border border-white/[0.06] p-4">
+                <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-4">
                   <p className="text-[10px] text-foreground-muted mb-2">The AI responds based on {dhName}'s personality and relationship with you.</p>
                   <div className="flex items-center gap-1.5 text-xs text-[#A2AB73]">
                     <Mic className="h-3 w-3" />
@@ -504,13 +504,13 @@ export default function DigitalHumanWorkspacePage() {
                 onChange={(e) => setScriptText(e.target.value)}
                 placeholder="Type your script here..."
                 rows={6}
-                className="w-full px-4 py-3 rounded-xl bg-card/80 border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-card/80 border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none"
               />
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] text-foreground-muted mb-1 block">Language</label>
                   <select value={scriptLang} onChange={(e) => setScriptLang(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
+                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
                     {INDIAN_LANGUAGES.map((l) => (
                       <option key={l.code} value={l.code}>{l.name} ({l.native})</option>
                     ))}
@@ -519,7 +519,7 @@ export default function DigitalHumanWorkspacePage() {
                 <div>
                   <label className="text-[10px] text-foreground-muted mb-1 block">Emotion</label>
                   <select value={scriptEmotion} onChange={(e) => setScriptEmotion(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
+                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
                     {EMOTIONS.map((e) => (
                       <option key={e.id} value={e.id}>{e.label}</option>
                     ))}
@@ -560,7 +560,7 @@ export default function DigitalHumanWorkspacePage() {
                   {generatingScript ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                   {generatingScript ? "Generating..." : "Generate Audio"}
                 </button>
-                <button disabled className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-foreground-muted text-sm">
+                <button disabled className="flex items-center gap-2 px-4 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted text-sm">
                   <Video className="h-4 w-4" /> Generate Video
                 </button>
               </div>
@@ -579,7 +579,7 @@ export default function DigitalHumanWorkspacePage() {
               {/* Upload area */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-white/[0.08] rounded-2xl p-10 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer"
+                className="border-2 border-dashed border-foreground/[0.08] rounded-2xl p-10 text-center hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all cursor-pointer"
               >
                 {uploadingKnowledge ? (
                   <div className="space-y-3">
@@ -610,7 +610,7 @@ export default function DigitalHumanWorkspacePage() {
                 ].map((item) => {
                   const Icon = item.icon
                   return (
-                    <button key={item.label} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+                    <button key={item.label} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                       <Icon className="h-3.5 w-3.5" /> {item.label}
                     </button>
                   )
@@ -618,7 +618,7 @@ export default function DigitalHumanWorkspacePage() {
               </div>
 
               {/* Knowledge sources */}
-              <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-5">
+              <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Current Knowledge</h3>
                 {knowledgeSources.length === 0 ? (
                   <p className="text-xs text-foreground-muted text-center py-4">No knowledge sources yet. Upload documents above.</p>
@@ -627,7 +627,7 @@ export default function DigitalHumanWorkspacePage() {
                     {knowledgeSources.map((doc: any) => {
                       const docId = doc.id || doc._id
                       return (
-                        <div key={docId} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <div key={docId} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06]">
                           <div className="flex items-center gap-2 min-w-0">
                             <FileText className="h-3.5 w-3.5 text-foreground-muted shrink-0" />
                             <span className="text-xs text-foreground truncate">{doc.name || doc.filename || doc.file_name || "Unknown"}</span>
@@ -661,9 +661,9 @@ export default function DigitalHumanWorkspacePage() {
               ].map((section) => {
                 const Icon = section.icon
                 return (
-                  <div key={section.title} className="flex items-center justify-between p-4 rounded-xl bg-card/80 border border-white/[0.06] hover:border-white/[0.12] transition-all">
+                  <div key={section.title} className="flex items-center justify-between p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:border-foreground/[0.12] transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-lg bg-foreground/[0.04] flex items-center justify-center">
                         <Icon className="h-4 w-4 text-foreground-muted" />
                       </div>
                       <div>
@@ -679,7 +679,7 @@ export default function DigitalHumanWorkspacePage() {
                 <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">
                   <Download className="h-4 w-4" /> Export
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground-muted">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground-muted">
                   <Share2 className="h-4 w-4" /> Share
                 </button>
                 <button

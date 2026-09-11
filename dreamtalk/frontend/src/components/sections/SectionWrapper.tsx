@@ -99,7 +99,13 @@ function SectionInner({
       viewport={{ once: true, margin: "-40px" }}
       variants={revealVariants[reveal]}
       className={`relative z-10 ${spacingClasses[spacing]} px-4 sm:px-6 lg:px-8 overflow-hidden contain-layout ${bgClasses[bg]} ${className}`}
-      style={reveal !== "none" ? { willChange: "transform, opacity" } : undefined}
+      style={{
+        // Skip layout + paint for sections far off-screen (biggest single win on
+        // this long page); the intrinsic size keeps the scrollbar stable.
+        contentVisibility: "auto",
+        containIntrinsicSize: "1px 800px",
+        ...(reveal !== "none" ? { willChange: "transform, opacity" } : {}),
+      }}
     >
       {label && (
         <motion.div

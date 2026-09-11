@@ -97,7 +97,7 @@ function TraitBar({ label, value, color = "#CC3A63" }: { label: string; value: n
         <span className="text-[11px] text-foreground-muted capitalize">{label.replace(/_/g, " ")}</span>
         <span className="text-[10px] text-foreground-muted">{Math.round(value * 100)}%</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${value * 100}%` }}
@@ -118,7 +118,7 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
           "w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all",
           completed
             ? "bg-[#A2AB73]/20 text-[#A2AB73]"
-            : "bg-white/[0.04] text-foreground-muted"
+            : "bg-foreground/[0.04] text-foreground-muted"
         )}
       >
         {completed ? (
@@ -137,13 +137,13 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
 function LoadingSkeleton() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      <div className="h-8 w-32 bg-white/[0.04] rounded-lg animate-pulse" />
+      <div className="h-8 w-32 bg-foreground/[0.04] rounded-lg animate-pulse" />
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="h-[400px] rounded-2xl bg-white/[0.04] animate-pulse" />
+        <div className="h-[400px] rounded-2xl bg-foreground/[0.04] animate-pulse" />
         <div className="space-y-4">
-          <div className="h-8 w-48 bg-white/[0.04] rounded-lg animate-pulse" />
-          <div className="h-4 w-64 bg-white/[0.04] rounded-lg animate-pulse" />
-          <div className="h-32 rounded-2xl bg-white/[0.04] animate-pulse" />
+          <div className="h-8 w-48 bg-foreground/[0.04] rounded-lg animate-pulse" />
+          <div className="h-4 w-64 bg-foreground/[0.04] rounded-lg animate-pulse" />
+          <div className="h-32 rounded-2xl bg-foreground/[0.04] animate-pulse" />
         </div>
       </div>
     </div>
@@ -281,19 +281,19 @@ export default function DigitalTwinDetailPage() {
 
           {/* Quick stats row */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-3 text-center">
               <p className="text-[10px] text-foreground-muted mb-1">Face Quality</p>
               <p className="text-sm font-bold text-foreground">
                 {appearance?.quality_score ? `${(appearance.quality_score * 100).toFixed(0)}%` : "—"}
               </p>
             </div>
-            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-3 text-center">
               <p className="text-[10px] text-foreground-muted mb-1">Landmarks</p>
               <p className="text-sm font-bold text-foreground">
                 {appearance?.landmarks_count || "—"}
               </p>
             </div>
-            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-white/[0.06] p-3 text-center">
+            <div className="rounded-xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-3 text-center">
               <p className="text-[10px] text-foreground-muted mb-1">Status</p>
               <p className="text-sm font-bold text-foreground capitalize">
                 {twin.status}
@@ -310,7 +310,7 @@ export default function DigitalTwinDetailPage() {
           className="lg:col-span-2 space-y-4"
         >
           {/* Header card */}
-          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-4">
+          <div className="bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] rounded-[20px] p-5 space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className={cn(
@@ -336,7 +336,7 @@ export default function DigitalTwinDetailPage() {
             )}
 
             {twin.greeting && (
-              <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
+              <div className="rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] p-3">
                 <p className="text-[10px] text-foreground-muted mb-1">Greeting</p>
                 <p className="text-sm text-foreground italic">&ldquo;{twin.greeting}&rdquo;</p>
               </div>
@@ -344,7 +344,7 @@ export default function DigitalTwinDetailPage() {
           </div>
 
           {/* Meta card */}
-          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+          <div className="bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] rounded-[20px] p-5 space-y-3">
             <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Details</h2>
 
             <div className="space-y-2.5">
@@ -363,7 +363,7 @@ export default function DigitalTwinDetailPage() {
                 </div>
                 <div className="flex gap-1">
                   {langs.map((lang) => (
-                    <span key={lang} className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-foreground-muted uppercase">
+                    <span key={lang} className="px-1.5 py-0.5 rounded-md bg-foreground/[0.04] text-[10px] text-foreground-muted uppercase">
                       {lang === "en" ? "EN" : lang === "ta" ? "TA" : lang === "hi" ? "HI" : lang.slice(0, 2).toUpperCase()}
                     </span>
                   ))}
@@ -411,7 +411,7 @@ export default function DigitalTwinDetailPage() {
           </div>
 
           {/* Pipeline steps card */}
-          <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+          <div className="bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] rounded-[20px] p-5 space-y-3">
             <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Creation Pipeline</h2>
             <div className="space-y-3">
               <StepIndicator label="Appearance" completed={!!appearance?.face_detected} />
@@ -424,7 +424,7 @@ export default function DigitalTwinDetailPage() {
 
           {/* Personality card */}
           {personality && Object.keys(personality).length > 0 && (
-            <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+            <div className="bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] rounded-[20px] p-5 space-y-3">
               <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Personality Traits</h2>
               <div className="space-y-2.5">
                 {Object.entries(personality).slice(0, 6).map(([trait, value]) => (
@@ -449,7 +449,7 @@ export default function DigitalTwinDetailPage() {
 
           {/* Voice details card */}
           {voice && (
-            <div className="bg-card/80 backdrop-blur-2xl border border-white/[0.06] rounded-[20px] p-5 space-y-3">
+            <div className="bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] rounded-[20px] p-5 space-y-3">
               <h2 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Voice Profile</h2>
               <div className="space-y-2.5">
                 {voice.accent && (
@@ -500,7 +500,7 @@ export default function DigitalTwinDetailPage() {
             )}
 
             <button
-              className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
+              className="p-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all"
               title="Settings"
             >
               <Settings className="h-4 w-4" />

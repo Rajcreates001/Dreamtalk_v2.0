@@ -78,7 +78,7 @@ export default function BillingPage() {
             className={`relative p-5 rounded-xl border transition-all ${
               plan.popular
                 ? "bg-gradient-to-br from-[#CC3A63]/10 to-[#A2AB73]/8 border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/10"
-                : "bg-card/80 border-white/[0.06] hover:border-white/[0.12]"
+                : "bg-card/80 border-foreground/[0.06] hover:border-foreground/[0.12]"
             }`}
           >
             {plan.popular && (
@@ -107,7 +107,7 @@ export default function BillingPage() {
               className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
                 plan.popular
                   ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20"
-                  : "bg-white/[0.04] border border-white/[0.06] text-foreground-muted hover:text-foreground hover:bg-white/[0.08]"
+                  : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08]"
               }`}
             >
               {plan.name === "Free" ? "Current Plan" : "Upgrade"} <ArrowRight className="h-3.5 w-3.5" />

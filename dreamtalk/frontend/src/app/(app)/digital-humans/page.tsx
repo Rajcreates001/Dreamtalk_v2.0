@@ -180,7 +180,7 @@ export default function DigitalHumansPage() {
                 onClick={() => setSelectedId(isSelected ? null : avatar.id)}
                 className={cn(
                   "rounded-xl bg-card/80 border transition-all duration-200 overflow-hidden cursor-pointer",
-                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-white/[0.06] hover:border-white/[0.12] hover:bg-card"
+                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-foreground/[0.06] hover:border-foreground/[0.12] hover:bg-card"
                 )}
               >
                 {/* Card header */}
@@ -212,7 +212,7 @@ export default function DigitalHumansPage() {
                         </span>
                         <span className="text-[10px] font-medium" style={{ color: statusCfg.color }}>{statusCfg.label}</span>
                       </div>
-                      <button className="p-1.5 rounded-lg hover:bg-white/[0.06] text-foreground-muted hover:text-foreground-muted transition-all">
+                      <button className="p-1.5 rounded-lg hover:bg-foreground/[0.06] text-foreground-muted hover:text-foreground-muted transition-all">
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -226,7 +226,7 @@ export default function DigitalHumansPage() {
                 </div>
 
                 {/* Stats row */}
-                <div className="grid grid-cols-3 gap-px bg-white/[0.04]">
+                <div className="grid grid-cols-3 gap-px bg-foreground/[0.04]">
                   {[
                     { label: "Memory", value: `${avatar.memory}%`, icon: Brain, color: "#CC3A63" },
                     { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "#CC3A63" },
@@ -243,7 +243,7 @@ export default function DigitalHumansPage() {
                 </div>
 
                 {/* Metadata */}
-                <div className="px-4 py-3 flex items-center justify-between border-t border-white/[0.06]">
+                <div className="px-4 py-3 flex items-center justify-between border-t border-foreground/[0.06]">
                   <div className="flex items-center gap-2 text-[10px] text-foreground-muted">
                     <Cpu className="h-3 w-3" />
                     <span>{avatar.model}</span>
@@ -260,19 +260,19 @@ export default function DigitalHumansPage() {
                 <div className="px-4 pb-4 flex gap-2">
                   <Link
                     href={`/conversations?twin=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all"
                   >
                     <MessageSquare className="h-3 w-3" />
                     Chat
                   </Link>
                   <Link
                     href={`/studio?id=${avatar.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all"
                   >
                     <Settings className="h-3 w-3" />
                     Edit
                   </Link>
-                  <button className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all">
                     <Sparkles className="h-3 w-3" />
                   </button>
                 </div>
@@ -288,9 +288,9 @@ export default function DigitalHumansPage() {
           >
             <Link
               href="/studio"
-              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-white/[0.08] p-8 hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all group"
+              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-foreground/[0.08] p-8 hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all group"
             >
-              <div className="w-14 h-14 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-[#CC3A63]/10 transition-all mb-4">
+              <div className="w-14 h-14 rounded-xl bg-foreground/[0.04] flex items-center justify-center group-hover:bg-[#CC3A63]/10 transition-all mb-4">
                 <Plus className="h-6 w-6 text-foreground-muted group-hover:text-[#CC3A63]" />
               </div>
               <p className="text-sm font-semibold text-foreground-muted group-hover:text-foreground transition-colors">Create New Avatar</p>

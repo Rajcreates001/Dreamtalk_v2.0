@@ -357,7 +357,7 @@ export function AvatarViewer3D({
 
       {/* Controls hint */}
       {showControls && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/[0.06] pointer-events-none">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-foreground/[0.06] pointer-events-none">
           <svg className="w-3 h-3 text-[#B0A79C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
@@ -368,7 +368,7 @@ export function AvatarViewer3D({
       )}
 
       {/* Rotation indicator */}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-white/[0.06] pointer-events-none">
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-foreground/[0.06] pointer-events-none">
         <div className="w-1.5 h-1.5 rounded-full bg-[#A2AB73]" />
         <span className="text-[10px] text-[#D8D2C8] font-medium">360°</span>
       </div>

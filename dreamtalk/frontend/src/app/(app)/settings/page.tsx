@@ -49,7 +49,7 @@ export default function SettingsPage() {
                   "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                   isActive
                     ? "bg-[#CC3A63]/10 text-foreground border border-[#CC3A63]/20"
-                    : "text-foreground-muted hover:text-foreground hover:bg-white/[0.04] border border-transparent"
+                    : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04] border border-transparent"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -59,18 +59,18 @@ export default function SettingsPage() {
           })}
         </div>
 
-        <div className="flex-1 rounded-xl bg-card/80 border border-white/[0.06] p-6 space-y-6">
+        <div className="flex-1 rounded-xl bg-card/80 border border-foreground/[0.06] p-6 space-y-6">
           {activeTab === "account" && (
             <div className="space-y-5">
               <h3 className="text-sm font-semibold text-foreground">Account Settings</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Full Name</label>
-                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Email</label>
-                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
               </div>
               <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Save Changes</button>
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                     onClick={() => setToggles(prev => prev.map((v, j) => j === i ? !v : v))}
                     className={cn(
                       "w-9 h-5 rounded-full transition-all relative",
-                      toggles[i] ? "bg-[#CC3A63]" : "bg-white/[0.08]"
+                      toggles[i] ? "bg-[#CC3A63]" : "bg-foreground/[0.08]"
                     )}
                   >
                     <div className={cn(
@@ -108,16 +108,16 @@ export default function SettingsPage() {
               <h3 className="text-sm font-semibold text-foreground">Security</h3>
               <div className="space-y-1.5">
                 <label className="text-xs text-foreground-muted">Current Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">New Password</label>
-                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Confirm Password</label>
-                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
                 </div>
               </div>
               <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Update Password</button>
@@ -127,21 +127,21 @@ export default function SettingsPage() {
           {activeTab === "api" && (
             <div className="space-y-5">
               <h3 className="text-sm font-semibold text-foreground">API Keys</h3>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="p-4 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-foreground-muted">Production Key</span>
                   <span className="text-[10px] text-[#A2AB73]">Active</span>
                 </div>
                 <code className="text-xs text-foreground font-mono">dt_sk_prod_••••••••••••••••</code>
               </div>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="p-4 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-foreground-muted">Development Key</span>
                   <span className="text-[10px] text-[#D6A44C]">Testing</span>
                 </div>
                 <code className="text-xs text-foreground font-mono">dt_sk_dev_••••••••••••••••</code>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground-muted hover:text-foreground transition-all">Generate New Key</button>
+              <button className="px-4 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground-muted hover:text-foreground transition-all">Generate New Key</button>
             </div>
           )}
 

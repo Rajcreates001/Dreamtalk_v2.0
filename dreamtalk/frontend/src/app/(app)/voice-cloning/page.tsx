@@ -384,12 +384,12 @@ export default function VoiceCloningPage() {
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                 isActive ? "bg-[#CC3A63]/15 text-[#CC3A63] border border-[#CC3A63]/30" :
                 isDone ? "bg-[#A2AB73]/10 text-[#A2AB73] border border-[#A2AB73]/20" :
-                "bg-white/[0.04] text-foreground-muted border border-white/[0.06]"
+                "bg-foreground/[0.04] text-foreground-muted border border-foreground/[0.06]"
               )}>
                 {isDone ? <Check className="h-3 w-3" /> : <span className="w-4 text-center">{step.num}</span>}
                 <span className="hidden sm:inline">{step.label}</span>
               </div>
-              {i < STEPS.length - 1 && <div className={cn("w-6 h-px", isDone ? "bg-[#A2AB73]/30" : "bg-white/[0.08]")} />}
+              {i < STEPS.length - 1 && <div className={cn("w-6 h-px", isDone ? "bg-[#A2AB73]/30" : "bg-foreground/[0.08]")} />}
             </div>
           )
         })}
@@ -411,7 +411,7 @@ export default function VoiceCloningPage() {
       </AnimatePresence>
 
       {/* ── Step 1: Record or Upload ─────────────────────────────────── */}
-      <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-6">
+      <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 rounded-lg bg-[#CC3A63]/15 flex items-center justify-center">
             <span className="text-xs font-bold text-[#CC3A63]">1</span>
@@ -425,7 +425,7 @@ export default function VoiceCloningPage() {
           <label className="text-[10px] text-foreground-muted mb-1 block">Voice Profile Name</label>
           <input type="text" value={voiceName} onChange={(e) => setVoiceName(e.target.value)}
             placeholder="e.g. My Voice, Speaker A"
-            className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+            className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
         </div>
 
         {/* Record / Upload buttons */}
@@ -516,7 +516,7 @@ export default function VoiceCloningPage() {
 
       {/* ── Step 2 & 3: Preview (only after cloning) ─────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-lg bg-[#D6A44C]/15 flex items-center justify-center">
               <span className="text-xs font-bold text-[#D6A44C]">2</span>
@@ -539,7 +539,7 @@ export default function VoiceCloningPage() {
 
       {/* ── Step 3: Language ─────────────────────────────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-lg bg-[#CC3A63]/15 flex items-center justify-center">
               <span className="text-xs font-bold text-[#CC3A63]">3</span>
@@ -552,7 +552,7 @@ export default function VoiceCloningPage() {
                 className={cn("px-4 py-2 rounded-xl text-xs transition-all border flex items-center gap-1.5",
                   outputLang === l.code
                     ? "bg-[#CC3A63]/15 border-[#CC3A63]/30 text-foreground"
-                    : "bg-white/[0.04] border-white/[0.06] text-foreground-muted hover:text-foreground")}>
+                    : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground")}>
                 {l.name}
                 {l.native && <span className="w-1.5 h-1.5 rounded-full bg-[#A2AB73] shrink-0" />}
               </button>
@@ -563,7 +563,7 @@ export default function VoiceCloningPage() {
 
       {/* ── Step 4: Generate / Live ──────────────────────────────────── */}
       {cloneStatus === "ready" && (
-        <div className="rounded-2xl bg-card/80 border border-white/[0.06] p-6">
+        <div className="rounded-2xl bg-card/80 border border-foreground/[0.06] p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-lg bg-[#A2AB73]/15 flex items-center justify-center">
               <span className="text-xs font-bold text-[#A2AB73]">4</span>
@@ -572,7 +572,7 @@ export default function VoiceCloningPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] w-fit mb-4">
+          <div className="flex gap-1 p-1 rounded-xl bg-foreground/[0.04] w-fit mb-4">
             {[{ id: "generate" as const, label: "Text to Speech", icon: FileAudio },
               { id: "live" as const, label: "Live Conversation", icon: Radio }].map((t) => {
               const Icon = t.icon
@@ -595,7 +595,7 @@ export default function VoiceCloningPage() {
                     className={cn("px-3 py-1.5 rounded-lg text-xs border transition-all",
                       script === sample.text
                         ? "bg-[#CC3A63]/10 border-[#CC3A63]/30 text-[#CC3A63]"
-                        : "bg-white/[0.04] border-white/[0.06] text-foreground-muted hover:text-foreground")}>
+                        : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground")}>
                     <Sparkles className="h-3 w-3 inline mr-1" />{sample.label}
                   </button>
                 ))}
@@ -603,7 +603,7 @@ export default function VoiceCloningPage() {
 
               <textarea value={script} onChange={(e) => setScript(e.target.value)}
                 placeholder="Type your script here..." rows={5}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
+                className="w-full px-4 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
 
               <div className="flex gap-2">
                 <button onClick={handleGenerate} disabled={!script.trim() || generating}
@@ -613,7 +613,7 @@ export default function VoiceCloningPage() {
                 </button>
                 {generatedAudio && (
                   <a href={generatedAudio} download
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-foreground text-sm hover:bg-white/[0.08] transition-all">
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground text-sm hover:bg-foreground/[0.08] transition-all">
                     <Download className="h-4 w-4" /> Download
                   </a>
                 )}
@@ -632,7 +632,7 @@ export default function VoiceCloningPage() {
           ) : (
             /* Live Voice Conversation */
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06]">
                 <div className={cn("w-16 h-16 rounded-full flex items-center justify-center transition-all",
                   isLive ? "bg-[#CC3A63]/15 border border-[#CC3A63]/30 animate-pulse" : "bg-[#A2AB73]/10 border border-[#A2AB73]/20")}>
                   {isListening ? <Mic className="h-8 w-8 text-[#CC3A63] animate-bounce" /> : <Radio className="h-8 w-8 text-[#A2AB73]" />}

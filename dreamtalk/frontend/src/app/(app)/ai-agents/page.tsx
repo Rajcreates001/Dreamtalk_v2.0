@@ -34,7 +34,7 @@ export default function AIAgentsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="p-4 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card hover:border-white/[0.12] transition-all"
+              className="p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card hover:border-foreground/[0.12] transition-all"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -60,11 +60,11 @@ export default function AIAgentsPage() {
               </div>
 
               <div className="flex items-center gap-2 mt-4">
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                   <Activity className="h-3 w-3" />
                   View Logs
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground transition-all">
                   <Play className="h-3 w-3" />
                   Run
                 </button>
@@ -79,7 +79,7 @@ export default function AIAgentsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="p-5 rounded-xl bg-card/80 border border-white/[0.06]"
+        className="p-5 rounded-xl bg-card/80 border border-foreground/[0.06]"
       >
         <div className="flex items-center gap-3 mb-4">
           <Network className="h-5 w-5 text-[#CC3A63]" />
@@ -89,7 +89,7 @@ export default function AIAgentsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-foreground/[0.02] border border-foreground/[0.06]">
           <div className="flex -space-x-2">
             {AGENTS.slice(0, 4).map((agent, i) => (
               <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold border-2 border-[#2C2929]" style={{ background: `${agent.color}20`, color: agent.color }}>

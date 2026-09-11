@@ -159,7 +159,7 @@ export default function HomePage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2C2929] via-[#1a1f35] to-[#2C2929] border border-white/[0.06] p-8"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2C2929] via-[#1a1f35] to-[#2C2929] border border-foreground/[0.06] p-8"
       >
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#CC3A63]/10 blur-[100px]" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-[#A2AB73]/8 blur-[80px]" />
@@ -222,7 +222,7 @@ export default function HomePage() {
               <Link
                 key={action.label}
                 href={dynamicHref}
-                className="group relative overflow-hidden rounded-xl bg-card/80 border border-white/[0.06] p-4 hover:bg-card hover:border-white/[0.12] transition-all duration-200 hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-xl bg-card/80 border border-foreground/[0.06] p-4 hover:bg-card hover:border-foreground/[0.12] transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-all duration-200"
@@ -250,12 +250,12 @@ export default function HomePage() {
             <h2 className="text-sm font-semibold text-foreground tracking-wide">Current Avatar</h2>
 
             {loading ? (
-              <div className="rounded-xl bg-card/80 border border-white/[0.06] p-8 flex items-center justify-center">
+              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-8 flex items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-foreground-muted" />
               </div>
             ) : data.activeAvatar ? (
-              <div className="rounded-xl bg-card/80 border border-white/[0.06] overflow-hidden">
-                <div className="flex items-center gap-4 p-5 border-b border-white/[0.06]">
+              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] overflow-hidden">
+                <div className="flex items-center gap-4 p-5 border-b border-foreground/[0.06]">
                   <div className="relative w-16 h-16 shrink-0">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-lg">
                       {data.activeAvatar.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
@@ -271,13 +271,13 @@ export default function HomePage() {
                   </div>
                   <Link
                     href={firstTwinId ? `/dh/${firstTwinId}` : "/create"}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-white/[0.08] transition-all"
+                    className="px-3 py-1.5 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all"
                   >
                     Open
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/[0.04]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-foreground/[0.04]">
                   {[
                     { label: "Emotion", value: data.activeAvatar.emotion, color: "#CC3A63" },
                     { label: "Knowledge", value: data.activeAvatar.knowledgeSize, color: "#A2AB73" },
@@ -294,7 +294,7 @@ export default function HomePage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl bg-card/80 border border-white/[0.06] p-8 text-center">
+              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-8 text-center">
                 <p className="text-sm text-foreground-muted">No digital humans yet</p>
                 <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#CC3A63] hover:text-foreground transition-all">
                   <Plus className="h-3 w-3" />
@@ -325,9 +325,9 @@ export default function HomePage() {
                 return (
                   <div
                     key={insight.label}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card/80 border border-white/[0.06] hover:bg-card transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card transition-all"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-foreground/[0.04] flex items-center justify-center shrink-0">
                       <Icon className="h-4 w-4 text-foreground-muted" />
                     </div>
                     <div className="flex-1 min-w-0">
