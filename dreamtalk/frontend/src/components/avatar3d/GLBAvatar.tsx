@@ -12,7 +12,6 @@ export interface GLBAvatarProps {
   interactive?: boolean
   className?: string
   glow?: string
-  /** apply a skin tone to any material that has no colour texture (raw heads) */
   skinColor?: string
   autoRotate?: boolean
 }
@@ -20,29 +19,27 @@ export interface GLBAvatarProps {
 const DEFAULT_URL = "/models/angelica.glb"
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function Model({ url, speaking, autoSpeak, skinColor, reduced, onFit }: {
-  url: string; speaking: boolean; autoSpeak: boolean; skinColor?: string; reduced: boolean
+function Model({ url, skinColor, reduced, onFit }: {
+  url: string; skinColor?: string; reduced: boolean
   onFit: (center: THREE.Vector3, radius: number) => void
 }) {
   const { scene } = useGLTF(url, true) as any
   const root = useRef<THREE.Group>(null)
   const headMesh = useRef<THREE.Object3D | null>(null)
-  const mouth = useRef<THREE.Object3D | null>(null)
   const eyes = useRef<THREE.Object3D[]>([])
-  const mouthBase = useRef({ y: 0, sy: 1 })
-  const talk = useRef({ open: 0, burstUntil: 0, next: 1 })
-  const blink = useRef({ next: 2.5, closing: 0 })
+  const blink = useRef({ next: 3, closing: 0 })
 
   const model = useMemo(() => {
     const c = scene.clone(true)
-    eyes.current = []; headMesh.current = null; mouth.current = null
+    eyes.current = []; headMesh.current = null
     const strip: any[] = []
     c.traverse((o: any) => {
       if (o.isCamera || o.isLight || /camera|sun|light/i.test(o.name)) { strip.push(o); return }
       o.frustumCulled = false
       if (/Head/.test(o.name) && o.isMesh && !headMesh.current) headMesh.current = o
-      if (o.name === "Mouth" || o.name === "Mouth_Mouth_0") mouth.current = o
-      if (/^(Eye|Eyelashes|EyeScleraReflect|MeniscusEye)/.test(o.name)) eyes.current.push(o)
+      // Wet-eye reflection layers render as a white film over the iris — hide them.
+      if (/^(EyeScleraReflect|MeniscusEye)/.test(o.name) && o.isMesh) { o.visible = false; return }
+      if (/^Eye($|_|lashes)/.test(o.name)) eyes.current.push(o)
       if (o.isMesh) {
         o.castShadow = false; o.receiveShadow = false
         const mats = Array.isArray(o.material) ? o.material : [o.material]
@@ -57,12 +54,9 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced, onFit }: {
       }
     })
     strip.forEach((o) => o.removeFromParent())
-    const mc = mouth.current as any
-    if (mc) mouthBase.current = { y: mc.position.y, sy: mc.scale.y }
     return c
   }, [scene, skinColor])
 
-  // Frame on the HEAD (so the face is prominent; long hair flows off-frame).
   useLayoutEffect(() => {
     if (!root.current) return
     root.current.updateWorldMatrix(true, true)
@@ -77,24 +71,17 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced, onFit }: {
   useFrame((state, delta) => {
     if (reduced) return
     const t = state.clock.elapsedTime
-
-    // Lip-sync — drive the separate Mouth mesh
-    const k = talk.current
-    const isSpeaking = speaking || (autoSpeak && t < k.burstUntil)
-    if (autoSpeak && !speaking && t > k.next) { k.burstUntil = t + 1.6 + Math.random() * 2.0; k.next = k.burstUntil + 1.6 + Math.random() * 3 }
-    let want = 0
-    if (isSpeaking) want = Math.min(1, 0.5 + 0.5 * Math.abs(Math.sin(t * 16) * 0.6 + Math.sin(t * 25) * 0.4))
-    k.open += (want - k.open) * Math.min(1, delta * 18)
-    if (mouth.current) {
-      mouth.current.scale.y = mouthBase.current.sy * (1 + k.open * 0.9)
-      mouth.current.position.y = mouthBase.current.y - k.open * 0.012
+    const g = root.current
+    if (g) {
+      // Gentle, natural idle sway (not a mechanical spin)
+      g.rotation.y = Math.sin(t * 0.45) * 0.05 + Math.sin(t * 0.2) * 0.025
+      g.rotation.x = Math.sin(t * 0.37) * 0.018
     }
-
-    // Blink
+    // Subtle blink — never fully collapses the eye
     const b = blink.current
-    if (t > b.next && b.closing <= 0) { b.closing = 0.13; b.next = t + 2.8 + Math.random() * 3.5 }
+    if (t > b.next && b.closing <= 0) { b.closing = 0.14; b.next = t + 3 + Math.random() * 3.5 }
     let eyeSy = 1
-    if (b.closing > 0) { b.closing -= delta; eyeSy = Math.max(0.06, Math.abs(Math.sin((b.closing / 0.13) * Math.PI))) }
+    if (b.closing > 0) { b.closing -= delta; eyeSy = 1 - 0.72 * Math.abs(Math.sin((b.closing / 0.14) * Math.PI)) }
     eyes.current.forEach((e) => { e.scale.y = eyeSy })
   })
 
@@ -110,7 +97,7 @@ function Rig({ center, radius, interactive }: {
     if (!center || radius <= 0) return
     const cam = camera as THREE.PerspectiveCamera
     const fov = (cam.fov * Math.PI) / 180
-    const dist = (radius / Math.sin(fov / 2)) * 1.35 // head fills most of the frame
+    const dist = (radius / Math.sin(fov / 2)) * 1.35
     cam.position.set(center.x, center.y, center.z + dist)
     cam.near = dist * 0.05
     cam.far = dist * 8
@@ -129,7 +116,6 @@ function Rig({ center, radius, interactive }: {
       enableZoom={false}
       autoRotate={false}
       enabled={interactive}
-      // Lock vertical (eye level); allow full horizontal 360° drag.
       minPolarAngle={Math.PI / 2}
       maxPolarAngle={Math.PI / 2}
       rotateSpeed={0.7}
@@ -139,13 +125,12 @@ function Rig({ center, radius, interactive }: {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
- * Realistic GLB avatar — framed on the head (large, upright, standard base),
- * horizontal 360° drag with vertical locked, mouth lip-sync + blink. PERF: the
- * render loop pauses when the avatar is off-screen or the tab is hidden.
+ * Realistic GLB avatar — head-framed (large, upright), horizontal 360° drag
+ * (vertical locked), subtle natural sway + blink. PERF: low dpr, few lights,
+ * and the render loop pauses when off-screen or the tab is hidden.
  */
 export function GLBAvatar({
-  url = DEFAULT_URL, speaking = false, autoSpeak = true, interactive = true,
-  className = "", glow = "#CC3A63", skinColor,
+  url = DEFAULT_URL, interactive = true, className = "", glow = "#CC3A63", skinColor,
 }: GLBAvatarProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const [onScreen, setOnScreen] = useState(true)
@@ -156,7 +141,7 @@ export function GLBAvatar({
   useEffect(() => {
     const el = wrap.current
     if (!el) return
-    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: "120px" })
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: "80px" })
     io.observe(el)
     const onVis = () => setDocVisible(!document.hidden)
     document.addEventListener("visibilitychange", onVis)
@@ -176,20 +161,18 @@ export function GLBAvatar({
 
   return (
     <div ref={wrap} className={className} style={{ position: "relative" }}>
-      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(50% 50% at 50% 46%, ${glow}22, transparent 72%)` }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(50% 50% at 50% 46%, ${glow}20, transparent 72%)` }} />
       <Canvas
         frameloop={active ? "always" : "never"}
-        dpr={[1, 1.6]}
+        dpr={[1, 1.25]}
         camera={{ position: [0, 0, 3], fov: 28, near: 0.01, far: 1000 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
-        <ambientLight intensity={1.6} />
-        <directionalLight position={[2, 3, 4]} intensity={2.4} color="#fff5ea" />
-        <directionalLight position={[-3, 1, 2]} intensity={1.0} color={glow} />
-        <directionalLight position={[0, 2, -4]} intensity={0.9} color="#ffffff" />
-        <hemisphereLight args={["#ffffff", "#5a4a44", 0.8]} />
-        <Model url={url} speaking={speaking} autoSpeak={autoSpeak} skinColor={skinColor} reduced={!!reduced}
+        <ambientLight intensity={1.75} />
+        <directionalLight position={[2, 3, 4]} intensity={2.3} color="#fff5ea" />
+        <hemisphereLight args={["#ffffff", "#5a4a44", 0.9]} />
+        <Model url={url} skinColor={skinColor} reduced={!!reduced}
           onFit={(center, radius) => setFit({ center, radius })} />
         <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />
       </Canvas>

@@ -7,6 +7,7 @@ import { motion } from "motion/react"
 import { BackToHome } from "@/components/ui/BackToHome"
 import { AuroraBackdrop } from "@/components/hero/AuroraBackground"
 import { DigitalHumanScene } from "./DigitalHumanScene"
+import { AvatarStage } from "@/components/avatar3d/AvatarStage"
 import { AuthenticationPanel } from "./AuthenticationPanel"
 import { storeAuth } from "@/lib/api"
 
@@ -141,9 +142,9 @@ export function LoginExperience() {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="w-full max-w-[560px]"
+            className="w-full max-w-[460px] aspect-square"
           >
-            <DigitalHumanScene roleColor={accentColor} roleId={selectedRole} />
+            <AvatarStage className="h-full w-full" colors={{ glow: accentColor }} interactive />
           </motion.div>
         </motion.div>
 

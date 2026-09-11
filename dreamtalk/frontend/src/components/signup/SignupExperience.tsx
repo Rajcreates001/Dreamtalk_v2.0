@@ -6,6 +6,7 @@ import { motion } from "motion/react"
 import { BackToHome } from "@/components/ui/BackToHome"
 import { AuroraBackdrop } from "@/components/hero/AuroraBackground"
 import { DigitalHumanScene } from "@/components/login/DigitalHumanScene"
+import { AvatarStage } from "@/components/avatar3d/AvatarStage"
 import { SignupWizard } from "./SignupWizard"
 
 const ROLE_COLORS: Record<string, string> = {
@@ -52,8 +53,8 @@ export function SignupExperience() {
           className="hidden lg:flex lg:w-1/2 relative items-center justify-center"
         >
           <div className="flex flex-col items-center gap-6 w-full max-w-[520px]">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1, delay: 0.2 }} className="w-full max-w-[480px]">
-              <DigitalHumanScene />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1, delay: 0.2 }} className="w-full max-w-[460px] aspect-square">
+              <AvatarStage className="h-full w-full" interactive />
             </motion.div>
 
             {/* Mission statement */}
