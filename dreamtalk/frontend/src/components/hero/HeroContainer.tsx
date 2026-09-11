@@ -11,7 +11,7 @@ import { useTheme } from "@/components/layout/theme-provider"
 /* ─── DIGITAL HUMAN — real 3D avatar centerpiece ─── */
 function DigitalChamber({ colors }: { colors: { primary: string; secondary: string; accent: string } }) {
   const { theme } = useTheme()
-  const base = theme === "dark" ? "#3a2f33" : "#e4d4bf"
+  const base = theme === "dark" ? "#b8825f" : "#d6a17a"
 
   return (
     <div className="relative w-full max-w-[620px] aspect-square">

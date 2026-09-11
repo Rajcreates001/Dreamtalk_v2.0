@@ -77,9 +77,9 @@ function FragmentedCard({
         ${hoveredTool !== null && hoveredTool !== index ? "opacity-50" : "opacity-100"}
       `}
       style={{
-        background: `linear-gradient(145deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7))`,
+        background: `linear-gradient(145deg, var(--card), var(--surface))`,
         border: "1px solid",
-        borderColor: hoveredTool === index ? "rgba(216,76,99,0.4)" : "rgba(255,255,255,0.06)",
+        borderColor: hoveredTool === index ? "rgba(216,76,99,0.4)" : "var(--border)",
       }}
     >
       <div

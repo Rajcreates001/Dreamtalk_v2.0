@@ -43,7 +43,8 @@ const PremiumFooter = dynamic(() => import("@/components/sections/PremiumFooter"
 import { SectionWrapper, SectionHeading, StaggerGrid, staggerItem, GlassCard } from "@/components/sections/SectionWrapper"
 import { Splash } from "@/components/splash/Splash"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { AvatarStage } from "@/components/avatar3d/AvatarStage"
+import { InViewAvatar } from "@/components/avatar3d/InViewAvatar"
+import { Section3D } from "@/components/motion/Section3D"
 
 const Nav = () => {
   const [scrolled, setScrolled] = useState(false)
@@ -183,10 +184,10 @@ export default function LandingPage() {
       <HeroContainer />
 
       {/* ─── CHAPTER 2: The Problem — AI Fragmentation ─── */}
-      <ProblemComparison />
+      <Section3D variant="tilt"><ProblemComparison /></Section3D>
 
       {/* ─── CHAPTER 3: The Solution — DreamTalk OS ─── */}
-      <DreamTalkSolution />
+      <Section3D variant="swing"><DreamTalkSolution /></Section3D>
 
       {/* ─── Interactive AI Demo ─── */}
       <SectionWrapper id="demo" bg="aurora" reveal="blur" spacing="compact">
@@ -202,12 +203,12 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="mx-auto mb-8 h-56 w-56"
           >
-            <AvatarStage
+            <InViewAvatar
               className="h-full w-full"
               speaking={demoLoading}
               autoSpeak={false}
               interactive
-              colors={{ primary: "#CC3A63", secondary: "#A2AB73", base: "#3a2f33", glow: "#CC3A63" }}
+              colors={{ primary: "#CC3A63", secondary: "#A2AB73", glow: "#CC3A63" }}
             />
           </motion.div>
           <motion.div
@@ -297,46 +298,46 @@ export default function LandingPage() {
       </SectionWrapper>
 
       {/* ─── CHAPTER 4: Avatar Studio — Creation Pipeline ─── */}
-      <AvatarStudioInteractive />
+      <Section3D variant="rise"><AvatarStudioInteractive /></Section3D>
 
       {/* ─── CHAPTER 5: Humanization Engine ─── */}
-      <HumanizationEngine />
+      <Section3D variant="zoom"><HumanizationEngine /></Section3D>
 
       {/* ─── CHAPTER 6: Memory Engine ─── */}
-      <MemoryVisualization />
+      <Section3D variant="tilt"><MemoryVisualization /></Section3D>
 
       {/* ─── CHAPTER 7: Knowledge Engine ─── */}
-      <KnowledgeEngine />
+      <Section3D variant="swing"><KnowledgeEngine /></Section3D>
 
       {/* ─── CHAPTER 8: Reasoning Engine ─── */}
-      <ReasoningEngine />
+      <Section3D variant="rise"><ReasoningEngine /></Section3D>
 
       {/* ─── CHAPTER 9: Voice Intelligence ─── */}
-      <VoiceIntelligence />
+      <Section3D variant="zoom"><VoiceIntelligence /></Section3D>
 
       {/* ─── CHAPTER 10: Deployment ─── */}
-      <DeploymentNetwork />
+      <Section3D variant="tilt"><DeploymentNetwork /></Section3D>
 
       {/* ─── CHAPTER 11: Industry Solutions ─── */}
-      <IndustrySolutions />
+      <Section3D variant="swing"><IndustrySolutions /></Section3D>
 
       {/* ─── Metrics & Trust ─── */}
-      <MetricsCounter />
+      <Section3D variant="rise"><MetricsCounter /></Section3D>
 
       {/* ─── CHAPTER 12: Security & Integrations ─── */}
-      <SecurityIntegrations />
+      <Section3D variant="zoom"><SecurityIntegrations /></Section3D>
 
       {/* ─── CHAPTER 14: Testimonials ─── */}
-      <PremiumTestimonials />
+      <Section3D variant="tilt"><PremiumTestimonials /></Section3D>
 
       {/* ─── Pricing Section ─── */}
-      <PricingSection />
+      <Section3D variant="rise"><PricingSection /></Section3D>
 
       {/* ─── CHAPTER 15: FAQ ─── */}
-      <PremiumFAQ />
+      <Section3D variant="swing"><PremiumFAQ /></Section3D>
 
       {/* ─── CHAPTER 16: CTA — Final Conversion ─── */}
-      <PremiumCTA />
+      <Section3D variant="zoom"><PremiumCTA /></Section3D>
 
       {/* ─── Footer ─── */}
       <PremiumFooter />
