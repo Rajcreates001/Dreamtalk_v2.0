@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { avatarApi, digitalTwinApi, getAccessToken } from "@/lib/api"
+import { avatarRuntime } from "@/services/avatar/client"
 
 // ── View-model types (frontend-only; wire shapes live in lib/api.ts) ──
 export type Step = "consent" | "identity" | "voice" | "processing" | "preview"
@@ -68,6 +69,8 @@ export function useCreateTwin() {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
 
   const blobUrls = useRef<string[]>([])
+  const voiceBlobRef = useRef<Blob | null>(null)
+  const faceFileRef = useRef<File | null>(null)
   const track = (url: string) => { blobUrls.current.push(url); return url }
 
   useEffect(() => {
@@ -108,6 +111,7 @@ export function useCreateTwin() {
 
   const analyzeFace = useCallback(async (file: File) => {
     if (!twinId) return
+    faceFileRef.current = file
     const url = track(URL.createObjectURL(file))
     setFaceFile(file)
     setFacePreviewUrl(url)
@@ -142,6 +146,7 @@ export function useCreateTwin() {
 
   const setVoice = useCallback(async (blob: Blob, durationSec: number) => {
     if (!twinId) return
+    voiceBlobRef.current = blob
     const url = track(URL.createObjectURL(blob))
     setVoiceUrl(url)
     setVoiceDuration(durationSec)
@@ -198,12 +203,26 @@ export function useCreateTwin() {
       if (isFail(final.status)) {
         setError("Avatar processing failed. Please try again.")
       } else {
+        // Best-effort: register a runtime profile so /talk has a digital human
+        // to speak with. Failure here never blocks the twin preview.
+        if (voiceBlobRef.current) {
+          try {
+            await avatarRuntime.createProfile({
+              name: name.trim() || "My Twin",
+              voiceSample: voiceBlobRef.current,
+              faceImages: faceFileRef.current ? [faceFileRef.current] : [],
+              consentConfirmed: consent,
+              consentSubjectName: name.trim() || undefined,
+              language: primaryLang(),
+            })
+          } catch { /* runtime profile is optional; preview still proceeds */ }
+        }
         setStep("preview")
       }
     } catch (e: any) {
       setError(e?.message || "Processing failed.")
     }
-  }, [twinId, selectedLangs])
+  }, [twinId, selectedLangs, name, consent])
 
   // Live-ish progress display while the pipeline runs.
   useEffect(() => {
