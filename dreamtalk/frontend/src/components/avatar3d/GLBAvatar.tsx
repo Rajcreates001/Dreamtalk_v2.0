@@ -47,6 +47,11 @@ function Model({ url, speaking, autoSpeak, skinColor, reduced }: {
           if (!m) return
           if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
           if (skinColor && !m.map) m.color = new THREE.Color(skinColor)
+          // Skin/hair are non-metallic; leftover metalness (from the
+          // spec-gloss -> metal-rough conversion) renders black without an
+          // env map, so force it off and keep a soft roughness.
+          if ("metalness" in m) m.metalness = 0
+          if ("roughness" in m && (m.roughness === undefined || m.roughness > 0.9)) m.roughness = 0.7
           m.needsUpdate = true
         })
       }
@@ -105,7 +110,18 @@ export function GLBAvatar({
     io.observe(el)
     const onVis = () => setDocVisible(!document.hidden)
     document.addEventListener("visibilitychange", onVis)
-    return () => { io.disconnect(); document.removeEventListener("visibilitychange", onVis) }
+    // R3F sometimes measures the canvas before layout settles (stale size).
+    // Nudge it to re-measure once things are laid out, and on any resize.
+    const fire = () => window.dispatchEvent(new Event("resize"))
+    const ro = new ResizeObserver(fire)
+    ro.observe(el)
+    const t1 = setTimeout(fire, 80)
+    const t2 = setTimeout(fire, 400)
+    return () => {
+      io.disconnect(); ro.disconnect()
+      document.removeEventListener("visibilitychange", onVis)
+      clearTimeout(t1); clearTimeout(t2)
+    }
   }, [])
 
   const active = onScreen && docVisible
@@ -120,11 +136,12 @@ export function GLBAvatar({
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
-        <ambientLight intensity={1.05} />
-        <directionalLight position={[2, 3, 4]} intensity={1.7} color="#fff5ea" />
-        <directionalLight position={[-3, 1, 2]} intensity={0.7} color={glow} />
-        <directionalLight position={[0, 1, -4]} intensity={0.5} color="#ffffff" />
-        <Bounds fit clip observe margin={1.1}>
+        <ambientLight intensity={1.6} />
+        <directionalLight position={[2, 3, 4]} intensity={2.4} color="#fff5ea" />
+        <directionalLight position={[-3, 1, 2]} intensity={1.0} color={glow} />
+        <directionalLight position={[0, 2, -4]} intensity={0.9} color="#ffffff" />
+        <hemisphereLight args={["#ffffff", "#5a4a44", 0.8]} />
+        <Bounds fit clip observe margin={0.95}>
           <Model url={url} speaking={speaking} autoSpeak={autoSpeak} skinColor={skinColor} reduced={!!reduced} />
         </Bounds>
         <OrbitControls
