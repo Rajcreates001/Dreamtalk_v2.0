@@ -95,6 +95,8 @@ from dreamtalk.backend.api.v1.endpoints.pipeline import router as pipeline_route
 _log_import("pipeline done")
 from dreamtalk.backend.api.v1.endpoints.avatar import router as avatar_router
 _log_import("avatar done")
+from dreamtalk.backend.api.v1.endpoints.avatar_runtime import router as avatar_runtime_router
+_log_import("avatar runtime done")
 from dreamtalk.backend.api.v1.endpoints.tasks import router as tasks_router
 _log_import("tasks done")
 from dreamtalk.emotion.api.emotion_router import router as emotion_router
@@ -130,7 +132,7 @@ def init_sentry():
             traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
             profiles_sample_rate=float(os.environ.get("SENTRY_PROFILES_SAMPLE_RATE", "0.05")),
             environment=os.environ.get("DREAMTALK_ENV", "development"),
-            release="dreamtalk@v0.5.0",
+            release="dreamtalk@v0.6.0",
             send_default_pii=False,
         )
         _sentry_initialized = True
@@ -298,8 +300,9 @@ async def lifespan(app: FastAPI):
 
     logger.info("=" * 60)
     logger.info("DreamTalk Backend Ready!")
-    logger.info(f"Avatar Viewer: http://localhost:5001/api/avatar/viewer")
-    logger.info(f"API Docs:      http://localhost:5001/docs")
+    public_port = os.environ.get("BACKEND_PUBLIC_PORT", "5050")
+    logger.info(f"Avatar Viewer: http://localhost:{public_port}/api/avatar/viewer")
+    logger.info(f"API Docs:      http://localhost:{public_port}/docs")
     if _redis_available:
         logger.info("Redis cache:     connected")
     if _weaviate_available:
@@ -327,7 +330,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Dreamtalk API Gateway",
     description="Backend API for Dreamtalk AI Digital Workforce Platform with 3D Avatar",
-    version="0.5.0",
+    version="0.6.0",
     lifespan=lifespan,
 )
 
@@ -343,7 +346,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:4000,http://localhost:3000").split(","),
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -367,10 +370,9 @@ except Exception as e:
 # ── Static file mounts ─────────────────────────────────────────────────
 os.makedirs("voice_module/assets/outputs", exist_ok=True)
 os.makedirs("voice_module/assets/voices", exist_ok=True)
-# Serve pipeline TTS outputs (where chat API saves audio)
-# Chat API writes to CWD-relative "pipeline_outputs/tts" (i.e. /app/pipeline_outputs/tts)
-# Also check the parent-relative path for backward compatibility
-_pipeline_tts_cwd = Path.cwd() / "pipeline_outputs" / "tts"
+# Serve the canonical runtime TTS directory. Docker points this at a
+# bind-mounted project directory so generated responses survive restarts.
+_pipeline_tts_cwd = Path(os.environ.get("TTS_OUTPUT_DIR", Path.cwd() / "pipeline_outputs" / "tts"))
 _pipeline_tts_parent = Path(__file__).resolve().parent.parent / "pipeline_outputs" / "tts"
 os.makedirs(str(_pipeline_tts_cwd), exist_ok=True)
 os.makedirs(str(_pipeline_tts_parent), exist_ok=True)
@@ -384,6 +386,13 @@ _avatar_static = Path(__file__).resolve().parent.parent / "avatar" / "static"
 os.makedirs(str(_avatar_static), exist_ok=True)
 app.mount("/api/static", StaticFiles(directory=str(_avatar_static)), name="avatar_static")
 
+_avatar_runtime_dir = Path(os.environ.get(
+    "AVATAR_RUNTIME_DIR",
+    Path(__file__).resolve().parent.parent / "media" / "avatar_runtime",
+))
+os.makedirs(str(_avatar_runtime_dir), exist_ok=True)
+app.mount("/avatar-runtime", StaticFiles(directory=str(_avatar_runtime_dir)), name="avatar_runtime_assets")
+
 # ── Routers ────────────────────────────────────────────────────────────
 app.include_router(auth_router)
 app.include_router(profile_router)
@@ -395,6 +404,7 @@ app.include_router(digital_twins_router)
 app.include_router(workforce_router)
 app.include_router(pipeline_router)
 app.include_router(avatar_router)
+app.include_router(avatar_runtime_router)
 app.include_router(tasks_router)
 app.include_router(emotion_router)
 app.include_router(cognition_router)
@@ -531,8 +541,8 @@ async def readiness():
     )
 
 
-@app.get("/metrics")
-async def metrics():
+@app.get("/metrics/status")
+async def metrics_status():
     """Expose Prometheus-style metrics for monitoring."""
     uptime = int(_time_mod.time() - _start_time)
     return {
@@ -543,7 +553,7 @@ async def metrics():
         "dreamtalk_celery_loaded": 1 if _celery_app else 0,
         "dreamtalk_sentry_enabled": 1 if _sentry_initialized else 0,
         "dreamtalk_models_loaded": 1,
-        "dreamtalk_version": "0.5.0",
+        "dreamtalk_version": "0.6.0",
     }
 
 
@@ -565,7 +575,7 @@ async def root():
     return {
         "service": "Dreamtalk API Gateway",
         "status": "running",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "avatar": "/api/avatar/viewer",
         "docs": "/docs",
     }
@@ -602,7 +612,7 @@ async def health():
 
     return {
         "service": "Dreamtalk AI Digital Workforce Platform (Avatar Integrated)",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "database": db_status,
         "redis": redis_status,
         "weaviate": weaviate_status,

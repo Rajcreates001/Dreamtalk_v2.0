@@ -16,7 +16,7 @@ def _weights(path: str) -> str:
 class MuseTalkConfig:
     ffmpeg_path: str = "ffmpeg"
     gpu_id: int = 0
-    vae_type: str = "sd-vae"
+    vae_type: str = _weights("weights/musetalk/sd-vae")
     unet_config: str = _weights("weights/musetalk/musetalk.json")
     unet_model_path: str = _weights("weights/musetalk/unet.pth")
     whisper_dir: str = _weights("weights/musetalk/whisper")

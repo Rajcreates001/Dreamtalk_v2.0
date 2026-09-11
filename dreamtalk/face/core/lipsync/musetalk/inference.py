@@ -14,7 +14,7 @@ import numpy as np
 import subprocess
 from tqdm import tqdm
 from omegaconf import OmegaConf
-from transformers import WhisperModel
+from transformers import WhisperConfig, WhisperModel
 
 logger = logging.getLogger("dreamtalk.face.musetalk.inference")
 
@@ -63,17 +63,34 @@ class MuseTalkInference:
         self.weight_dtype = unet.model.dtype
 
         self.audio_processor = AudioProcessor(feature_extractor_path=whisper_dir)
-        self.whisper = WhisperModel.from_pretrained(whisper_dir)
+        try:
+            self.whisper = WhisperModel.from_pretrained(whisper_dir, local_files_only=True)
+        except (OSError, ValueError):
+            checkpoint = os.path.join(whisper_dir, "pytorch_model.bin")
+            if not os.path.exists(checkpoint):
+                raise
+            self.whisper = WhisperModel(WhisperConfig())
+            state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+            if state and all(key.startswith("model.") for key in state):
+                state = {key.removeprefix("model."): value for key, value in state.items()}
+            self.whisper.load_state_dict(state)
         self.whisper = self.whisper.to(device=device, dtype=self.weight_dtype).eval()
         self.whisper.requires_grad_(False)
 
-        if version == "v15":
-            self.fp = FaceParsing(
-                left_cheek_width=self.config.left_cheek_width if self.config else 90,
-                right_cheek_width=self.config.right_cheek_width if self.config else 90
-            )
-        else:
-            self.fp = FaceParsing()
+        try:
+            if version == "v15":
+                self.fp = FaceParsing(
+                    left_cheek_width=self.config.left_cheek_width if self.config else 90,
+                    right_cheek_width=self.config.right_cheek_width if self.config else 90
+                )
+            else:
+                self.fp = FaceParsing()
+        except Exception as exc:
+            # Some older MuseTalk bundles include a BiSeNet checkpoint for a
+            # different face-parser architecture. Lip generation remains
+            # valid; blending.py supplies a soft geometric jaw mask.
+            logger.warning("MuseTalk face parser unavailable; using geometric blend mask: %s", exc)
+            self.fp = None
 
     def _run_ffmpeg(self, cmd: list, desc: str = "") -> None:
         try:
@@ -106,6 +123,7 @@ class MuseTalkInference:
             output_vid_name = os.path.join(temp_dir, output_vid_name)
 
         # Extract frames
+        save_dir_full = None
         if get_file_type(video_path) == "video":
             save_dir_full = os.path.join(temp_dir, input_basename)
             os.makedirs(save_dir_full, exist_ok=True)
@@ -219,7 +237,7 @@ class MuseTalkInference:
 
         shutil.rmtree(result_img_save_path)
         os.remove(temp_vid_path)
-        if os.path.exists(save_dir_full):
+        if save_dir_full and os.path.exists(save_dir_full):
             shutil.rmtree(save_dir_full)
 
         return output_vid_name

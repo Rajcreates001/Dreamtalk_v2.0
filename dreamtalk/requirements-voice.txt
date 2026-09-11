@@ -5,6 +5,7 @@ ffmpeg-python>=0.2.0
 loguru
 misaki[en]>=0.9.4
 rotary_embedding_torch
+faster-whisper>=1.1.0
 
 # Lazy-loaded / optional stubs (no weights currently available):
 # gpt-sovits  # Dead code path — no pretrained weights exist, see tts_pipeline.py

@@ -36,7 +36,7 @@ OUTPUT_DIR = PROJECT_ROOT / "pipeline_outputs"
 
 # IndicF5 microservice location. Inside Docker, set to
 # http://host.docker.internal:8003 to reach the host-side service.
-INDICF5_BASE_URL = os.environ.get("INDICF5_BASE_URL", "http://localhost:8003")
+INDICF5_BASE_URL = os.environ.get("INDICF5_BASE_URL", "http://localhost:8002")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -616,12 +616,12 @@ async def generate_indicf5_tts(
     language: str = Form("hi"),
     ref_text: str = Form(""),
 ):
-    """Generate TTS using IndicF5 microservice (12 Indian languages + English).
+    """Generate TTS using IndicF5 microservice (11 Indian languages).
 
     If ref_audio is provided, the output will be in that speaker's voice.
     If no ref_audio is provided, uses a default style.
 
-    Supported languages: as, bn, gu, hi, kn, ml, mr, or, pa, ta, te, en
+    Supported languages: as, bn, gu, hi, kn, ml, mr, or, pa, ta, te
     """
     import httpx
 
@@ -658,7 +658,7 @@ async def generate_indicf5_tts(
         files = {"ref_audio": (os.path.basename(str(ref_path)), ref_bytes, "audio/wav")}
         data = {"gen_text": text, "ref_text": ref_text, "lang": language}
 
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=float(os.environ.get("INDICF5_TIMEOUT", "900"))) as client:
             resp = await client.post(
                 f"{INDICF5_BASE_URL}/synthesize",
                 files=files,
@@ -1661,8 +1661,8 @@ async def _generate_tts(text: str, language: str = "en", output_path: str = None
         except Exception as e:
             logger.warning(f"Kokoro TTS failed: {e}")
 
-    # 4. IndicF5 TTS (microservice at localhost:8003 — 12 Indian languages)
-    INDICF5_LANGS = {"as", "bn", "gu", "hi", "kn", "ml", "mr", "or", "pa", "ta", "te", "en"}
+    # 4. IndicF5 TTS (microservice — 11 Indian languages)
+    INDICF5_LANGS = {"as", "bn", "gu", "hi", "kn", "ml", "mr", "or", "pa", "ta", "te"}
     if language in INDICF5_LANGS:
         try:
             import httpx
@@ -1672,7 +1672,7 @@ async def _generate_tts(text: str, language: str = "en", output_path: str = None
                     ref_bytes = ref_f.read()
                 files = {"ref_audio": ("ref.wav", ref_bytes, "audio/wav")}
                 data = {"gen_text": text, "ref_text": "", "lang": language}
-                async with httpx.AsyncClient(timeout=180) as client:
+                async with httpx.AsyncClient(timeout=float(os.environ.get("INDICF5_TIMEOUT", "900"))) as client:
                     resp = await client.post(f"{INDICF5_BASE_URL}/synthesize", files=files, data=data)
                 if resp.status_code == 200 and len(resp.content) > 1000:
                     with open(output_path, "wb") as f:

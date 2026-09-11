@@ -39,7 +39,13 @@ class GenerateVoiceRequest(BaseModel):
 
 @router.get("/status")
 async def get_status():
-    return {"status": "online", "message": "Voice Module is ready."}
+    from dreamtalk.backend.services.cloned_speech import get_cloned_speech_service
+    health = await get_cloned_speech_service().discover(force=True)
+    return {
+        "status": "online" if health.get("available") else "degraded",
+        "voice_cloning": health,
+        "message": "Voice cloning is ready." if health.get("available") else "Generic TTS is available; IndicF5 cloning is unavailable.",
+    }
 
 
 @router.get("/voices")
@@ -66,19 +72,38 @@ async def get_engines():
 async def clone_voice(
     name: str = Form(...),
     description: str = Form(""),
+    language: str = Form("auto"),
+    reference_text: str = Form(""),
     file: UploadFile = File(...)
 ):
+    temp_filename = None
     try:
         os.makedirs("voice_module/assets/voices", exist_ok=True)
-        temp_filename = f"voice_module/assets/voices/{uuid.uuid4()}_{file.filename}"
+        safe_name = os.path.basename(file.filename or "reference.wav")
+        temp_filename = f"voice_module/assets/voices/{uuid.uuid4()}_{safe_name}"
         with open(temp_filename, "wb") as f:
             f.write(await file.read())
 
-        voice_id = await _get_orchestrator().clone_voice(name, description, [temp_filename])
-        return {"voice_id": voice_id}
+        voice_id = await _get_orchestrator().clone_voice(
+            name, description, [temp_filename], language=language, ref_text=reference_text
+        )
+        from dreamtalk.backend.services.cloned_speech import get_cloned_speech_service
+        health = await get_cloned_speech_service().discover()
+        return {
+            "voice_id": voice_id,
+            "engine": "indicf5",
+            "language": language,
+            "ready": bool(health.get("available")),
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_filename and os.path.exists(temp_filename):
+            try:
+                os.remove(temp_filename)
+            except OSError:
+                pass
 
 
 @router.post("/generate-voice")
@@ -97,7 +122,10 @@ async def generate_voice(request: GenerateVoiceRequest):
             language=request.language or "auto",
         )
 
-        return {"audio_url": f"/outputs/{filename}"}
+        return {
+            "audio_url": f"/outputs/{os.path.basename(filename)}",
+            "cloned": request.voice_id.startswith("indicf5_"),
+        }
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -111,6 +139,7 @@ async def clone_and_speak(
     file: UploadFile = File(...),
     text: str = Form(...),
     language: str = Form("auto"),
+    reference_text: str = Form(""),
     name: str = Form("Cloned Voice"),
     persist: bool = Form(True),
 ):
@@ -134,12 +163,19 @@ async def clone_and_speak(
 
         # Save uploaded audio to temp
         os.makedirs("voice_module/assets/voices", exist_ok=True)
-        temp_filename = f"voice_module/assets/voices/clone_speak_{uuid.uuid4().hex[:12]}_{file.filename}"
+        safe_name = os.path.basename(file.filename or "reference.wav")
+        temp_filename = f"voice_module/assets/voices/clone_speak_{uuid.uuid4().hex[:12]}_{safe_name}"
         with open(temp_filename, "wb") as f:
             f.write(await file.read())
 
         # Step 1: Clone the voice
-        voice_id = await _get_orchestrator().clone_voice(name, f"Auto-cloned for: {text[:50]}", [temp_filename])
+        voice_id = await _get_orchestrator().clone_voice(
+            name,
+            f"Auto-cloned for: {text[:50]}",
+            [temp_filename],
+            language=language,
+            ref_text=reference_text,
+        )
 
         # Step 2: Generate speech using the cloned voice
         filename = await _get_orchestrator().generate_speech(
@@ -173,7 +209,7 @@ async def clone_and_speak(
         # Fallback: return path info
         return {
             "voice_id": voice_id,
-            "audio_url": f"/outputs/{filename}",
+            "audio_url": f"/outputs/{os.path.basename(filename)}",
             "text": cleaned_text[:100],
             "language": language,
         }
@@ -191,35 +227,16 @@ async def clone_and_speak(
                 pass
 
 
-# ── Free Local STT (faster-whisper, no API key) ────────────────────────
-_stt_model = None
-
-def _get_stt_model():
-    global _stt_model
-    if _stt_model is None:
-        try:
-            from faster_whisper import WhisperModel
-            _stt_model = WhisperModel("tiny", device="cpu", compute_type="int8")
-            logger.info("faster-whisper STT model loaded (tiny, cpu)")
-        except Exception as e:
-            logger.error(f"Failed to load STT model: {e}")
-    return _stt_model
-
-
 @router.post("/transcribe")
 async def transcribe_audio(
     audio: UploadFile = File(...),
-    language: str = Form("en"),
+    language: str = Form("auto"),
 ):
     """Free local speech-to-text using faster-whisper.
 
     Accepts WAV, MP3, WEBM, OGG audio files.
     Returns transcribed text.
     """
-    model = _get_stt_model()
-    if model is None:
-        raise HTTPException(status_code=503, detail="STT model not available")
-
     # Save uploaded audio to temp file
     ext = os.path.splitext(audio.filename or "audio.wav")[1] or ".wav"
     temp_path = f"/tmp/stt_upload_{uuid.uuid4().hex[:8]}{ext}"
@@ -228,26 +245,16 @@ async def transcribe_audio(
         with open(temp_path, "wb") as f:
             f.write(content)
 
-        # Transcribe with faster-whisper
-        segments, info = model.transcribe(
+        from dreamtalk.backend.services.multimodal_language import get_multilingual_asr
+        result = await get_multilingual_asr().transcribe(
             temp_path,
-            language=language if language != "auto" else None,
-            beam_size=1,  # Fast mode
-            vad_filter=True,  # Voice activity detection
+            None if language == "auto" else language,
         )
-
-        text = " ".join([seg.text for seg in segments])
-
-        return {
-            "text": text.strip(),
-            "language": info.language,
-            "language_probability": round(info.language_probability, 3),
-            "duration": round(info.duration, 2),
-        }
+        return result.to_dict()
 
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e))
     finally:
         if os.path.exists(temp_path):
             try:

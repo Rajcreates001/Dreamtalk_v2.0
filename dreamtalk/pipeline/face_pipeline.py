@@ -29,6 +29,14 @@ except Exception:
     MEDIAPIPE_AVAILABLE = False
 
 try:
+    import mediapipe as mp
+    from mediapipe.tasks import python as mp_tasks_python
+    from mediapipe.tasks.python import vision as mp_tasks_vision
+    MEDIAPIPE_TASKS_AVAILABLE = hasattr(mp, "Image") and hasattr(mp_tasks_vision, "FaceLandmarker")
+except Exception:
+    MEDIAPIPE_TASKS_AVAILABLE = False
+
+try:
     from deepface import DeepFace
     DEEPFACE_AVAILABLE = True
 except Exception:
@@ -93,6 +101,7 @@ class FacePipeline:
         self.flame_model_path = flame_model_path
         self._face_mesh = None
         self._face_detector_mp = None
+        self._face_landmarker_task = None
         self._flame = None
         self._flame_translator = None
 
@@ -102,9 +111,7 @@ class FacePipeline:
     # ─── Lazy Model Loading ────────────────────────────────────────────────
 
     def _lazy_load_mediapipe(self):
-        if not MEDIAPIPE_AVAILABLE:
-            return None, None
-        if self._face_mesh is None:
+        if MEDIAPIPE_AVAILABLE and self._face_mesh is None:
             try:
                 self._face_mesh = mp_face_mesh.FaceMesh(
                     static_image_mode=True,
@@ -117,8 +124,39 @@ class FacePipeline:
                 )
             except Exception as e:
                 logger.warning(f"MediaPipe load failed: {e}")
+        if MEDIAPIPE_AVAILABLE and self._face_mesh is not None:
+            return self._face_detector_mp, self._face_mesh
+
+        if MEDIAPIPE_TASKS_AVAILABLE and self._face_landmarker_task is None:
+            try:
+                model_path = Path(__file__).resolve().parent.parent / "weights" / "face" / "face_landmarker.task"
+                options = mp_tasks_vision.FaceLandmarkerOptions(
+                    base_options=mp_tasks_python.BaseOptions(model_asset_path=str(model_path)),
+                    running_mode=mp_tasks_vision.RunningMode.IMAGE,
+                    num_faces=4,
+                    min_face_detection_confidence=0.45,
+                    min_face_presence_confidence=0.45,
+                    min_tracking_confidence=0.45,
+                    output_face_blendshapes=True,
+                    output_facial_transformation_matrixes=True,
+                )
+                self._face_landmarker_task = mp_tasks_vision.FaceLandmarker.create_from_options(options)
+                logger.info("MediaPipe Tasks FaceLandmarker loaded from %s", model_path)
+            except Exception as e:
+                logger.warning("MediaPipe Tasks load failed: %s", e)
                 return None, None
-        return self._face_detector_mp, self._face_mesh
+        if self._face_landmarker_task is not None:
+            return None, self._face_landmarker_task
+        return None, None
+
+    def _run_mediapipe_tasks(self, image: np.ndarray):
+        """Run the modern MediaPipe Tasks landmarker bundled with the project."""
+        _, landmarker = self._lazy_load_mediapipe()
+        if landmarker is None or not MEDIAPIPE_TASKS_AVAILABLE:
+            return None
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
+        return landmarker.detect(mp_image)
 
     def _lazy_load_flame_fitter(self):
         if self._flame_fitter is not None:
@@ -269,6 +307,25 @@ class FacePipeline:
         if face_mesh is None:
             return []
 
+        if not MEDIAPIPE_AVAILABLE and MEDIAPIPE_TASKS_AVAILABLE:
+            results = self._run_mediapipe_tasks(image)
+            if not results or not results.face_landmarks:
+                return []
+            h, w, _ = image.shape
+            faces = []
+            for landmarks in results.face_landmarks:
+                pts = [(int(lm.x * w), int(lm.y * h), int(lm.z * w)) for lm in landmarks]
+                xs = [point[0] for point in pts]
+                ys = [point[1] for point in pts]
+                faces.append({
+                    "bbox": [max(0, min(xs)), max(0, min(ys)), min(w, max(xs)), min(h, max(ys))],
+                    "landmarks": pts,
+                    "landmark_count": len(pts),
+                    "confidence": 0.95,
+                    "detection_method": "mediapipe_tasks_landmarker",
+                })
+            return faces
+
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb)
         if not results or not results.multi_face_landmarks:
@@ -358,6 +415,36 @@ class FacePipeline:
         if face_mesh is None:
             # Fallback: use structural face template instead of random noise
             return self._generate_structural_landmarks(image, face_bbox)
+
+        if not MEDIAPIPE_AVAILABLE and MEDIAPIPE_TASKS_AVAILABLE:
+            results = self._run_mediapipe_tasks(image)
+            if not results or not results.face_landmarks:
+                return self._generate_structural_landmarks(image, face_bbox)
+            h, w, _ = image.shape
+            primary = results.face_landmarks[0]
+            landmarks = [(int(lm.x * w), int(lm.y * h), int(lm.z * w)) for lm in primary]
+            blendshapes = {}
+            if results.face_blendshapes:
+                for category in results.face_blendshapes[0]:
+                    name = category.category_name or category.display_name
+                    if name:
+                        blendshapes[name] = round(float(category.score), 5)
+            nose = np.array([primary[1].x, primary[1].y, primary[1].z])
+            left_eye = np.array([primary[33].x, primary[33].y, primary[33].z])
+            right_eye = np.array([primary[263].x, primary[263].y, primary[263].z])
+            eye_center = (left_eye + right_eye) / 2
+            forward = nose - eye_center
+            yaw = float(np.degrees(np.arctan2(forward[0], forward[2])))
+            pitch = float(np.degrees(np.arctan2(forward[1], forward[2])))
+            eye_line = np.array([right_eye[0] - left_eye[0], right_eye[1] - left_eye[1]])
+            roll = float(np.degrees(np.arctan2(eye_line[1], eye_line[0])))
+            return {
+                "landmarks": landmarks,
+                "landmark_count": len(landmarks),
+                "blendshapes": blendshapes,
+                "head_pose": {"yaw": round(yaw, 2), "pitch": round(pitch, 2), "roll": round(roll, 2)},
+                "method": "mediapipe_tasks_landmarker_478",
+            }
 
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb)
@@ -862,12 +949,14 @@ class FacePipeline:
             result.texture_path = tex_path
             result.mesh_vertex_count = mesh_info["vertex_count"]
             result.mesh_face_count = mesh_info["face_count"]
+            result.texture_mapped = bool(mesh_path and tex_path)
             result.flame_expression_coeffs = [0.0] * 100  # structural since we save OBJ directly
 
         # Step 5: Face embedding
         result.face_embedding = self.get_face_embedding(primary_path)
         result.identity_embedding = result.face_embedding
         result.embedding_dim = len(result.face_embedding) if result.face_embedding else 128
+        result.identity_confidence = 0.85 if result.face_embedding else 0.0
 
         # Step 6: Facial emotion
         if result.mediapipe_blendshapes:

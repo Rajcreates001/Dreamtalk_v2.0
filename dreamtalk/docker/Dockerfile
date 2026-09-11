@@ -49,6 +49,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     python${PYTHON_VERSION}-venv \
     ffmpeg \
     libgl1 \
+    libegl1 \
+    libgles2 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
@@ -141,6 +143,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl \
     ffmpeg \
     libgl1 \
+    libegl1 \
+    libgles2 \
     libglib2.0-0 \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*

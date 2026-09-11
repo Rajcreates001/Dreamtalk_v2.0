@@ -15,6 +15,18 @@ def get_crop_box(box, expand):
 
 
 def face_seg(image, mode="raw", fp=None):
+    if fp is None:
+        # Soft lower-face mask used when an optional BiSeNet checkpoint is not
+        # compatible with the vendored parser. Keep the forehead/eyes from the
+        # source and blend only the generated mouth, jaw, and lower cheeks.
+        width, height = image.size
+        mask = np.zeros((height, width), dtype=np.uint8)
+        center = (width // 2, int(height * 0.68))
+        axes = (max(1, int(width * 0.42)), max(1, int(height * 0.30)))
+        cv2.ellipse(mask, center, axes, 0, 0, 360, 255, -1)
+        mask[: int(height * 0.43), :] = 0
+        mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=max(2.0, width * 0.025))
+        return Image.fromarray(mask)
     seg_image = fp(image, mode=mode)
     if seg_image is None:
         return None

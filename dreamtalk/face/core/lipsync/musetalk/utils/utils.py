@@ -20,7 +20,8 @@ def load_all_model(
     unet_config=os.path.join("models", "musetalkV15", "musetalk.json"),
     device=None,
 ):
-    vae = VAE(model_path=os.path.join("models", vae_type))
+    vae_path = vae_type if os.path.isabs(vae_type) else os.path.join("models", vae_type)
+    vae = VAE(model_path=vae_path)
     unet = UNet(unet_config=unet_config, model_path=unet_model_path, device=device)
     pe = PositionalEncoding(d_model=384)
     return vae, unet, pe

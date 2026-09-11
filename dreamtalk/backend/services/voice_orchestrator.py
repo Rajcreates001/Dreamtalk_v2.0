@@ -269,15 +269,31 @@ class VoiceOrchestrator:
         engine: str = "kokoro",
         language: str = "auto",
     ) -> str:
-        if not self._kokoro_available:
-            raise RuntimeError("Kokoro TTS engine is not available")
-
-        # Check if this is a cloned voice (starts with "rvc_")
+        # A stored clone must use the reference-conditioned IndicF5 path.
+        # Never silently return a generic Kokoro voice as a successful clone.
         cloned_voices = _load_cloned_voices()
         if voice_id in cloned_voices:
-            return await self._kokoro_generate_with_clone(
-                text, voice_id, speed, emotion, language, cloned_voices[voice_id]
+            from dreamtalk.backend.services.cloned_speech import get_cloned_speech_service
+            from dreamtalk.backend.services.multimodal_language import detect_text_language
+
+            profile = cloned_voices[voice_id]
+            target_language = language
+            if not target_language or target_language == "auto":
+                target_language = detect_text_language(text, profile.get("language")).language
+            result = await get_cloned_speech_service().synthesize_clone(
+                text=text,
+                reference_audio=profile["ref_audio_path"],
+                reference_text=profile.get("ref_text", ""),
+                language=target_language,
+                emotion=emotion,
+                reference_language=profile.get("language"),
             )
+            return result.path
+
+        if engine in {"indicf5", "rvc", "clone"}:
+            raise ValueError("A cloned voice_id is required for cloned speech generation")
+        if not self._kokoro_available:
+            raise RuntimeError("Kokoro TTS engine is not available")
 
         # Default: use Kokoro directly
         return await self._kokoro_generate(text, voice_id, speed, emotion, language)
@@ -362,8 +378,15 @@ class VoiceOrchestrator:
             pass
         return temp_file  # If copy failed, temp_file still exists
 
-    async def clone_voice(self, name: str, description: str, audio_files: list):
-        """Clone a voice using RVC and store the profile.
+    async def clone_voice(
+        self,
+        name: str,
+        description: str,
+        audio_files: list,
+        language: str = "auto",
+        ref_text: str = "",
+    ):
+        """Create an IndicF5 zero-shot voice profile and store its reference.
 
         Steps:
         1. Validate audio files
@@ -379,7 +402,7 @@ class VoiceOrchestrator:
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
         # Generate a voice ID
-        voice_id = f"rvc_{uuid.uuid4().hex[:12]}"
+        voice_id = f"indicf5_{uuid.uuid4().hex[:12]}"
         output_dir = "voice_module/assets/voices"
         os.makedirs(output_dir, exist_ok=True)
 
@@ -387,15 +410,24 @@ class VoiceOrchestrator:
         ref_filename = f"{voice_id}_ref.wav"
         ref_path = os.path.join(output_dir, ref_filename)
 
-        # Copy/convert the uploaded file to WAV
-        try:
-            import soundfile as sf
-            import librosa
-            data, sr = sf.read(audio_path)
-            sf.write(ref_path, data, sr)
-        except Exception:
-            import shutil
-            shutil.copy2(audio_path, ref_path)
+        from dreamtalk.backend.services.cloned_speech import prepare_reference_audio
+        from dreamtalk.backend.services.multimodal_language import (
+            detect_text_language,
+            get_multilingual_asr,
+            normalize_language,
+        )
+
+        quality = await asyncio.to_thread(prepare_reference_audio, audio_path, ref_path)
+        requested_language = None if language == "auto" else normalize_language(language)
+        transcription = None
+        if not ref_text.strip():
+            transcription = await get_multilingual_asr().transcribe(ref_path, requested_language)
+            ref_text = transcription.text
+            detected_language = transcription.language
+        else:
+            detected_language = requested_language or detect_text_language(ref_text).language
+        if not ref_text.strip():
+            raise ValueError("Reference transcript is required and ASR did not detect speech")
 
         # Build the voice profile
         profile = {
@@ -404,16 +436,17 @@ class VoiceOrchestrator:
             "description": description,
             "ref_audio_path": ref_path,
             "created_at": datetime.utcnow().isoformat(),
-            "engine": "rvc",
+            "engine": "indicf5",
+            "language": detected_language,
+            "ref_text": ref_text.strip(),
+            "quality": quality,
+            "transcription": transcription.to_dict() if transcription else None,
         }
 
-        # Try to load RVC with this audio as reference
-        if self.rvc_available:
-            profile["rvc_loaded"] = True
-            print(f"RVC loaded for voice clone: {name} ({voice_id})")
-        else:
-            profile["rvc_loaded"] = False
-            print(f"RVC not loaded, storing profile only: {name} ({voice_id})")
+        from dreamtalk.backend.services.cloned_speech import get_cloned_speech_service
+        health = await get_cloned_speech_service().discover()
+        profile["ready"] = bool(health.get("available"))
+        profile["service"] = health.get("url")
 
         # Save the profile
         voices = _load_cloned_voices()
@@ -452,7 +485,9 @@ class VoiceOrchestrator:
                 vid: {
                     "name": p["name"],
                     "description": p.get("description", ""),
-                    "engine": p.get("engine", "rvc"),
+                    "engine": p.get("engine", "indicf5"),
+                    "language": p.get("language", "en"),
+                    "ready": p.get("ready", False),
                 }
                 for vid, p in cloned.items()
             }
@@ -473,8 +508,13 @@ class VoiceOrchestrator:
             },
         ]
 
-        # Add IndicF5 (F5-TTS — neural, 12 Indian languages + English)
-        indicf5_available = await self._check_indicf5_health_async()
+        # Add IndicF5 (F5-TTS — neural, 11 documented Indian languages)
+        try:
+            from dreamtalk.backend.services.cloned_speech import get_cloned_speech_service
+            indicf5_health = await get_cloned_speech_service().discover()
+            indicf5_available = bool(indicf5_health.get("available"))
+        except Exception:
+            indicf5_available = False
         engines.append({
             "id": "indicf5",
             "name": "IndicF5 TTS",
@@ -483,12 +523,12 @@ class VoiceOrchestrator:
             "cost": "free",
             "model": "F5-TTS (CFM-based, 1.34B params)",
             "languages": [
-                "Assamese", "Bengali", "English", "Gujarati", "Hindi",
+                "Assamese", "Bengali", "Gujarati", "Hindi",
                 "Kannada", "Malayalam", "Marathi", "Odia", "Punjabi",
                 "Tamil", "Telugu",
             ],
-            "voices": 12,
-            "description": "Zero-shot voice cloning for 12 languages via dedicated microservice (port 8003)",
+            "voices": 11,
+            "description": "Zero-shot voice cloning for 11 Indian languages via the dedicated IndicF5 service",
         })
 
         # Add RVC if available

@@ -1,310 +1,315 @@
-"""
-DreamTalk — WebSocket Chat Handler
+"""Realtime WebSocket protocol for the canonical DreamTalk avatar runtime."""
 
-Real-time bidirectional communication for the digital twin.
-Handles: text chat, voice input, emotion streaming, brain state updates.
-"""
+from __future__ import annotations
 
-import asyncio
+import base64
 import json
-import time
 import logging
+import os
+import tempfile
+import time
 import uuid
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 logger = logging.getLogger("dreamtalk.websocket")
 
 
 @dataclass
 class ChatSession:
-    """Persistent chat session state."""
     session_id: str = ""
     user_id: str = ""
     twin_id: str = ""
     role: str = "normal_user"
-    model_name: str = "deepseek-r1:7b"
-    conversation_history: List[Dict] = field(default_factory=list)
+    model_name: str = ""
+    conversation_history: list[dict[str, Any]] = field(default_factory=list)
     max_history: int = 20
     created_at: float = 0.0
     last_active: float = 0.0
-    interaction_id: str = ""  # DB-persisted interaction ID
+    interaction_id: str = ""
+    profile_id: str = ""
+    language: str = "auto"
+    synthesize: bool = True
+    strict_clone: bool = True
+    render_video: bool = False
 
-    def __post_init__(self):
-        if not self.session_id:
-            self.session_id = uuid.uuid4().hex
-        if not self.created_at:
-            self.created_at = time.time()
+    def __post_init__(self) -> None:
+        self.session_id = self.session_id or uuid.uuid4().hex
+        self.created_at = self.created_at or time.time()
         self.last_active = time.time()
 
-    def add_message(self, role: str, content: str):
-        self.conversation_history.append({
-            "role": role,
-            "content": content,
-            "timestamp": time.time(),
-        })
+    def add_message(self, role: str, content: str) -> None:
+        self.conversation_history.append({"role": role, "content": content, "timestamp": time.time()})
         if len(self.conversation_history) > self.max_history:
-            self.conversation_history = self.conversation_history[-self.max_history:]
+            self.conversation_history = self.conversation_history[-self.max_history :]
         self.last_active = time.time()
 
 
 class WebSocketChatHandler:
-    """Handles WebSocket connections for real-time digital twin chat."""
+    """Text and complete-audio-message realtime avatar protocol.
 
-    def __init__(self):
-        self._sessions: Dict[str, ChatSession] = {}
-        self._connections: Dict[str, Any] = {}  # session_id -> websocket
-        self._brain_pipeline = None
+    Browser messages:
+      {"type":"config", "profile_id":"...", "language":"auto"}
+      {"type":"text", "text":"..."}
+      {"type":"audio", "audio":"<base64>", "mime_type":"audio/webm"}
+    """
 
-    def _get_brain_pipeline(self):
-        if self._brain_pipeline is None:
-            try:
-                from dreamtalk.pipeline.brain_pipeline import BrainPipeline
-                self._brain_pipeline = BrainPipeline()
-            except Exception as e:
-                logger.warning(f"Failed to load BrainPipeline: {e}")
-                return None
-        return self._brain_pipeline
+    def __init__(self) -> None:
+        self._sessions: dict[str, ChatSession] = {}
+        self._connections: dict[str, Any] = {}
+        self._avatar_runtime = None
 
-    async def handle_connection(self, websocket, session_id: str = None):
-        """Handle a new WebSocket connection."""
-        if not session_id:
-            session_id = uuid.uuid4().hex
+    def _get_avatar_runtime(self):
+        if self._avatar_runtime is None:
+            from dreamtalk.backend.services.avatar_runtime import get_avatar_runtime
 
-        session = ChatSession(session_id=session_id)
-        self._sessions[session_id] = session
-        self._connections[session_id] = websocket
+            self._avatar_runtime = get_avatar_runtime()
+        return self._avatar_runtime
 
-        # Create persisted interaction in DB
-        try:
-            from dreamtalk.backend.services.conversation_memory import get_conversation_memory
-            memory = get_conversation_memory()
-            uid = session.user_id or "00000000-0000-0000-0000-000000000000"
-            session.interaction_id = await memory.create_interaction(uid)
-        except Exception as e:
-            logger.debug(f"Memory init skipped: {e}")
+    async def handle_connection(self, websocket, session_id: Optional[str] = None) -> None:
+        session = ChatSession(session_id=session_id or "")
+        self._sessions[session.session_id] = session
+        self._connections[session.session_id] = websocket
+        await self._start_persistence(session)
 
         try:
-            # Send session info
             await websocket.send_json({
                 "type": "session_info",
-                "session_id": session_id,
+                "session_id": session.session_id,
                 "status": "connected",
-                "message": "Connected to DreamTalk Digital Twin",
+                "message": "Connected to DreamTalk realtime avatar",
+                "protocol_version": "1.0",
+                "accepted_message_types": ["config", "text", "message", "audio", "voice", "history", "clear", "ping"],
             })
-
-            # Main message loop (FastAPI WebSocket uses receive_text/.receive_json)
             while True:
                 try:
                     raw = await websocket.receive_text()
                     data = json.loads(raw)
+                    if not isinstance(data, dict):
+                        raise ValueError("WebSocket message must be a JSON object")
                     await self._handle_message(websocket, session, data)
                 except json.JSONDecodeError:
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": "Invalid JSON",
-                    })
-                except Exception as e:
-                    # WebSocketDisconnect is normal — client closed
-                    err_name = type(e).__name__
-                    if err_name in ("WebSocketDisconnect", "ConnectionClosedOK", "ConnectionClosedError"):
-                        logger.info(f"Client disconnected: {err_name}")
+                    await websocket.send_json({"type": "error", "code": "invalid_json", "message": "Invalid JSON"})
+                except Exception as exc:
+                    if type(exc).__name__ in {"WebSocketDisconnect", "ConnectionClosedOK", "ConnectionClosedError"}:
                         break
-                    logger.error(f"Message handling error: {e}")
+                    logger.exception("WebSocket message failed")
                     try:
                         await websocket.send_json({
                             "type": "error",
-                            "message": str(e),
+                            "code": "message_failed",
+                            "message": str(exc),
+                            "recoverable": True,
                         })
                     except Exception:
-                        break  # Can't send — connection is dead
-
-        except Exception as e:
-            logger.warning(f"WebSocket disconnected: {e}")
+                        break
+        except Exception as exc:
+            if type(exc).__name__ not in {"WebSocketDisconnect", "ConnectionClosedOK", "ConnectionClosedError"}:
+                logger.warning("WebSocket disconnected: %s", exc)
         finally:
-            # End interaction in DB
-            try:
-                from dreamtalk.backend.services.conversation_memory import get_conversation_memory
-                mem = get_conversation_memory()
-                if session.interaction_id:
-                    await mem.end_interaction(session.interaction_id)
-            except Exception:
-                pass
-            self._connections.pop(session_id, None)
-            self._sessions.pop(session_id, None)
-            logger.info(f"Session {session_id} cleaned up")
+            await self._end_persistence(session)
+            self._connections.pop(session.session_id, None)
+            self._sessions.pop(session.session_id, None)
 
-    async def _handle_message(self, websocket, session: ChatSession, data: Dict):
-        """Route incoming messages to the appropriate handler."""
-        msg_type = data.get("type", "text")
-
-        # Accept both "text" and "message" types from clients
-        if msg_type in ("text", "message"):
-            await self._handle_text_message(websocket, session, data)
-        elif msg_type == "config":
+    async def _handle_message(self, websocket, session: ChatSession, data: dict[str, Any]) -> None:
+        message_type = str(data.get("type", "text")).lower()
+        if message_type in {"text", "message"}:
+            await self._handle_text(websocket, session, data)
+        elif message_type in {"audio", "voice"}:
+            await self._handle_audio(websocket, session, data)
+        elif message_type == "config":
             await self._handle_config(websocket, session, data)
-        elif msg_type == "ping":
+        elif message_type == "ping":
             await websocket.send_json({"type": "pong", "timestamp": time.time()})
-        elif msg_type == "history":
-            await self._send_history(websocket, session)
-        elif msg_type == "clear":
+        elif message_type == "history":
+            await websocket.send_json({"type": "history", "data": session.conversation_history})
+        elif message_type == "clear":
             session.conversation_history.clear()
             await websocket.send_json({"type": "history_cleared"})
         else:
-            await websocket.send_json({
-                "type": "error",
-                "message": f"Unknown message type: {msg_type}",
-            })
+            await websocket.send_json({"type": "error", "code": "unknown_type", "message": f"Unknown message type: {message_type}"})
 
-    async def _handle_text_message(self, websocket, session: ChatSession, data: Dict):
-        """Process a text message through the brain pipeline."""
-        # Accept both "text" and "message" fields
-        text = (data.get("text") or data.get("message") or "").strip()
+    async def _handle_text(self, websocket, session: ChatSession, data: dict[str, Any]) -> None:
+        text = str(data.get("text") or data.get("message") or "").strip()
         if not text:
-            await websocket.send_json({"type": "error", "message": "Empty text"})
+            await websocket.send_json({"type": "error", "code": "empty_text", "message": "Empty text"})
             return
-
-        # Add user message to history
+        history = list(session.conversation_history)
         session.add_message("user", text)
-
-        # Send processing indicator
         await websocket.send_json({
             "type": "processing",
-            "step": "emotion_detection",
-            "message": "Analyzing emotional context...",
+            "step": "language_emotion",
+            "message": "Detecting language and emotional context...",
         })
 
-        brain = self._get_brain_pipeline()
-        if brain is None:
-            # Fallback: return basic response without brain pipeline
+        runtime = self._get_avatar_runtime()
+        profile = runtime.store.get(session.profile_id or None)
+        if session.synthesize and not profile:
             await websocket.send_json({
-                "type": "response",
-                "data": {
-                    "text": f"I received your message: {text}",
-                    "confidence": 0.3,
-                    "model": "fallback",
-                    "emotion": {"primary_mood": "neutral", "valence": 0.0, "arousal": 0.0},
-                    "session_id": session.session_id,
-                    "message_count": len(session.conversation_history),
-                },
+                "type": "notice",
+                "code": "profile_required_for_voice",
+                "message": "No active avatar profile; returning text and animation without synthesized audio.",
             })
-            session.add_message("assistant", f"I received your message: {text}")
-            return
+        result = await runtime.process_text(
+            message=text,
+            profile_id=session.profile_id or None,
+            language=session.language,
+            history=history,
+            synthesize=session.synthesize and profile is not None,
+            strict_clone=session.strict_clone,
+            render_video=session.render_video,
+        )
+        await self._send_result(websocket, session, text, result)
 
-        # Step 1: Detect emotion
+    async def _handle_audio(self, websocket, session: ChatSession, data: dict[str, Any]) -> None:
+        encoded = data.get("audio") or data.get("data") or ""
+        if not isinstance(encoded, str) or not encoded:
+            raise ValueError("Audio payload is missing")
+        if encoded.lstrip().startswith("data:") and "," in encoded:
+            encoded = encoded.split(",", 1)[1]
         try:
-            emotion_result = await brain.detect_emotion(text)
-            emotion_data = {
-                "primary_mood": emotion_result.primary_mood.value if emotion_result else "neutral",
-                "valence": emotion_result.valence if emotion_result else 0.0,
-                "arousal": emotion_result.arousal if emotion_result else 0.0,
-                "dominance": emotion_result.dominance if emotion_result else 0.5,
-                "intensity": emotion_result.intensity if emotion_result else "low",
-                "is_hostile": emotion_result.is_hostile if emotion_result else False,
-                "cognitive_appraisal": emotion_result.cognitive_appraisal if emotion_result else "baseline",
-                "action_tendency": emotion_result.action_tendency if emotion_result else "observe_and_process",
-            }
+            payload = base64.b64decode(encoded, validate=True)
+        except Exception as exc:
+            raise ValueError("Audio payload is not valid base64") from exc
+        max_bytes = int(os.environ.get("AVATAR_WS_MAX_AUDIO_BYTES", str(50 * 1024 * 1024)))
+        if not payload:
+            raise ValueError("Audio payload is empty")
+        if len(payload) > max_bytes:
+            raise ValueError(f"Audio payload exceeds {max_bytes // (1024 * 1024)} MB")
+
+        runtime = self._get_avatar_runtime()
+        profile = runtime.store.get(session.profile_id or None)
+        if session.synthesize and session.strict_clone and not profile:
+            raise RuntimeError("Create or activate an avatar profile before requesting cloned speech")
+
+        mime = str(data.get("mime_type") or "audio/webm").lower()
+        suffix = ".wav" if "wav" in mime else ".ogg" if "ogg" in mime else ".mp4" if "mp4" in mime else ".webm"
+        temp_path = ""
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
+                temp.write(payload)
+                temp_path = temp.name
             await websocket.send_json({
-                "type": "emotion",
-                "data": emotion_data,
+                "type": "processing",
+                "step": "speech_recognition",
+                "message": "Transcribing speech and detecting language and vocal emotion...",
             })
-        except Exception as e:
-            logger.warning(f"Emotion detection failed: {e}")
-            emotion_result = None
-            emotion_data = {"primary_mood": "neutral", "valence": 0.0, "arousal": 0.0}
-
-        # Step 2: Brain processing
-        await websocket.send_json({
-            "type": "processing",
-            "step": "brain_processing",
-            "message": "Processing through cognitive architecture...",
-        })
-
-        try:
-            brain_result = await brain.make_decision(
-                text=text,
-                role=session.role,
-                emotion=emotion_result,
-                model_name=session.model_name,
+            history = list(session.conversation_history)
+            result = await runtime.process_audio(
+                audio_path=temp_path,
+                profile_id=session.profile_id or None,
+                language=session.language,
+                history=history,
+                synthesize=session.synthesize,
+                strict_clone=session.strict_clone,
+                render_video=session.render_video,
             )
+            user_text = str((result.get("transcription") or {}).get("text", "")).strip()
+            session.add_message("user", user_text)
+            await self._send_result(websocket, session, user_text, result)
+        finally:
+            if temp_path:
+                try:
+                    os.unlink(temp_path)
+                except OSError:
+                    pass
 
-            # Send brain state updates
-            await websocket.send_json({
-                "type": "brain_state",
-                "data": {
-                    "pfc_firing_rate": brain_result.brain_region_activations[0].firing_rate_hz if brain_result.brain_region_activations else 0,
-                    "dacc_conflict": brain_result.dacc_conflict_score,
-                    "insula_valence": brain_result.insula_emotional_valence,
-                    "basal_ganglia_action": brain_result.basal_ganglia_action,
-                    "spiking_activity": {
-                        "total_firing_rate": brain_result.spiking_activity.total_firing_rate_hz if brain_result.spiking_activity else 0,
-                        "network_synchrony": brain_result.spiking_activity.network_synchrony if brain_result.spiking_activity else 0,
-                    },
-                    "encoding_method": brain_result.encoding_method,
-                },
-            })
-
-            response_text = brain_result.response_text
-            confidence = brain_result.confidence
-            model_name = brain_result.model_name
-
-        except Exception as e:
-            logger.error(f"Brain processing failed: {e}")
-            response_text = f"I encountered an issue processing your request. Let me try again. (Error: {str(e)[:100]})"
-            confidence = 0.3
-            model_name = "error_fallback"
-
-        # Add assistant response to history
+    async def _send_result(self, websocket, session: ChatSession, user_text: str, result: dict[str, Any]) -> None:
+        response_text = str(result.get("response") or result.get("text") or "")
         session.add_message("assistant", response_text)
 
-        # Persist to database
-        try:
-            from dreamtalk.backend.services.conversation_memory import get_conversation_memory
-            mem = get_conversation_memory()
-            if session.interaction_id:
-                emotion_label = emotion_data.get("primary_mood", "neutral")
-                await mem.save_message(session.interaction_id, "user", text, emotion=emotion_label)
-                await mem.save_message(session.interaction_id, "assistant", response_text, emotion=emotion_label)
-        except Exception as e:
-            logger.debug(f"Memory persist skipped: {e}")
-
-        # Send final response
+        await websocket.send_json({"type": "language", "data": result.get("language")})
+        await websocket.send_json({"type": "emotion", "data": result.get("user_emotion")})
+        await websocket.send_json({"type": "brain_state", "data": result.get("brain")})
+        if result.get("audio"):
+            await websocket.send_json({
+                "type": "audio",
+                "data": {
+                    **result["audio"],
+                    "lipsync": result.get("lipsync", []),
+                    "duration": result.get("lipsync_duration", result["audio"].get("duration", 0.0)),
+                },
+            })
+        await websocket.send_json({"type": "animation", "data": result.get("animation")})
+        await self._persist_exchange(session, user_text, response_text, result)
         await websocket.send_json({
             "type": "response",
             "data": {
-                "text": response_text,
-                "confidence": round(confidence, 3),
-                "model": model_name,
-                "emotion": emotion_data,
+                **result,
+                "confidence": (result.get("brain") or {}).get("brain_confidence", 1.0),
+                "model": (result.get("brain") or {}).get("model", "unknown"),
                 "session_id": session.session_id,
                 "message_count": len(session.conversation_history),
             },
         })
 
-    async def _handle_config(self, websocket, session: ChatSession, data: Dict):
-        """Update session configuration."""
-        if "role" in data:
-            session.role = data["role"]
-        if "model_name" in data:
-            session.model_name = data["model_name"]
+    async def _handle_config(self, websocket, session: ChatSession, data: dict[str, Any]) -> None:
+        runtime = self._get_avatar_runtime()
+        if "profile_id" in data:
+            requested = str(data.get("profile_id") or "")
+            if requested and not runtime.store.get(requested):
+                raise KeyError(f"Avatar profile '{requested}' was not found")
+            session.profile_id = requested
+        if "language" in data:
+            session.language = str(data.get("language") or "auto")
+        if "synthesize" in data:
+            session.synthesize = bool(data["synthesize"])
+        if "strict_clone" in data:
+            session.strict_clone = bool(data["strict_clone"])
+        if "render_video" in data:
+            session.render_video = bool(data["render_video"])
         if "max_history" in data:
-            session.max_history = min(data["max_history"], 50)
-
+            session.max_history = max(2, min(int(data["max_history"]), 50))
+        if "role" in data:
+            session.role = str(data["role"])
+        if "model_name" in data:
+            session.model_name = str(data["model_name"])
         await websocket.send_json({
             "type": "config_updated",
             "data": {
-                "role": session.role,
-                "model_name": session.model_name,
+                "profile_id": session.profile_id or (runtime.store.get() or {}).get("id"),
+                "language": session.language,
+                "synthesize": session.synthesize,
+                "strict_clone": session.strict_clone,
+                "render_video": session.render_video,
                 "max_history": session.max_history,
             },
         })
 
-    async def _send_history(self, websocket, session: ChatSession):
-        """Send conversation history."""
-        await websocket.send_json({
-            "type": "history",
-            "data": session.conversation_history,
-        })
+    @staticmethod
+    async def _start_persistence(session: ChatSession) -> None:
+        try:
+            from dreamtalk.backend.services.conversation_memory import get_conversation_memory
+
+            user_id = session.user_id or "00000000-0000-0000-0000-000000000000"
+            session.interaction_id = await get_conversation_memory().create_interaction(user_id)
+        except Exception as exc:
+            logger.debug("Conversation persistence unavailable: %s", exc)
+
+    @staticmethod
+    async def _persist_exchange(session: ChatSession, user_text: str, response_text: str, result: dict[str, Any]) -> None:
+        if not session.interaction_id:
+            return
+        try:
+            from dreamtalk.backend.services.conversation_memory import get_conversation_memory
+
+            memory = get_conversation_memory()
+            user_emotion = (result.get("user_emotion") or {}).get("primary_mood", "neutral")
+            await memory.save_message(session.interaction_id, "user", user_text, emotion=user_emotion)
+            await memory.save_message(session.interaction_id, "assistant", response_text, emotion=result.get("emotion", "neutral"))
+        except Exception as exc:
+            logger.debug("Conversation persistence skipped: %s", exc)
+
+    @staticmethod
+    async def _end_persistence(session: ChatSession) -> None:
+        if not session.interaction_id:
+            return
+        try:
+            from dreamtalk.backend.services.conversation_memory import get_conversation_memory
+
+            await get_conversation_memory().end_interaction(session.interaction_id)
+        except Exception:
+            pass
 
     def get_active_sessions(self) -> int:
         return len(self._connections)

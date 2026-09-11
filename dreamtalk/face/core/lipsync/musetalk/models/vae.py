@@ -13,7 +13,51 @@ import os
 class VAE():
     def __init__(self, model_path="./models/sd-vae-ft-mse/", resized_img=256, use_float16=False):
         self.model_path = model_path
-        self.vae = AutoencoderKL.from_pretrained(self.model_path)
+        try:
+            self.vae = AutoencoderKL.from_pretrained(self.model_path, local_files_only=True)
+        except (OSError, ValueError):
+            # The project ships the Stable Diffusion VAE state dict without
+            # Hugging Face metadata. Build the standard SD VAE architecture
+            # locally instead of attempting a network download.
+            weights_path = os.path.join(self.model_path, "diffusion_pytorch_model.bin")
+            if not os.path.exists(weights_path):
+                raise
+            self.vae = AutoencoderKL(
+                in_channels=3,
+                out_channels=3,
+                down_block_types=(
+                    "DownEncoderBlock2D", "DownEncoderBlock2D",
+                    "DownEncoderBlock2D", "DownEncoderBlock2D",
+                ),
+                up_block_types=(
+                    "UpDecoderBlock2D", "UpDecoderBlock2D",
+                    "UpDecoderBlock2D", "UpDecoderBlock2D",
+                ),
+                block_out_channels=(128, 256, 512, 512),
+                layers_per_block=2,
+                act_fn="silu",
+                latent_channels=4,
+                norm_num_groups=32,
+                sample_size=256,
+                scaling_factor=0.18215,
+            )
+            state = torch.load(weights_path, map_location="cpu", weights_only=True)
+            # Convert attention names used by older Diffusers checkpoints to
+            # the current Attention module schema.
+            replacements = {
+                ".query.": ".to_q.",
+                ".key.": ".to_k.",
+                ".value.": ".to_v.",
+                ".proj_attn.": ".to_out.0.",
+            }
+            converted = {}
+            for key, value in state.items():
+                converted_key = key
+                for old, new in replacements.items():
+                    converted_key = converted_key.replace(old, new)
+                converted[converted_key] = value
+            state = converted
+            self.vae.load_state_dict(state)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.vae.to(self.device)
 

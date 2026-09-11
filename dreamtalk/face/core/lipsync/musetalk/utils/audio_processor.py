@@ -7,12 +7,20 @@ import librosa
 import numpy as np
 import torch
 from einops import rearrange
-from transformers import AutoFeatureExtractor
+from transformers import AutoFeatureExtractor, WhisperFeatureExtractor
 
 
 class AudioProcessor:
     def __init__(self, feature_extractor_path="openai/whisper-tiny/"):
-        self.feature_extractor = AutoFeatureExtractor.from_pretrained(feature_extractor_path)
+        try:
+            self.feature_extractor = AutoFeatureExtractor.from_pretrained(
+                feature_extractor_path,
+                local_files_only=True,
+            )
+        except (OSError, ValueError):
+            # MuseTalk's bundled Whisper checkpoint omits the tiny model's
+            # preprocessor_config.json; these are Whisper's canonical values.
+            self.feature_extractor = WhisperFeatureExtractor()
 
     def get_audio_feature(self, wav_path, start_index=0, weight_dtype=None):
         if not os.path.exists(wav_path):

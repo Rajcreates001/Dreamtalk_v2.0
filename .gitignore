@@ -72,6 +72,8 @@ dreamtalk/results/
 dreamtalk/pipeline_test_results.json
 dreamtalk/indicf5_test_output.wav
 dreamtalk/tamil_test.wav
+# User-provided biometric media and generated avatar responses stay local.
+dreamtalk/media/avatar_runtime/
 
 # ═══════ Vendored runtime bundles ═══════
 dreamtalk/espeak-ng/

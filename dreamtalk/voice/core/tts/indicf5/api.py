@@ -119,11 +119,17 @@ class F5TTS:
         seed=-1,
     ):
         # Resolve ODE steps: explicit arg > INDICF5_NFE_STEPS env var > auto.
-        # Auto keeps 32 steps for long generations but drops to 16 for short
-        # ones — ~2.5x faster on CPU with near-identical quality.
+        # CPU inference for this 1.3B model is otherwise several minutes per
+        # sentence. Eight ODE steps balances intelligibility and latency;
+        # GPU deployments retain the higher-quality 16/32 step defaults.
         if nfe_step is None:
             env_nfe = os.environ.get("INDICF5_NFE_STEPS", "").strip()
-            nfe_step = int(env_nfe) if env_nfe else (16 if len(gen_text) <= 200 else 32)
+            if env_nfe:
+                nfe_step = int(env_nfe)
+            elif str(self.device).startswith("cpu"):
+                nfe_step = 8
+            else:
+                nfe_step = 16 if len(gen_text) <= 200 else 32
         nfe_step = max(1, int(nfe_step))
 
         if seed == -1:

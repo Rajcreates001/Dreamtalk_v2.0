@@ -1,106 +1,114 @@
-# Dreamtalk - Face Engine
-# Extracted from MuseTalk
-from face_detection import FaceAlignment, LandmarksType
-from os import listdir, path
-import numpy as np
+"""Face crop preprocessing for MuseTalk using bundled MediaPipe Tasks.
+
+The upstream helper expected mmpose, DWPose weights, and a top-level
+``face_detection`` package. DreamTalk already ships MediaPipe's 478-point face
+landmarker, so this module uses that single validated dependency instead.
+"""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Optional
+
 import cv2
-import pickle
-import os
-from mmpose.apis import inference_topdown, init_model
-from mmpose.structures import merge_data_samples
-import torch
+import numpy as np
 from tqdm import tqdm
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-config_file = './musetalk/utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py'
-checkpoint_file = './models/dwpose/dw-ll_ucoco_384.pth'
-model = init_model(config_file, checkpoint_file, device=device)
+logger = logging.getLogger("dreamtalk.face.musetalk.preprocessing")
 
-device_fa = "cuda" if torch.cuda.is_available() else "cpu"
-fa = FaceAlignment(LandmarksType._2D, flip_input=False, device=device_fa)
-
+PROJECT_ROOT = Path(__file__).resolve().parents[5]
+LANDMARK_MODEL = PROJECT_ROOT / "weights" / "face" / "face_landmarker.task"
 coord_placeholder = (0.0, 0.0, 0.0, 0.0)
+_landmarker = None
 
 
-def resize_landmark(landmark, w, h, new_w, new_h):
-    w_ratio = new_w / w
-    h_ratio = new_h / h
-    landmark_norm = landmark / [w, h]
-    landmark_resized = landmark_norm * [new_w, new_h]
-    return landmark_resized
+def _get_landmarker():
+    global _landmarker
+    if _landmarker is not None:
+        return _landmarker
+    if not LANDMARK_MODEL.exists():
+        raise FileNotFoundError(f"MediaPipe face landmarker not found: {LANDMARK_MODEL}")
+    from mediapipe.tasks import python
+    from mediapipe.tasks.python import vision
+
+    options = vision.FaceLandmarkerOptions(
+        base_options=python.BaseOptions(model_asset_path=str(LANDMARK_MODEL)),
+        running_mode=vision.RunningMode.IMAGE,
+        num_faces=1,
+        min_face_detection_confidence=0.4,
+        min_face_presence_confidence=0.4,
+        min_tracking_confidence=0.4,
+        output_face_blendshapes=False,
+        output_facial_transformation_matrixes=False,
+    )
+    _landmarker = vision.FaceLandmarker.create_from_options(options)
+    return _landmarker
 
 
 def read_imgs(img_list):
     frames = []
-    for img_path in tqdm(img_list):
-        frame = cv2.imread(img_path)
+    for image_path in tqdm(img_list, desc="MuseTalk frames"):
+        frame = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError(f"Cannot decode MuseTalk frame: {image_path}")
         frames.append(frame)
     return frames
 
 
-def get_bbox_range(img_list, upperbondrange=0):
-    frames = read_imgs(img_list)
-    batch_size_fa = 1
-    batches = [frames[i:i + batch_size_fa] for i in range(0, len(frames), batch_size_fa)]
-    coords_list = []
-    landmarks = []
-    average_range_minus = []
-    average_range_plus = []
-    for fb in tqdm(batches):
-        results = inference_topdown(model, np.asarray(fb)[0])
-        results = merge_data_samples(results)
-        keypoints = results.pred_instances.keypoints
-        face_land_mark = keypoints[0][23:91]
-        face_land_mark = face_land_mark.astype(np.int32)
-        bbox = fa.get_detections_for_batch(np.asarray(fb))
-        for j, f in enumerate(bbox):
-            if f is None:
-                coords_list += [coord_placeholder]
-                continue
-            half_face_coord = face_land_mark[29]
-            range_minus = (face_land_mark[30] - face_land_mark[29])[1]
-            range_plus = (face_land_mark[29] - face_land_mark[28])[1]
-            average_range_minus.append(range_minus)
-            average_range_plus.append(range_plus)
-            if upperbondrange != 0:
-                half_face_coord[1] = upperbondrange + half_face_coord[1]
-    text_range = f"Total frame:「{len(frames)}」 Manually adjust range : [ -{int(sum(average_range_minus) / len(average_range_minus))}~{int(sum(average_range_plus) / len(average_range_plus))} ] , the current value: {upperbondrange}"
-    return text_range
+def _detect_landmarks(frame: np.ndarray) -> Optional[np.ndarray]:
+    import mediapipe as mp
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    result = _get_landmarker().detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb))
+    if not result.face_landmarks:
+        return None
+    height, width = frame.shape[:2]
+    return np.asarray(
+        [(point.x * width, point.y * height) for point in result.face_landmarks[0]],
+        dtype=np.float32,
+    )
+
+
+def _landmarks_to_crop(
+    landmarks: np.ndarray,
+    frame_shape: tuple[int, ...],
+    upperbondrange: int = 0,
+) -> tuple[int, int, int, int]:
+    height, width = frame_shape[:2]
+    x1, y1 = np.min(landmarks, axis=0)
+    x2, y2 = np.max(landmarks, axis=0)
+    face_w = max(1.0, x2 - x1)
+    face_h = max(1.0, y2 - y1)
+    x1 -= face_w * 0.10
+    x2 += face_w * 0.10
+    y1 -= face_h * 0.12
+    y2 += face_h * 0.13
+    y1 += int(upperbondrange)
+    x1 = int(np.clip(x1, 0, width - 2))
+    y1 = int(np.clip(y1, 0, height - 2))
+    x2 = int(np.clip(x2, x1 + 2, width))
+    y2 = int(np.clip(y2, y1 + 2, height))
+    return x1, y1, x2, y2
 
 
 def get_landmark_and_bbox(img_list, upperbondrange=0):
     frames = read_imgs(img_list)
-    batch_size_fa = 1
-    batches = [frames[i:i + batch_size_fa] for i in range(0, len(frames), batch_size_fa)]
-    coords_list = []
-    landmarks = []
-    average_range_minus = []
-    average_range_plus = []
-    for fb in tqdm(batches):
-        results = inference_topdown(model, np.asarray(fb)[0])
-        results = merge_data_samples(results)
-        keypoints = results.pred_instances.keypoints
-        face_land_mark = keypoints[0][23:91]
-        face_land_mark = face_land_mark.astype(np.int32)
-        bbox = fa.get_detections_for_batch(np.asarray(fb))
-        for j, f in enumerate(bbox):
-            if f is None:
-                coords_list += [coord_placeholder]
-                continue
-            half_face_coord = face_land_mark[29]
-            range_minus = (face_land_mark[30] - face_land_mark[29])[1]
-            range_plus = (face_land_mark[29] - face_land_mark[28])[1]
-            average_range_minus.append(range_minus)
-            average_range_plus.append(range_plus)
-            if upperbondrange != 0:
-                half_face_coord[1] = upperbondrange + half_face_coord[1]
-            half_face_dist = np.max(face_land_mark[:, 1]) - half_face_coord[1]
-            min_upper_bond = 0
-            upper_bond = max(min_upper_bond, half_face_coord[1] - half_face_dist)
-            f_landmark = (np.min(face_land_mark[:, 0]), int(upper_bond), np.max(face_land_mark[:, 0]), np.max(face_land_mark[:, 1]))
-            x1, y1, x2, y2 = f_landmark
-            if y2 - y1 <= 0 or x2 - x1 <= 0 or x1 < 0:
-                coords_list += [f]
-            else:
-                coords_list += [f_landmark]
-    return coords_list, frames
+    coordinates = []
+    for frame in tqdm(frames, desc="MuseTalk landmarks"):
+        landmarks = _detect_landmarks(frame)
+        if landmarks is None:
+            logger.warning("MediaPipe did not find a face in one MuseTalk frame")
+            coordinates.append(coord_placeholder)
+        else:
+            coordinates.append(_landmarks_to_crop(landmarks, frame.shape, upperbondrange))
+    return coordinates, frames
+
+
+def get_bbox_range(img_list, upperbondrange=0):
+    coordinates, _ = get_landmark_and_bbox(img_list, upperbondrange)
+    valid = [item for item in coordinates if item != coord_placeholder]
+    return (
+        f"Total frames: {len(coordinates)}; detected faces: {len(valid)}; "
+        f"current bbox shift: {upperbondrange}"
+    )

@@ -11,6 +11,7 @@ Endpoints:
   GET  /models       -> {"type": "F5-TTS", "supported_languages": [...]}
 """
 
+import asyncio
 import io
 import json
 import logging
@@ -43,6 +44,9 @@ logger = logging.getLogger("dreamtalk.indicf5.microservice")
 app = FastAPI(title="IndicF5 Voice Cloning Service", version="0.1.0")
 _engine = None
 _device = "cpu"
+_inference_lock = asyncio.Lock()
+_active_requests = 0
+_queued_requests = 0
 
 
 # ==========================================================================
@@ -136,6 +140,10 @@ async def health():
         "status": "ok",
         "model_loaded": _engine is not None,
         "device": _device,
+        "busy": _active_requests > 0,
+        "active_requests": _active_requests,
+        "queued_requests": _queued_requests,
+        "nfe_steps": int(os.environ.get("INDICF5_NFE_STEPS", "8" if _device == "cpu" else "16")),
     }
 
 
@@ -177,8 +185,17 @@ async def synthesize(
     Returns:
         WAV audio file with voice-cloned speech
     """
+    global _active_requests, _queued_requests
+
     if _engine is None:
         raise HTTPException(status_code=503, detail="IndicF5 model not loaded")
+    gen_text = gen_text.strip()
+    ref_text = ref_text.strip()
+    if not gen_text:
+        raise HTTPException(status_code=422, detail="gen_text cannot be empty")
+    max_chars = int(os.environ.get("INDICF5_MAX_TEXT_CHARS", "500"))
+    if len(gen_text) > max_chars:
+        raise HTTPException(status_code=422, detail=f"gen_text exceeds {max_chars} characters")
 
     import tempfile
     import soundfile as sf
@@ -188,6 +205,11 @@ async def synthesize(
     try:
         # Write uploaded file to a temp WAV
         audio_bytes = await ref_audio.read()
+        max_reference_bytes = int(os.environ.get("INDICF5_MAX_REFERENCE_BYTES", str(50 * 1024 * 1024)))
+        if not audio_bytes:
+            raise HTTPException(status_code=422, detail="Reference audio is empty")
+        if len(audio_bytes) > max_reference_bytes:
+            raise HTTPException(status_code=413, detail="Reference audio is too large")
         suffix = Path(ref_audio.filename or "ref.wav").suffix or ".wav"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
         tmp.write(audio_bytes)
@@ -199,13 +221,30 @@ async def synthesize(
             ref_audio.filename, len(audio_bytes), gen_text[:50],
         )
 
-        # Run inference through the adapter's .synthesize()
-        wav, sr = _engine.synthesize(
-            text=gen_text,
-            ref_audio_path=tmp_path,
-            ref_text=ref_text,
-            lang=lang,
-        )
+        # The model is not concurrency-safe and duplicate CPU inference can
+        # exhaust RAM. Queue requests and run the blocking torch call in a
+        # worker thread so /health remains responsive while speech is built.
+        _queued_requests += 1
+        entered_inference = False
+        try:
+            async with _inference_lock:
+                _queued_requests -= 1
+                _active_requests += 1
+                entered_inference = True
+                try:
+                    wav, sr = await asyncio.to_thread(
+                        _engine.synthesize,
+                        text=gen_text,
+                        ref_audio_path=tmp_path,
+                        ref_text=ref_text,
+                        lang=lang,
+                    )
+                finally:
+                    _active_requests -= 1
+        except BaseException:
+            if not entered_inference:
+                _queued_requests -= 1
+            raise
 
         if wav is None or len(wav) == 0:
             raise HTTPException(status_code=500, detail="Synthesis produced no audio")
