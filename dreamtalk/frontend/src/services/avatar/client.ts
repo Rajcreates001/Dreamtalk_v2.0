@@ -7,7 +7,7 @@ import type {
   RespondRequest, RespondResult, RuntimeStatus,
 } from "./types"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050"
 const BASE = `${API_BASE_URL}/api/v1/avatar`
 
 /** Prefix a signed/relative runtime asset path with the API origin. */

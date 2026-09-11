@@ -17,7 +17,7 @@ function DigitalChamber({ colors }: { colors: { primary: string; secondary: stri
     <div className="relative w-full max-w-[620px] aspect-square">
       {/* Ambient bloom behind the avatar */}
       <div
-        className="absolute inset-[8%] rounded-full blur-[90px] animate-pulse-glow"
+        className="pointer-events-none absolute inset-[8%] rounded-full blur-[90px] animate-pulse-glow"
         style={{ background: `radial-gradient(circle, ${colors.primary}22, transparent 70%)` }}
       />
 
