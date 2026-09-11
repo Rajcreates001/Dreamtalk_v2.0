@@ -22,12 +22,14 @@ function DigitalChamber({ colors }: { colors: { primary: string; secondary: stri
       />
 
       {/* 3D avatar */}
-      <AvatarStage
-        className="absolute inset-0"
-        colors={{ primary: colors.primary, secondary: colors.secondary, base, glow: colors.primary }}
-        autoSpeak
-        interactive
-      />
+      <div className="absolute inset-0">
+        <AvatarStage
+          className="h-full w-full"
+          colors={{ primary: colors.primary, secondary: colors.secondary, base, glow: colors.primary }}
+          autoSpeak
+          interactive
+        />
+      </div>
 
       {/* Status label */}
       <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-20">
