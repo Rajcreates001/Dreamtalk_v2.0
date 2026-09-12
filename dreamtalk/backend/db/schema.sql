@@ -797,3 +797,48 @@ INSERT INTO digital_humans (name, description, category, accent_color, emoji, pe
 ('Captain Rex', 'A motivational speaker for inspiration and goal-setting.', 'personal', '#ef4444', '🚀', 'Bold, charismatic, driven', 78),
 ('Dr. Chen', 'A nutritionist for diet planning and healthy eating.', 'healthcare', '#10b981', '🥗', 'Knowledgeable, practical, supportive', 80),
 ('Serena', 'A meditation guide for mindfulness and relaxation.', 'personal', '#a855f7', '🧘', 'Calm, soothing, present', 83);
+
+
+-- ══════════════════════════════════════════════════════════════════
+-- Avatar runtime profiles
+--
+-- The avatar runtime (/api/v1/avatar) owns its own profiles, separate from
+-- digital_twins: a profile can exist without a twin, so media_assets (which
+-- requires a twin_id) cannot describe them. These tables give the generated
+-- avatar and its assets a durable, queryable home instead of living only in
+-- results/avatar_runtime_profiles.json.
+-- ══════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS avatar_profiles (
+    id                UUID PRIMARY KEY,
+    user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name              VARCHAR(255) NOT NULL,
+    status            VARCHAR(30)  NOT NULL DEFAULT 'pending',
+    sample_language   VARCHAR(16),
+    validated_language VARCHAR(16),
+    voice_ready       BOOLEAN DEFAULT FALSE,
+    appearance_ready  BOOLEAN DEFAULT FALSE,
+    blendshape_names  JSONB DEFAULT '[]'::jsonb,
+    metadata          JSONB DEFAULT '{}'::jsonb,
+    created_at        TIMESTAMPTZ DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_avatar_profiles_user ON avatar_profiles(user_id);
+
+CREATE TABLE IF NOT EXISTS avatar_profile_assets (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    profile_id   UUID NOT NULL REFERENCES avatar_profiles(id) ON DELETE CASCADE,
+    user_id      UUID NOT NULL,
+    -- glb | mesh | texture | primary_image | voice_reference
+    kind         VARCHAR(40)   NOT NULL,
+    file_path    VARCHAR(1024) NOT NULL,
+    file_size    BIGINT        DEFAULT 0,
+    mime_type    VARCHAR(127),
+    checksum     VARCHAR(64),
+    metadata     JSONB         DEFAULT '{}'::jsonb,
+    created_at   TIMESTAMPTZ   DEFAULT NOW(),
+    UNIQUE (profile_id, kind)
+);
+
+CREATE INDEX IF NOT EXISTS idx_avatar_assets_profile ON avatar_profile_assets(profile_id);

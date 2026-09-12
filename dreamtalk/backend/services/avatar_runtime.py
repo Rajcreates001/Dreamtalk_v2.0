@@ -551,6 +551,7 @@ class AvatarRuntimeService:
         profile["status"] = "ready" if profile["voice"]["ready"] and profile["appearance"]["ready"] else "degraded"
         profile["updated_at"] = utc_now()
         self.store.save(profile, activate=True)
+        await self._persist_profile_to_db(profile)
         return self.public_profile(profile)
 
     def delete_profile(self, profile_id: str, user_id: str) -> dict[str, Any]:
@@ -910,6 +911,125 @@ class AvatarRuntimeService:
             "brain": brain,
             "processing_ms": round((time.perf_counter() - started) * 1000, 2),
         }
+
+    # ── database persistence ──────────────────────────────────────────
+    # The JSON registry stays the runtime's source of truth; this mirrors the
+    # profile and its assets into Postgres so the avatar is queryable and
+    # survives loss of the results/ file. Never fatal — a DB problem must not
+    # fail avatar creation.
+
+    _DB_SCHEMA_SQL = """
+    CREATE TABLE IF NOT EXISTS avatar_profiles (
+        id                UUID PRIMARY KEY,
+        user_id           UUID NOT NULL,
+        name              VARCHAR(255) NOT NULL,
+        status            VARCHAR(30)  NOT NULL DEFAULT 'pending',
+        sample_language   VARCHAR(16),
+        validated_language VARCHAR(16),
+        voice_ready       BOOLEAN DEFAULT FALSE,
+        appearance_ready  BOOLEAN DEFAULT FALSE,
+        blendshape_names  JSONB DEFAULT '[]'::jsonb,
+        metadata          JSONB DEFAULT '{}'::jsonb,
+        created_at        TIMESTAMPTZ DEFAULT NOW(),
+        updated_at        TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS avatar_profile_assets (
+        id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        profile_id   UUID NOT NULL REFERENCES avatar_profiles(id) ON DELETE CASCADE,
+        user_id      UUID NOT NULL,
+        kind         VARCHAR(40)   NOT NULL,
+        file_path    VARCHAR(1024) NOT NULL,
+        file_size    BIGINT        DEFAULT 0,
+        mime_type    VARCHAR(127),
+        checksum     VARCHAR(64),
+        metadata     JSONB         DEFAULT '{}'::jsonb,
+        created_at   TIMESTAMPTZ   DEFAULT NOW(),
+        UNIQUE (profile_id, kind)
+    );
+    """
+
+    _ASSET_MIME = {
+        "glb": "model/gltf-binary", "mesh": "model/obj", "texture": "image/png",
+        "primary_image": "image/jpeg", "voice_reference": "audio/wav",
+    }
+
+    async def _persist_profile_to_db(self, profile: dict[str, Any]) -> bool:
+        """Mirror a profile + its asset paths into Postgres."""
+        import json as _json
+
+        user_id = profile.get("user_id")
+        if not user_id:
+            return False
+        appearance = profile.get("appearance") or {}
+        voice = profile.get("voice") or {}
+        try:
+            from dreamtalk.backend.db.database import execute
+
+            # Idempotent DDL: deployments created before these tables existed
+            # should not need a manual migration pass.
+            await execute(self._DB_SCHEMA_SQL)
+            await execute(
+                """
+                INSERT INTO avatar_profiles
+                    (id, user_id, name, status, sample_language, validated_language,
+                     voice_ready, appearance_ready, blendshape_names, metadata, updated_at)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb, NOW())
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    status = EXCLUDED.status,
+                    validated_language = EXCLUDED.validated_language,
+                    voice_ready = EXCLUDED.voice_ready,
+                    appearance_ready = EXCLUDED.appearance_ready,
+                    blendshape_names = EXCLUDED.blendshape_names,
+                    metadata = EXCLUDED.metadata,
+                    updated_at = NOW()
+                """,
+                uuid.UUID(str(profile["id"])), uuid.UUID(str(user_id)),
+                profile.get("name") or "Digital human",
+                profile.get("status") or "pending",
+                voice.get("sample_language"), voice.get("validated_language"),
+                bool(voice.get("ready")), bool(appearance.get("ready")),
+                _json.dumps(appearance.get("blendshape_names") or []),
+                _json.dumps({
+                    "render_modes": appearance.get("render_modes") or [],
+                    "identity_verification": appearance.get("identity_verification") or {},
+                    "clone_quality_warnings": voice.get("clone_quality_warnings") or [],
+                }),
+            )
+
+            assets = {
+                "glb": appearance.get("glb_path"),
+                "mesh": appearance.get("mesh_path"),
+                "texture": appearance.get("texture_path"),
+                "primary_image": appearance.get("primary_image_path"),
+                "voice_reference": voice.get("reference_audio_path"),
+            }
+            for kind, path in assets.items():
+                if not path:
+                    continue
+                size = 0
+                try:
+                    size = os.path.getsize(path)
+                except OSError:
+                    pass
+                await execute(
+                    """
+                    INSERT INTO avatar_profile_assets
+                        (profile_id, user_id, kind, file_path, file_size, mime_type)
+                    VALUES ($1,$2,$3,$4,$5,$6)
+                    ON CONFLICT (profile_id, kind) DO UPDATE SET
+                        file_path = EXCLUDED.file_path,
+                        file_size = EXCLUDED.file_size,
+                        mime_type = EXCLUDED.mime_type
+                    """,
+                    uuid.UUID(str(profile["id"])), uuid.UUID(str(user_id)),
+                    kind, str(path), int(size), self._ASSET_MIME.get(kind),
+                )
+            return True
+        except Exception as exc:
+            logger.warning("Could not mirror avatar profile %s to the database: %s",
+                           profile.get("id"), exc)
+            return False
 
     # ── conversation memory ───────────────────────────────────────────
     # One long-lived interaction per avatar profile, so the twin remembers

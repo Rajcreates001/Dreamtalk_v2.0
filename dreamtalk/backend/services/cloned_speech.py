@@ -366,14 +366,27 @@ class ClonedSpeechService:
             audio = np.asarray(audio, dtype=np.float32)
             if audio.ndim > 1:
                 audio = np.mean(audio, axis=1)
+            source_rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
             if abs(rate - 1.0) > 0.005:
                 audio = librosa.effects.time_stretch(audio, rate=rate)
             if abs(semitones) > 0.05:
                 audio = librosa.effects.pitch_shift(audio, sr=sample_rate, n_steps=semitones)
-            audio *= gain
+
+            # Hit the intended loudness by RMS, not by scaling the peak.
+            # Cloned TTS already sits near full scale, so `audio *= gain`
+            # followed by a peak normalise clipped every gain > 1 straight back
+            # down — angry and excited came out *quieter* than neutral, which
+            # returns early untouched. Time-stretch and pitch-shift move the
+            # peak too, so peak is the wrong reference entirely.
+            current_rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+            if source_rms > 0.0 and current_rms > 0.0:
+                audio = audio * ((source_rms * gain) / current_rms)
+            else:
+                audio = audio * gain
+            # Only touch the peak to stop it clipping.
             peak = float(np.max(np.abs(audio))) if audio.size else 0.0
-            if peak > 0.98:
-                audio = audio / peak * 0.95
+            if peak > 0.99:
+                audio = audio * (0.99 / peak)
             sf.write(str(path), audio, sample_rate, subtype="PCM_16")
         except Exception as exc:
             logger.warning("Emotion prosody post-processing skipped: %s", exc)
