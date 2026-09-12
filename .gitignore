@@ -100,3 +100,6 @@ e2e_out/
 
 # Generated per-user media from twin/avatar builds
 dreamtalk/media/personal/
+
+# Deep E2E verification artifacts
+dreamtalk/e2e_deep/

@@ -22,6 +22,10 @@ logger = logging.getLogger("dreamtalk.pipeline.flame_fitter")
 # Resolve project root
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _DEFAULT_MODEL_PATH = os.path.join(_PROJECT_ROOT, "weights", "flame", "FLAME2020_numpy.pkl")
+
+# Maximum |identity coefficient| in FLAME shape-PCA standard deviations.
+# Real faces live within ~3; beyond that the mesh stops being a head.
+IDENTITY_SIGMA_LIMIT = float(os.environ.get("FLAME_IDENTITY_SIGMA_LIMIT", "3.0"))
 _STATIC_DIR = os.path.join(_PROJECT_ROOT, "avatar", "static")
 
 # ── FLAME Model Loader ────────────────────────────────────────────────
@@ -509,8 +513,12 @@ def fit_identity_from_landmarks(
         # Each landmark contributes error^2 * weight, then weighted average
         reproj = np.sum(weights * (error_x ** 2 + error_y ** 2)) / weights.sum()
 
-        # Regularization: identity coefficients (pulled toward mean face)
-        reg = reg_strength * np.sum(coeffs ** 2)
+        # Regularization: identity coefficients (pulled toward mean face).
+        # Penalise in FLAME sigma units, not normalised-basis units. `coeffs`
+        # are divided by `basis_std` on the way out, so a component with little
+        # landmark influence is amplified; penalising the raw normalised value
+        # left those effectively unconstrained.
+        reg = reg_strength * np.sum((coeffs / basis_std) ** 2) / max(1, n_components)
 
         # Mild regularization on camera to prevent extreme values
         cam_reg = 0.01 * (log_scale ** 2 + angle ** 2 + tx ** 2 + ty ** 2) / (image_width ** 2)
@@ -523,8 +531,19 @@ def fit_identity_from_landmarks(
         np.zeros(n_components),
     ])
 
-    # ── Bounds: camera unbounded, identity unbounded ──
-    bounds = [(None, None)] * (4 + n_components)
+    # ── Bounds: camera unbounded, identity clamped to a plausible face ──
+    # FLAME identity coefficients are standard deviations of the shape PCA; a
+    # real human sits within ~3. Leaving them unbounded let the optimiser buy a
+    # few pixels of landmark accuracy with absurd deformation — fits were
+    # reaching 36 sigma and displacing vertices by ~98% of head height, which
+    # both mangled the mesh and made the texture projection sample hair and
+    # background instead of skin.
+    # The bound is expressed in normalised-basis units so that after the
+    # `/ basis_std` un-normalisation below it means +/-IDENTITY_SIGMA_LIMIT.
+    ident_bounds = [
+        (-IDENTITY_SIGMA_LIMIT * s, IDENTITY_SIGMA_LIMIT * s) for s in basis_std
+    ]
+    bounds = [(None, None)] * 4 + ident_bounds
 
     result = minimize(
         objective,
@@ -541,9 +560,13 @@ def fit_identity_from_landmarks(
     angle_opt = result.x[3]
     opt_coeffs = result.x[4:]
 
-    # Un-normalize coefficients (undo the basis normalization)
+    # Un-normalize coefficients (undo the basis normalization), then clamp as a
+    # belt-and-braces guarantee: the bounds above should already hold, but this
+    # keeps a diverged solve from ever reaching the mesh.
     identity_coeffs = np.zeros(300)
-    identity_coeffs[:n_components] = opt_coeffs / basis_std
+    identity_coeffs[:n_components] = np.clip(
+        opt_coeffs / basis_std, -IDENTITY_SIGMA_LIMIT, IDENTITY_SIGMA_LIMIT,
+    )
 
     logger.info(
         "Identity fit: %d iters, loss=%.2f, cam=(s=%.1f, tx=%.0f, ty=%.0f, θ=%.1f°), "
