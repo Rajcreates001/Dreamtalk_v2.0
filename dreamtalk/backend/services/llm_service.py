@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import time
 from typing import AsyncGenerator, Optional
 from dreamtalk.shared.config.settings import settings
 from dreamtalk.orchestration.persona.presets import DR_BC_ROY_SYSTEM_PROMPT
@@ -27,6 +28,25 @@ MODEL_NAME = settings.LLM_MODEL_NAME
 logger = logging.getLogger("dreamtalk.llm")
 
 
+# ── endpoint circuit breaker ──────────────────────────────────────────
+# A single reply makes several LLM calls (emotion, generation, translation).
+# When the primary endpoint is down, each of them paid the full connect
+# timeout before falling back, adding tens of seconds to every utterance.
+# Remember a failure briefly and skip that endpoint instead of re-probing it.
+_ENDPOINT_COOLDOWN_S = float(os.environ.get("LLM_ENDPOINT_COOLDOWN", "300"))
+_endpoint_down_until: dict[str, float] = {}
+
+
+def _mark_endpoint_down(api_base: str) -> None:
+    _endpoint_down_until[api_base] = time.monotonic() + _ENDPOINT_COOLDOWN_S
+    logger.warning("LLM endpoint %s marked down for %.0fs", api_base, _ENDPOINT_COOLDOWN_S)
+
+
+def _mark_endpoint_up(api_base: str) -> None:
+    if _endpoint_down_until.pop(api_base, None) is not None:
+        logger.info("LLM endpoint %s recovered", api_base)
+
+
 def _candidate_endpoints() -> list[tuple[str, str]]:
     candidates = [(GPU_API_BASE, MODEL_NAME)]
     fallback_url = os.environ.get("LLM_FALLBACK_BASE_URL", "http://host.docker.internal:11434/v1")
@@ -34,7 +54,10 @@ def _candidate_endpoints() -> list[tuple[str, str]]:
     fallback = (_normalise_api_base(fallback_url), fallback_model)
     if fallback not in candidates:
         candidates.append(fallback)
-    return candidates
+    now = time.monotonic()
+    live = [(b, m) for (b, m) in candidates if _endpoint_down_until.get(b, 0.0) <= now]
+    # If everything is cooling down, try them all rather than fail outright.
+    return live or candidates
 
 
 def _clean_response(content: str) -> str:
@@ -82,6 +105,7 @@ async def chat_completion(
                 )
                 response.raise_for_status()
                 data = response.json()
+                _mark_endpoint_up(api_base)
                 return {
                     "response": _clean_response(data["choices"][0]["message"]["content"]),
                     "model": data.get("model", model),
@@ -91,6 +115,7 @@ async def chat_completion(
             except Exception as exc:
                 errors.append(f"{model}@{api_base}: {type(exc).__name__}: {exc}")
                 logger.warning("LLM endpoint failed: %s", errors[-1])
+                _mark_endpoint_down(api_base)
     raise RuntimeError("All configured LLM endpoints failed: " + " | ".join(errors))
 
 
@@ -125,6 +150,7 @@ async def _stream_response(
             except Exception as exc:
                 errors.append(f"{model}@{api_base}: {type(exc).__name__}: {exc}")
                 logger.warning("Streaming LLM endpoint failed: %s", errors[-1])
+                _mark_endpoint_down(api_base)
     raise RuntimeError("All configured streaming LLM endpoints failed: " + " | ".join(errors))
 
 

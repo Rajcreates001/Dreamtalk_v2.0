@@ -831,7 +831,19 @@ class AvatarRuntimeService:
 
         text_emotion = await self._detect_text_emotion(message)
         user_emotion = self._fuse_emotion(text_emotion, vocal_emotion)
-        response_text, brain = await self._generate_response(message, target_language, profile, history, user_emotion)
+
+        # Server-side conversation memory. Without this the twin only ever knew
+        # what the client resent in `history`, so closing the tab erased it and
+        # the `interactions` tables stayed empty. When the caller supplies no
+        # history we recall this profile's own stored conversation instead.
+        interaction_id = await self._ensure_interaction(profile)
+        recalled: list[dict[str, str]] = []
+        if interaction_id and not history:
+            recalled = await self._recall_history(interaction_id)
+        effective_history = history or recalled
+
+        response_text, brain = await self._generate_response(
+            message, target_language, profile, effective_history, user_emotion)
         response_text, translated = await self._ensure_response_language(response_text, target_language)
         response_emotion = await self._detect_text_emotion(response_text)
 
@@ -862,8 +874,22 @@ class AvatarRuntimeService:
             audio_payload.pop("path", None)
             audio_payload.pop("service_url", None)
 
+        # Persist the turn so the twin remembers it in later sessions.
+        if interaction_id:
+            await self._remember_turn(
+                interaction_id, message, response_text,
+                user_emotion=self._display_emotion(user_emotion.get("primary_mood", "neutral")),
+                reply_emotion=animation.get("emotion"),
+                audio_url=speech_result.audio_url if speech_result else None,
+            )
+
         return {
             "response": response_text,
+            "memory": {
+                "interaction_id": interaction_id,
+                "recalled_messages": len(recalled),
+                "persisted": bool(interaction_id),
+            },
             "text": response_text,
             "profile_id": profile.get("id") if profile else None,
             "language": {
@@ -884,6 +910,68 @@ class AvatarRuntimeService:
             "brain": brain,
             "processing_ms": round((time.perf_counter() - started) * 1000, 2),
         }
+
+    # ── conversation memory ───────────────────────────────────────────
+    # One long-lived interaction per avatar profile, so the twin remembers
+    # across sessions instead of only within a single browser tab.
+
+    async def _ensure_interaction(self, profile: Optional[dict[str, Any]]) -> Optional[str]:
+        if not profile:
+            return None
+        memory = profile.setdefault("memory", {})
+        existing = memory.get("interaction_id")
+        if existing:
+            return existing
+        user_id = profile.get("user_id") or profile.get("owner_id")
+        if not user_id:
+            return None
+        try:
+            from dreamtalk.backend.services.conversation_memory import ConversationMemory
+
+            interaction_id = await ConversationMemory().create_interaction(
+                user_id=str(user_id),
+                title=f"{profile.get('name') or 'Digital human'} — conversation",
+            )
+        except Exception as exc:
+            logger.warning("Could not open conversation memory: %s", exc)
+            return None
+        memory["interaction_id"] = interaction_id
+        try:
+            self.store.save(profile)
+        except Exception:
+            pass
+        return interaction_id
+
+    @staticmethod
+    async def _recall_history(interaction_id: str, limit: int = 12) -> list[dict[str, str]]:
+        try:
+            from dreamtalk.backend.services.conversation_memory import ConversationMemory
+
+            rows = await ConversationMemory().get_history(interaction_id, limit=limit)
+            return [{"role": r["role"], "content": r["content"]} for r in rows
+                    if r.get("role") and r.get("content")]
+        except Exception as exc:
+            logger.warning("Could not recall conversation memory: %s", exc)
+            return []
+
+    @staticmethod
+    async def _remember_turn(
+        interaction_id: str,
+        user_message: str,
+        reply: str,
+        user_emotion: Optional[str] = None,
+        reply_emotion: Optional[str] = None,
+        audio_url: Optional[str] = None,
+    ) -> None:
+        try:
+            from dreamtalk.backend.services.conversation_memory import ConversationMemory
+
+            mem = ConversationMemory()
+            await mem.save_message(interaction_id, "user", user_message, emotion=user_emotion)
+            await mem.save_message(interaction_id, "assistant", reply,
+                                   emotion=reply_emotion, audio_url=audio_url)
+        except Exception as exc:
+            logger.warning("Could not persist conversation turn: %s", exc)
 
     @staticmethod
     def _build_lipsync(audio_path: str, emotion: dict[str, Any], text: str) -> dict[str, Any]:
