@@ -40,7 +40,7 @@ run**, three of which made the product visibly broken.
 | Non-Indic voice | ⚠️ stand-in voice, correctly flagged `cloned=false` |
 | Brain memory | ✅ now persists to Postgres (was **not wired at all** — fixed) |
 | Emotions | ✅ all 12 synthesize, prosody measurably varies (2 caveats) |
-| Avatar persistence | ⚠️ JSON registry + disk; the `media_assets` table is unused |
+| Avatar persistence | ✅ now in Postgres (`avatar_profiles` + assets) — was file-only |
 | Profile status | ✅ `ready` (every English-sample profile was **degraded** — fixed) |
 
 ---
@@ -205,14 +205,40 @@ label attached to identical audio):
 
 F0 spread 116.8–173.0 Hz (σ 13.2); RMS spread 0.053–0.177 (3.3× range).
 
-**Two caveats worth acting on:**
+**Correction — the first measurement was confounded.** Each emotion received a
+*different* LLM reply, so content variation (48 % pitch spread) swamped the
+±0.8 semitone preset (~4.7 %). Re-run with **identical text** under each
+emotion:
 
-1. The *direction* of the mapping looks off against normal prosody — `sad` has
-   the **highest** pitch (173 Hz) and `angry` nearly the lowest (135.6 Hz),
-   which is backwards from what listeners expect. Worth reviewing
-   `PROSODY_PRESETS`.
-2. `frustrated` produced only **0.6 s** of audio — almost certainly a truncated
-   or failed generation, not a real reply.
+| emotion | F0 | dur ratio vs neutral | preset rate |
+| --- | --- | --- | --- |
+| neutral | 135.8 Hz | 1.00 | 1.00 |
+| calm | 138.7 | 0.89 | 0.96 |
+| happy | 130.5 | 1.22 | 1.05 |
+| excited | 135.2 | 1.03 | 1.09 |
+| sad | 133.8 | **0.89** | **0.92** |
+| angry | 128.9 | **1.38** | **1.06** |
+
+**The presets are applied, and are not inverted** — my earlier claim was wrong.
+Duration tracks `rate` consistently across independent runs (sad slower, angry
+faster), which is the reliable evidence.
+
+Pitch cannot be resolved at n=1: **IndicF5 is stochastic**, and F0 for identical
+text+emotion moved ~10 Hz between runs — larger than the ±0.8 semitone preset
+(~6 Hz). Judging the pitch mapping needs averaging over many samples.
+
+**One real bug found and fixed here:** `_apply_emotional_prosody` applied
+`audio *= gain` then normalised the **peak** to 0.95. Cloned TTS already sits
+near full scale, so every gain > 1 clipped and was scaled straight back down,
+while `neutral` returns early untouched — `angry` (gain 1.10) and `excited`
+(1.08) came out *quieter* than neutral. Now targets RMS.
+
+| | before | after |
+| --- | --- | --- |
+| ΔRMS vs neutral | −0.089 … −0.154 (all quieter) | −0.024 … +0.002 |
+| quietest emotion | — | `sad` (gain 0.88) ✅ |
+
+`frustrated` still produced a 0.6 s clip in the end-to-end sweep — worth a look.
 
 ---
 
@@ -258,20 +284,28 @@ blendshape names persisted               all 10 (aa ih ou ee oh blink happy sad 
 - assets on disk under `media/avatar_runtime/<profile_id>/{appearance,voice,responses}`
 - manifest re-serves them behind signed URLs
 
-**But not in the database.** `media_assets`, `voice_profiles` and
-`identity_profiles` are all **0 rows** — the tables exist and are unused by the
-avatar runtime. Storage is file-based.
+**And now in the database too.** `media_assets` could not describe these: its
+`twin_id` is `NOT NULL` referencing `digital_twins`, while an avatar profile can
+exist without a twin. Added `avatar_profiles` + `avatar_profile_assets`; the
+runtime mirrors every profile and asset path on creation (JSON registry stays
+the source of truth, DB failures never fail enrolment).
 
-That is durable on one host, but it will not survive a container rebuild that
-drops the volume, and it does not replicate. Moving asset metadata into
-`media_assets` is the remaining gap against the stated requirement.
+```
+avatar_profiles        16 rows
+avatar_profile_assets  5 kinds x 16 — glb 15MB · mesh 12MB · images 23MB
+                       · textures 3.8MB · voice 7.7MB
+```
+
+Verified on a fresh enrolment: profile `ready`, `validated_language=hi`,
+5 assets totalling 4716 kB written automatically. The 15 pre-existing profiles
+were backfilled (`scripts/backfill_avatar_db.py`).
 
 ---
 
 ## 8. What is still not right
 
 1. **Cloned voice covers 11 of 22 languages.** Deploy Indic-Mio to close it.
-2. **Avatar assets are not in the DB** (`media_assets` unused).
+2. ~~Avatar assets are not in the DB~~ — **done** (§7).
 3. **No actual learning** — memory only; `learning_logs` empty.
 4. **3D head has no hair, teeth or ears of its own** — FLAME is a face model.
    An open mouth shows a void. Teeth + hair are the biggest remaining realism
@@ -280,5 +314,6 @@ drops the volume, and it does not replicate. Moving asset metadata into
    MuseTalk needs ~6.5 GB VRAM and contends with the 5.3 GB Ollama model on an
    8 GB card). Repeated OOM can corrupt the CUDA context and need a restart.
 6. **Lip articulation is subtle** rather than pronounced.
-7. **Emotion→prosody mapping looks inverted** for `sad`/`angry`, and
-   `frustrated` generated a 0.6 s clip (see §5b).
+7. **Emotion pitch mapping is unverified** — IndicF5's run-to-run variance
+   exceeds the preset, so it needs averaging over many samples (§5b). The
+   loudness bug found alongside it is fixed. `frustrated` produced a 0.6 s clip.
