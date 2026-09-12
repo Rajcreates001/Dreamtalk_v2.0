@@ -311,8 +311,28 @@ class LipSyncPipeline:
             silence_thresh = min(silence_thresh, 0.15)
             voiced = rms_norm > silence_thresh
 
-            # Find segment boundaries
-            segments = []
+            # Find segment boundaries.
+            #
+            # One segment per contiguous voiced run is not enough: synthesized
+            # speech has almost no internal silence, so a whole utterance came
+            # out as a single run — one viseme held for seven seconds, which
+            # froze the 3D avatar's mouth in one shape. Speech articulates at
+            # roughly 10-14 phonemes/second, so long runs are subdivided and a
+            # viseme is chosen from each sub-window's own energy and centroid.
+            max_seg_s = float(os.environ.get("LIPSYNC_MAX_SEGMENT_S", "0.09"))
+            max_frames = max(1, int(round(max_seg_s * sr / hop_length)))
+
+            def emit(start_i: int, end_i: int, out: list) -> None:
+                for a in range(start_i, end_i, max_frames):
+                    b = min(a + max_frames, end_i)
+                    if b <= a:
+                        continue
+                    e = float(np.mean(rms_norm[a:b]))
+                    c = float(np.mean(centroid_norm[a:b]))
+                    out.append((a * hop_length / sr, b * hop_length / sr,
+                                self._energy_centroid_to_phoneme(e, c)))
+
+            segments: List[Tuple[float, float, str]] = []
             in_segment = False
             seg_start = 0
 
@@ -321,26 +341,12 @@ class LipSyncPipeline:
                     seg_start = i
                     in_segment = True
                 elif not voiced[i] and in_segment:
-                    # End of voiced segment
-                    start_t = seg_start * hop_length / sr
-                    end_t = i * hop_length / sr
-
-                    # Determine viseme based on energy and centroid
-                    seg_energy = float(np.mean(rms_norm[seg_start:i]))
-                    seg_centroid = float(np.mean(centroid_norm[seg_start:i]))
-
-                    phoneme = self._energy_centroid_to_phoneme(seg_energy, seg_centroid)
-                    segments.append((start_t, end_t, phoneme))
+                    emit(seg_start, i, segments)
                     in_segment = False
 
             # Handle last segment
             if in_segment:
-                start_t = seg_start * hop_length / sr
-                end_t = len(voiced) * hop_length / sr
-                seg_energy = float(np.mean(rms_norm[seg_start:]))
-                seg_centroid = float(np.mean(centroid_norm[seg_start:]))
-                phoneme = self._energy_centroid_to_phoneme(seg_energy, seg_centroid)
-                segments.append((start_t, end_t, phoneme))
+                emit(seg_start, len(voiced), segments)
 
             return segments
 
