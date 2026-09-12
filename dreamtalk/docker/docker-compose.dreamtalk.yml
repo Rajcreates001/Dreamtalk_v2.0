@@ -220,6 +220,14 @@ services:
     image: dreamtalk-indicf5:latest
     container_name: dreamtalk-indicf5
     restart: unless-stopped
+    # NOTE: this runs on CPU, and it is the dominant cost in a text reply
+    # (16-23s measured). The microservice already selects CUDA when it can see
+    # a device, so it is NOT enough to add `gpus:` here — Dockerfile.indicf5
+    # builds on python:3.11-slim and installs torch from the /whl/cpu index,
+    # so the image ships torch 2.5.1+cpu and cannot use a GPU at all.
+    # Moving it needs: a CUDA runtime base + cu124 torch wheels + `gpus: all`,
+    # and ~2GB VRAM that must be budgeted against MuseTalk's ~6.5GB on an 8GB
+    # card. See docs/COMPETITIVE_GAP_ANALYSIS.md §3.1.
     ports:
       - "8002:8002"
     environment:
