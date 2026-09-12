@@ -230,23 +230,42 @@ class FaceIdentityService:
         # versions in this shared image. Identity embedding is an enrollment-
         # time operation, so isolate TensorFlow on CPU unless explicitly
         # overridden while leaving all Torch inference on CUDA.
-        if os.environ.get("FACE_IDENTITY_USE_GPU", "false").lower() != "true":
-            import tensorflow as tf
+        force_cpu = os.environ.get("FACE_IDENTITY_USE_GPU", "false").lower() != "true"
+        tf = None
+        if force_cpu:
+            import tensorflow as tf  # noqa: PLC0415
 
             try:
                 tf.config.set_visible_devices([], "GPU")
             except RuntimeError:
+                # TF had already initialised its GPUs (MediaPipe in the face
+                # pipeline gets there first), so hiding devices is a no-op by
+                # this point. The device scope below is what actually holds.
                 pass
         from deepface import DeepFace
 
         with self._lock:
-            result = DeepFace.represent(
-                img_path=image_path,
-                model_name=self.model_name,
-                detector_backend=os.environ.get("FACE_IDENTITY_DETECTOR", "opencv"),
-                enforce_detection=True,
-                align=True,
-            )
+            if force_cpu and tf is not None:
+                # Placement scope works even after TF has initialised CUDA,
+                # which set_visible_devices does not. Without it the embedding
+                # ran on GPU and hit the cuDNN skew between TF and Torch
+                # ("No DNN in stream executor"), failing enrollment with a 503.
+                with tf.device("/CPU:0"):
+                    result = DeepFace.represent(
+                        img_path=image_path,
+                        model_name=self.model_name,
+                        detector_backend=os.environ.get("FACE_IDENTITY_DETECTOR", "opencv"),
+                        enforce_detection=True,
+                        align=True,
+                    )
+            else:
+                result = DeepFace.represent(
+                    img_path=image_path,
+                    model_name=self.model_name,
+                    detector_backend=os.environ.get("FACE_IDENTITY_DETECTOR", "opencv"),
+                    enforce_detection=True,
+                    align=True,
+                )
         if not result or not result[0].get("embedding"):
             raise RuntimeError("Identity encoder returned no face embedding")
         embedding = np.asarray(result[0]["embedding"], dtype=np.float32)

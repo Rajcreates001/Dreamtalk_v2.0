@@ -636,7 +636,11 @@ class FacePipeline:
             output_dir = self.assets_dir
         os.makedirs(output_dir, exist_ok=True)
 
-        # Save texture
+        # Last-resort texture only. This is the RAW input photo, not a UV
+        # atlas — the FLAME UV layout does not index it meaningfully, so if it
+        # ever reaches the GLB the head is painted with background and clothing
+        # (foliage on the cheeks, suit across the face). The fitter's own
+        # UV-projected texture is preferred everywhere below.
         texture_path = os.path.join(output_dir, f"flame_texture_{uuid.uuid4().hex[:8]}.jpg")
         cv2.imwrite(texture_path, image)
 
@@ -657,7 +661,9 @@ class FacePipeline:
                         "max_expression_value": 0.0,
                         "identity_fitted": result["identity_fitted"],
                     }
-                    return result["obj_path"], texture_path, mesh_info
+                    # Prefer the fitter's UV-projected atlas; it is the only
+                    # texture whose layout matches the mesh's UVs.
+                    return result["obj_path"], result.get("texture_path") or texture_path, mesh_info
             except Exception as e:
                 logger.warning("FlameFitter failed, falling back: %s", e)
 
@@ -673,7 +679,7 @@ class FacePipeline:
                         "max_expression_value": 0.0,
                         "identity_fitted": False,
                     }
-                    return result["obj_path"], texture_path, mesh_info
+                    return result["obj_path"], result.get("texture_path") or texture_path, mesh_info
             except Exception as e:
                 logger.warning("Mean FLAME mesh failed: %s", e)
 

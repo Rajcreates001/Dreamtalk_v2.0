@@ -130,9 +130,13 @@ export function useCreateTwin() {
       setTwinId(twin.id ?? twin.twin_id)
       setStep("identity")
     } catch (e: any) {
-      setError(e?.message?.includes("Failed to fetch") || e?.message?.includes("HTTP")
+      // Only a genuine network failure means the API is unreachable. Matching
+      // on "HTTP" here reported real server errors (e.g. a duplicate twin
+      // name) as connectivity problems, which sent debugging the wrong way.
+      const msg = String(e?.message ?? "")
+      setError(msg.includes("Failed to fetch") || msg.includes("NetworkError")
         ? "Couldn't reach the backend. Make sure the DreamTalk API is running."
-        : e?.message || "Could not create your twin.")
+        : msg || "Could not create your twin.")
     } finally {
       setBusy(false)
     }
@@ -212,59 +216,53 @@ export function useCreateTwin() {
     setSelectedLangs((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code])
   }, [])
 
+  /** Register a runtime avatar profile so /talk has a digital human to show. */
+  const registerRuntimeProfile = useCallback(async () => {
+    if (!voiceBlobRef.current) return
+    try {
+      await avatarRuntime.createProfile({
+        name: name.trim() || "My Twin",
+        voiceSample: voiceBlobRef.current,
+        faceImages: faceFileRef.current ? [faceFileRef.current] : [],
+        consentConfirmed: consent,
+        consentSubjectName: name.trim() || undefined,
+        language: primaryLang(),
+      })
+    } catch { /* runtime profile is optional; preview still proceeds */ }
+  }, [name, consent, selectedLangs])
+
+  // `/api/v1/pipeline/run` is synchronous — it returns the finished result, so
+  // there is nothing to poll. The old code polled
+  // `/digital-twins/{id}/pipeline/status`, which reports the *twin's*
+  // lifecycle status ("draft") and never transitions to complete, so the
+  // progress ring sat at 0% forever even on success.
   const startProcessing = useCallback(async () => {
     if (!twinId) return
     setStep("processing")
     setError(null)
+    setPipeline({ status: "running", progress: 15, stage: "starting" })
     try {
       await digitalTwinApi.update(twinId, { language: primaryLang() }).catch(() => {})
-      await digitalTwinApi.runPipeline(twinId)
-      const final: any = await pollUntil(
-        () => digitalTwinApi.getPipelineStatus(twinId),
-        (r: any) => isOk(r?.status) || isFail(r?.status),
-        { tries: 120, intervalMs: 2000 },
-      )
-      setPipeline({
-        status: final.status,
-        progress: final.progress ?? (isOk(final.status) ? 100 : 0),
-        stage: final.stage ?? final.status,
-      })
-      if (isFail(final.status)) {
-        setError("Avatar processing failed. Please try again.")
-      } else {
-        // Best-effort: register a runtime profile so /talk has a digital human
-        // to speak with. Failure here never blocks the twin preview.
-        if (voiceBlobRef.current) {
-          try {
-            await avatarRuntime.createProfile({
-              name: name.trim() || "My Twin",
-              voiceSample: voiceBlobRef.current,
-              faceImages: faceFileRef.current ? [faceFileRef.current] : [],
-              consentConfirmed: consent,
-              consentSubjectName: name.trim() || undefined,
-              language: primaryLang(),
-            })
-          } catch { /* runtime profile is optional; preview still proceeds */ }
-        }
-        setStep("preview")
+      setPipeline({ status: "running", progress: 45, stage: "building" })
+      const res: any = await digitalTwinApi.runPipeline(twinId)
+      const status = String(res?.status ?? "completed")
+      if (isFail(status) || res?.error) {
+        setPipeline({ status, progress: 0, stage: status })
+        setError(res?.error || "Avatar processing failed. Please try again.")
+        return
       }
+      setPipeline({ status, progress: 100, stage: status })
+      await registerRuntimeProfile()
+      setStep("preview")
     } catch (e: any) {
-      setError(e?.message || "Processing failed.")
+      const msg = String(e?.message ?? "")
+      setError(msg.includes("Failed to fetch") || msg.includes("NetworkError")
+        ? "Couldn't reach the backend. Make sure the DreamTalk API is running."
+        : msg || "Processing failed.")
     }
-  }, [twinId, selectedLangs, name, consent])
+  }, [twinId, selectedLangs, registerRuntimeProfile])
 
-  // Live-ish progress display while the pipeline runs.
-  useEffect(() => {
-    if (step !== "processing" || !twinId) return
-    let alive = true
-    const id = setInterval(async () => {
-      try {
-        const s: any = await digitalTwinApi.getPipelineStatus(twinId)
-        if (alive) setPipeline({ status: s.status, progress: s.progress ?? 0, stage: s.stage ?? s.status })
-      } catch { /* ignore */ }
-    }, 2000)
-    return () => { alive = false; clearInterval(id) }
-  }, [step, twinId])
+
 
   const canProceed: Record<Step, boolean> = {
     consent: consent && name.trim().length > 0 && authed === true && !busy,

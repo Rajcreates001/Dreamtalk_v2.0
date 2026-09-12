@@ -50,13 +50,23 @@ function HeadModel({ url, audioRef, keyframesRef, emotionRef, reduced, onFit }: 
       if (o.isMesh) {
         o.castShadow = false
         o.receiveShadow = false
+        // The generated head is a single closed surface whose triangle winding
+        // does not reliably match glTF's CCW convention, so front-face culling
+        // showed the inside of the skull. Recompute normals from the geometry
+        // (the exported ones lit it from behind) and render both sides.
+        if (o.geometry) {
+          o.geometry.computeVertexNormals()
+          o.geometry.computeBoundingBox()
+          o.geometry.computeBoundingSphere()
+        }
         const mats = Array.isArray(o.material) ? o.material : [o.material]
         mats.forEach((m: any) => {
           if (!m) return
           if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
           if ("metalness" in m) m.metalness = 0
           if ("roughness" in m) m.roughness = Math.min(0.9, Math.max(0.55, m.roughness ?? 0.75))
-          m.side = THREE.FrontSide
+          m.side = THREE.DoubleSide
+          m.flatShading = false
           m.needsUpdate = true
         })
         if (o.morphTargetDictionary && o.morphTargetInfluences) meshes.current.push(o)

@@ -254,10 +254,20 @@ export const digitalTwinApi = {
     }),
 
   // Pipeline
-  runPipeline: (twinId: string) =>
-    request<{ pipeline_id: string; status: string }>(`/api/v1/digital-twins/pipeline`, {
-      method: "POST", auth: true, body: { twin_id: twinId },
-    }),
+  // Runs the pipeline for an EXISTING twin and returns the result
+  // synchronously. `/api/v1/digital-twins/pipeline` is a different endpoint —
+  // it *creates* a twin and requires `name`, so posting {twin_id} there
+  // returned 422 and the build never started.
+  runPipeline: (twinId: string, role = "personal") =>
+    request<{ pipeline_id: string; status: string; error?: string | null }>(
+      `/api/v1/pipeline/run`, {
+        method: "POST", auth: true,
+        body: {
+          twin_id: twinId, role,
+          enable_3d_face: true, enable_voice_clone: true, enable_emotion: true,
+        },
+      },
+    ),
 
   getPipelineStatus: (twinId: string) =>
     request<any>(`/api/v1/digital-twins/${twinId}/pipeline/status`, { auth: true }),

@@ -97,3 +97,6 @@ local_backup/
 dreamtalk/.tmp_miocodec_inspect/
 dreamtalk/.tmp_miotts_inspect/
 e2e_out/
+
+# Generated per-user media from twin/avatar builds
+dreamtalk/media/personal/

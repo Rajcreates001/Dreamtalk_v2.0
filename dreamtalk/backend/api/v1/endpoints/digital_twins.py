@@ -39,7 +39,20 @@ async def create_twin(
     req: CreateDigitalTwinRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    twin = await DigitalTwinEngine.create(current_user["sub"], req)
+    try:
+        twin = await DigitalTwinEngine.create(current_user["sub"], req)
+    except Exception as exc:
+        # (user_id, name) is unique. Without this the driver's
+        # UniqueViolationError escaped as an unhandled 500, which is emitted
+        # without CORS headers — so the browser reported a network failure and
+        # the UI said "Couldn't reach the backend" for what is really a
+        # name clash.
+        if "digital_twins_user_id_name_key" in str(exc) or "UniqueViolation" in type(exc).__name__:
+            raise HTTPException(
+                status_code=409,
+                detail=f"You already have a digital twin named '{req.name}'. Pick another name.",
+            ) from exc
+        raise
     return twin.model_dump()
 
 

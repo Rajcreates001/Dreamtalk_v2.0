@@ -88,8 +88,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path in ("/health", "/livez", "/readyz", "/metrics") or path.startswith("/_next/"):
             return await call_next(request)
 
-        # Select appropriate bucket
-        if "/pipeline" in path:
+        # Select appropriate bucket.
+        # Read-only status/result polling is *designed* to be called every
+        # couple of seconds while a build runs. Bucketing it with the expensive
+        # pipeline triggers (10/min) throttled the progress UI to a standstill,
+        # so only the triggers get the strict bucket.
+        is_pipeline_poll = request.method == "GET" and (
+            "/pipeline/status" in path
+            or "/pipeline/result" in path
+            or "/pipeline/history" in path
+        )
+        if "/pipeline" in path and not is_pipeline_poll:
             bucket = self._pipeline_buckets[identifier]
         elif "/ws" in path or "/chat" in path:
             bucket = self._chat_buckets[identifier]
@@ -100,15 +109,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if not allowed:
             logger.warning(f"Rate limited: {identifier} on {path}")
+            headers = {
+                "Retry-After": str(int(wait_time) + 1),
+                "X-RateLimit-Limit": str(bucket.capacity),
+                "X-RateLimit-Remaining": str(int(bucket.tokens)),
+            }
+            # This short-circuits before CORSMiddleware runs, so without these
+            # the browser cannot read the 429 and reports a bare network
+            # failure instead of "rate limited" — which sends debugging after
+            # phantom connectivity problems.
+            origin = request.headers.get("origin")
+            if origin:
+                headers["Access-Control-Allow-Origin"] = origin
+                headers["Access-Control-Allow-Credentials"] = "true"
+                headers["Vary"] = "Origin"
             return Response(
                 status_code=429,
                 content=f'{{"detail":"Rate limit exceeded. Retry in {wait_time:.1f}s"}}',
                 media_type="application/json",
-                headers={
-                    "Retry-After": str(int(wait_time) + 1),
-                    "X-RateLimit-Limit": str(bucket.capacity),
-                    "X-RateLimit-Remaining": str(int(bucket.tokens)),
-                },
+                headers=headers,
             )
 
         response = await call_next(request)
