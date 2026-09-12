@@ -939,6 +939,7 @@ class FacePipeline:
             vertices, _normals, _uvs, _faces = exporter._parse_obj(mesh_path)
 
             targets = {}
+            mouth_parts = []
             masks_path = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                 "weights", "flame", "FLAME_masks.pkl",
@@ -947,9 +948,25 @@ class FacePipeline:
             # blendshapes when the mesh actually is that topology.
             if os.path.exists(masks_path) and len(vertices) == 5023:
                 try:
-                    targets = build_blendshapes(vertices, load_flame_masks(masks_path))
+                    from dreamtalk.pipeline.face_blendshapes import _Frame
+                    from dreamtalk.pipeline.face_teeth import (
+                        build_teeth, teeth_morph_targets,
+                    )
+
+                    masks = load_flame_masks(masks_path)
+                    targets = build_blendshapes(vertices, masks)
+
+                    # FLAME has no mouth interior, so every jaw-opening viseme
+                    # revealed a void. Add teeth + tongue, with morph targets
+                    # that carry them along with the jaw.
+                    frame = _Frame(vertices, masks)
+                    built = build_teeth(vertices, masks, frame)
+                    for part in (built or {}).get("parts", []):
+                        part["morph_targets"] = teeth_morph_targets(
+                            part, targets, vertices, masks, frame)
+                        mouth_parts.append(part)
                 except Exception as exc:
-                    logger.warning("Blendshape build failed: %s", exc)
+                    logger.warning("Blendshape/teeth build failed: %s", exc)
             elif len(vertices) != 5023:
                 logger.info("Mesh has %d verts (not FLAME topology) — no blendshapes",
                             len(vertices))
@@ -958,6 +975,7 @@ class FacePipeline:
             exporter.obj_to_glb(
                 mesh_path, texture_path, destination,
                 morph_targets=targets or None,
+                extra_parts=mouth_parts or None,
             )
             if os.path.exists(destination) and os.path.getsize(destination) > 1024:
                 return destination, sorted(targets)

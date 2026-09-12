@@ -33,6 +33,7 @@ class AvatarExporter:
         output_path: Optional[str] = None,
         metadata: Optional[Dict] = None,
         morph_targets: Optional[Dict[str, np.ndarray]] = None,
+        extra_parts: Optional[list] = None,
     ) -> str:
         """Convert OBJ mesh to GLB (glTF Binary).
 
@@ -58,6 +59,7 @@ class AvatarExporter:
             return self._export_glb_native(
                 vertices, normals, uvs, faces,
                 texture_path, output_path, metadata, morph_targets,
+                extra_parts,
             )
         except Exception as exc:
             logger.warning("Native GLB export failed (%s) — falling back", exc)
@@ -91,6 +93,7 @@ class AvatarExporter:
         output_path: str,
         metadata: Optional[Dict],
         morph_targets: Optional[Dict[str, np.ndarray]] = None,
+        extra_parts: Optional[list] = None,
     ) -> str:
         import json
         import struct
@@ -166,6 +169,45 @@ class AvatarExporter:
             gltf["meshes"][0]["weights"] = [0.0] * len(target_names)
             gltf["meshes"][0]["extras"] = {"targetNames": target_names}
 
+        # Extra solid-coloured parts (teeth, tongue). Each becomes its own mesh
+        # + node so it can carry its own material and morph targets — FLAME has
+        # no mouth interior, so without these an open viseme shows a void.
+        extra_materials: list = []
+        for part in (extra_parts or []):
+            p_pos = np.ascontiguousarray(part["vertices"], dtype=np.float32)
+            p_idx = np.ascontiguousarray(part["faces"], dtype=np.uint32).reshape(-1)
+            p_attrs = {"POSITION": add_accessor(p_pos, "VEC3", FLOAT, ARRAY_BUF, minmax=True)}
+            p_prim: Dict[str, Any] = {
+                "attributes": p_attrs,
+                "indices": add_accessor(p_idx, "SCALAR", UINT, ELEM_BUF),
+            }
+            p_names: list = []
+            for name, delta in (part.get("morph_targets") or {}).items():
+                d = np.ascontiguousarray(delta, dtype=np.float32)
+                if d.shape != p_pos.shape:
+                    continue
+                p_prim.setdefault("targets", []).append(
+                    {"POSITION": add_accessor(d, "VEC3", FLOAT, ARRAY_BUF, minmax=True)})
+                p_names.append(name)
+
+            r, g_, b_ = part.get("color", (0.9, 0.88, 0.84))
+            extra_materials.append({
+                "name": part["name"],
+                "pbrMetallicRoughness": {
+                    "baseColorFactor": [float(r), float(g_), float(b_), 1.0],
+                    "metallicFactor": 0.0,
+                    "roughnessFactor": float(part.get("roughness", 0.45)),
+                },
+            })
+            mesh_entry: Dict[str, Any] = {"primitives": [p_prim], "name": part["name"]}
+            if p_names:
+                mesh_entry["weights"] = [0.0] * len(p_names)
+                mesh_entry["extras"] = {"targetNames": p_names}
+            gltf["meshes"].append(mesh_entry)
+            gltf["nodes"].append({"mesh": len(gltf["meshes"]) - 1, "name": part["name"]})
+            gltf["scenes"][0]["nodes"].append(len(gltf["nodes"]) - 1)
+            p_prim["_material_slot"] = len(extra_materials) - 1
+
         if texture_path and os.path.exists(texture_path):
             with open(texture_path, "rb") as f:
                 img_bytes = f.read()
@@ -186,6 +228,18 @@ class AvatarExporter:
                 },
             }]
             primitive["material"] = 0
+
+        # Append the solid-colour materials after the textured head material so
+        # their indices are stable whether or not a texture was supplied.
+        if extra_materials:
+            gltf.setdefault("materials", [])
+            base = len(gltf["materials"])
+            gltf["materials"].extend(extra_materials)
+            for mesh_entry in gltf["meshes"][1:]:
+                p = mesh_entry["primitives"][0]
+                slot = p.pop("_material_slot", None)
+                if slot is not None:
+                    p["material"] = base + slot
 
         if metadata:
             gltf.setdefault("extras", {}).update(metadata)

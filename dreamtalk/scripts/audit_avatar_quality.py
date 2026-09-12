@@ -52,6 +52,7 @@ def main() -> int:
         return 1
     b, j, bin_off = load_glb(GLB)
     prim = j["meshes"][0]["primitives"][0]
+    part_names = [m.get("name") for m in j.get("meshes", [])]
     pos = accessor(b, j, bin_off, prim["attributes"]["POSITION"])
     names = j["meshes"][0].get("extras", {}).get("targetNames", [])
     print(f"GLB: {len(pos)} verts, {len(prim.get('targets', []))} morph targets\n")
@@ -85,13 +86,19 @@ def main() -> int:
         masks = load_flame_masks("/app/dreamtalk/weights/flame/FLAME_masks.pkl")
         have = {k: len(v) for k, v in masks.items()}
         print("\nFLAME regions present:", ", ".join(sorted(have)))
-        for missing, why in (
-            ("teeth", "an open mouth shows a void — biggest realism cost"),
-            ("tongue", "no tongue behind the teeth"),
-            ("hair", "FLAME is a scalp-only model; head reads bald"),
+        # Teeth/tongue are not FLAME regions — they are extra GLB parts we add.
+        joined = " ".join(n or "" for n in part_names).lower()
+        for needle, label, why in (
+            ("teeth", "teeth", "an open mouth shows a void — biggest realism cost"),
+            ("tongue", "tongue", "no tongue behind the teeth"),
         ):
-            if missing not in have:
-                note("GAP", "completeness", f"no '{missing}' geometry — {why}")
+            if needle in joined:
+                note("ok", "completeness", f"{label} present as a GLB part")
+            else:
+                note("GAP", "completeness", f"no '{label}' geometry — {why}")
+        if "hair" not in have and "hair" not in joined:
+            note("GAP", "completeness",
+                 "no 'hair' geometry — FLAME is a scalp-only model; head reads bald")
     except Exception as exc:
         note("warn", "completeness", f"mask check skipped: {exc}")
 

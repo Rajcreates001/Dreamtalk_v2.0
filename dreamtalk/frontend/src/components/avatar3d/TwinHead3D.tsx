@@ -59,13 +59,22 @@ function HeadModel({ url, audioRef, keyframesRef, emotionRef, reduced, onFit }: 
           o.geometry.computeBoundingBox()
           o.geometry.computeBoundingSphere()
         }
+        const isMouthPart = /teeth|tongue/i.test(o.name || "")
         const mats = Array.isArray(o.material) ? o.material : [o.material]
         mats.forEach((m: any) => {
           if (!m) return
           if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
           if ("metalness" in m) m.metalness = 0
-          if ("roughness" in m) m.roughness = Math.min(0.9, Math.max(0.55, m.roughness ?? 0.75))
-          m.side = THREE.DoubleSide
+          if ("roughness" in m) {
+            // Enamel is glossier than skin; the tongue is wetter still.
+            m.roughness = isMouthPart
+              ? Math.min(0.6, m.roughness ?? 0.45)
+              : Math.min(0.9, Math.max(0.55, m.roughness ?? 0.75))
+          }
+          // The mouth interior is a closed shell — keep backface culling so we
+          // don't see through it; only the head needs DoubleSide for its
+          // inconsistent winding.
+          m.side = isMouthPart ? THREE.FrontSide : THREE.DoubleSide
           m.flatShading = false
           m.needsUpdate = true
         })
