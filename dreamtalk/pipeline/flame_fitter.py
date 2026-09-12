@@ -26,6 +26,12 @@ _DEFAULT_MODEL_PATH = os.path.join(_PROJECT_ROOT, "weights", "flame", "FLAME2020
 # Maximum |identity coefficient| in FLAME shape-PCA standard deviations.
 # Real faces live within ~3; beyond that the mesh stops being a head.
 IDENTITY_SIGMA_LIMIT = float(os.environ.get("FLAME_IDENTITY_SIGMA_LIMIT", "3.0"))
+
+# UV atlas resolution. The shipped FLAME mean texture is 512², but the colour
+# that matters is sampled from the user's photo (typically 1500-2000px), so 512
+# threw away most of that detail and the skin read soft. 1024 matches a normal
+# portrait's usable face resolution without oversampling.
+TEXTURE_ATLAS_SIZE = int(os.environ.get("FLAME_TEXTURE_SIZE", "1024"))
 _STATIC_DIR = os.path.join(_PROJECT_ROOT, "avatar", "static")
 
 # ── FLAME Model Loader ────────────────────────────────────────────────
@@ -800,7 +806,10 @@ def generate_uv_texture(
     faces: np.ndarray,
     ft: np.ndarray,
     vt: np.ndarray,
-    output_size: int = 512,
+    output_size: int = TEXTURE_ATLAS_SIZE,
+    *,
+    photo_img: Optional[np.ndarray] = None,
+    vertex_px: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Generate a UV texture atlas from per-vertex colors.
 
@@ -884,13 +893,35 @@ def generate_uv_texture(
         if not np.any(inside):
             continue
 
-        # Sample colors via barycentric interpolation
-        for c in range(3):
-            tex_slice = texture[min_y:max_y + 1, min_x:max_x + 1, c]
-            color_vals = (
-                a * tri_colors[0, c] + b * tri_colors[1, c] + g * tri_colors[2, c]
-            )
-            tex_slice[inside] += color_vals[inside]
+        if vertex_px is not None:
+            # Per-texel photo sampling ("texture baking"). Interpolating
+            # per-vertex colours caps detail at one sample per vertex (5023 for
+            # FLAME), so a larger atlas only smooths — it cannot add skin
+            # detail. Sampling the photo once per texel does.
+            #
+            # We interpolate the already-projected 2D positions rather than
+            # interpolating 3D and re-projecting: the latter needs a
+            # projectPoints call per triangle (~10k calls, ~6 min) for a
+            # perspective correction that is negligible across a single
+            # face-sized triangle.
+            tri_px = vertex_px[v_idx]                          # (3,2)
+            uvpos = (a[..., None] * tri_px[0]
+                     + b[..., None] * tri_px[1]
+                     + g[..., None] * tri_px[2])               # (H,W,2)
+            sel = uvpos[inside]
+            if sel.size:
+                cols = sample_colors_from_photo(photo_img, sel)  # (M,3) RGB
+                for c in range(3):
+                    tex_slice = texture[min_y:max_y + 1, min_x:max_x + 1, c]
+                    tex_slice[inside] += cols[:, c]
+        else:
+            # Sample colors via barycentric interpolation of vertex colours
+            for c in range(3):
+                tex_slice = texture[min_y:max_y + 1, min_x:max_x + 1, c]
+                color_vals = (
+                    a * tri_colors[0, c] + b * tri_colors[1, c] + g * tri_colors[2, c]
+                )
+                tex_slice[inside] += color_vals[inside]
 
         w_slice = weight[min_y:max_y + 1, min_x:max_x + 1]
         w_slice[inside] += 1.0
@@ -906,10 +937,20 @@ def generate_uv_texture(
         logger.info("Texture atlas coverage: %.1f%% (%.1f%% filled from mean texture)",
                     100.0 * mask.mean(), 100.0 * (1.0 - mask.mean()))
 
-    # Blend uncovered pixels with mean FLAME texture
+    # Blend uncovered pixels with mean FLAME texture. The shipped mean atlas is
+    # 512², so it must be resized whenever the output atlas is larger than that
+    # — otherwise this assignment raises on a shape mismatch.
     mean_tex = mean_texture.astype(np.float32)
+    if mean_tex.shape[:2] != texture.shape[:2]:
+        try:
+            import cv2
+            mean_tex = cv2.resize(mean_tex, (texture.shape[1], texture.shape[0]),
+                                  interpolation=cv2.INTER_LINEAR)
+        except Exception as exc:
+            logger.warning("Could not resize mean texture (%s); skipping gap fill", exc)
+            mean_tex = None
     uncovered = ~mask
-    if np.any(uncovered):
+    if mean_tex is not None and np.any(uncovered):
         texture[uncovered] = mean_tex[uncovered]
 
     # Light edge smoothing with a gentle blur
@@ -1066,7 +1107,7 @@ class FlameFitter:
         landmarks_2d: np.ndarray,
         image_width: int,
         image_height: int,
-        output_size: int = 512,
+        output_size: int = TEXTURE_ATLAS_SIZE,
     ) -> np.ndarray:
         """Generate a UV texture atlas by projecting the photo onto FLAME UV space.
 
@@ -1127,11 +1168,15 @@ class FlameFitter:
         # Sample photo colors
         vertex_colors = sample_colors_from_photo(photo_bgr, pixels_2d)
 
-        # Render UV texture atlas
+        # Render UV texture atlas. Passing the projection lets the rasteriser
+        # sample the photo per texel rather than interpolating 5023 per-vertex
+        # colours, which is what actually puts skin detail in the atlas.
         texture = generate_uv_texture(
             vertex_uv, vertex_colors, tex["mean"],
             self.flame.faces, tex["ft"], tex["vt"],
             output_size=output_size,
+            photo_img=photo_bgr,
+            vertex_px=pixels_2d,
         )
         return texture
 
@@ -1141,7 +1186,7 @@ class FlameFitter:
         vertex_uv: np.ndarray,
         landmarks_2d: np.ndarray,
         mean_texture: np.ndarray,
-        output_size: int = 512,
+        output_size: int = TEXTURE_ATLAS_SIZE,
     ) -> np.ndarray:
         """Fallback: use RBF interpolation to map UV → photo pixels.
 
@@ -1279,7 +1324,7 @@ class FlameFitter:
                 texture_img = self._generate_texture_from_photo(
                     photo_path, vertices, landmarks_2d,
                     image_width or 640, img_h,
-                    output_size=512,
+                    output_size=TEXTURE_ATLAS_SIZE,
                 )
                 if texture_img is not None:
                     result["texture_generated"] = True
@@ -1351,7 +1396,7 @@ class FlameFitter:
                     img_h = photo_bgr.shape[0] if photo_bgr is not None else 480
                     texture_img = self._generate_texture_from_photo(
                         photo_path, self.flame.generate_mesh(), landmarks_2d,
-                        img_w or 640, img_h, output_size=512,
+                        img_w or 640, img_h, output_size=TEXTURE_ATLAS_SIZE,
                     )
             except Exception as e:
                 logger.warning("Texture gen in mean mesh skipped: %s", e)
