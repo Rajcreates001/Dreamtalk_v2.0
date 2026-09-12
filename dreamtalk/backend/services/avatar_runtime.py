@@ -510,18 +510,36 @@ class AvatarRuntimeService:
         self.store.save(profile, activate=True)
 
         if validate_clone:
+            # Validate in a language the clone engine actually covers. IndicF5
+            # handles 11 Indic languages but not English, so validating in the
+            # sample's own language marked every English-sample profile
+            # "degraded" even though cloning works perfectly in the covered
+            # languages. The profile is ready; the coverage gap is a warning.
+            health = await self.speech.discover()
+            supported = set((health.get("supported_languages") or {}).keys())
+            if sample_language in supported or not supported:
+                validation_language = sample_language
+            else:
+                validation_language = "hi" if "hi" in supported else sorted(supported)[0]
             try:
                 preview = await self.speech.synthesize_clone(
-                    text=PREVIEW_TEXT.get(sample_language, PREVIEW_TEXT["en"]),
+                    text=PREVIEW_TEXT.get(validation_language, PREVIEW_TEXT["en"]),
                     reference_audio=str(voice_path),
                     reference_text=reference_text.strip(),
-                    language=sample_language,
+                    language=validation_language,
                     emotion="happy",
                     reference_language=sample_language,
                 )
                 profile["voice"]["ready"] = True
+                profile["voice"]["validated_language"] = validation_language
                 profile["voice"]["preview_audio_url"] = preview.audio_url
                 profile["voice"]["validation"] = preview.to_dict()
+                if validation_language != sample_language:
+                    profile["voice"]["clone_quality_warnings"].append(
+                        f"Voice cloned and verified in '{validation_language}'. The sample "
+                        f"language '{sample_language}' is outside the clone engine's coverage, "
+                        f"so replies in it use a clearly-labelled stand-in voice."
+                    )
             except Exception as exc:
                 profile["voice"]["validation_error"] = str(exc)
                 logger.warning("Clone validation failed for profile %s: %s", profile_id, exc)
