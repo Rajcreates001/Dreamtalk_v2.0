@@ -37,13 +37,13 @@ spade_generator:
 stitching_retargeting_module:
   stitching:
     input_size: 126
-    hidden_sizes: [256, 128, 64, 64]
+    hidden_sizes: [128, 128, 64]
     output_size: 65
   eye:
-    input_size: 64
-    hidden_sizes: [512, 256, 128, 64]
+    input_size: 66
+    hidden_sizes: [256, 256, 128, 128, 64]
     output_size: 63
   lip:
-    input_size: 64
-    hidden_sizes: [512, 256, 128, 64]
+    input_size: 65
+    hidden_sizes: [128, 128, 64]
     output_size: 63

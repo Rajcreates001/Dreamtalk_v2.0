@@ -7,13 +7,21 @@ import numpy as np
 import soundfile as sf
 
 from dreamtalk.backend.services.avatar_runtime import AvatarProfileStore, AvatarRuntimeService
+from dreamtalk.backend.services.image_identity import FaceIdentityService, FaceRestorationService
 from dreamtalk.backend.services.multimodal_language import (
+    SUPPORTED_LANGUAGES,
     analyze_vocal_emotion,
     detect_text_language,
 )
+from dreamtalk.pipeline.face_pipeline import FacePipeline
+from dreamtalk.face.core.animation.liveportrait.utils.crop import crop_image
 
 
 class LanguageDetectionTests(unittest.TestCase):
+    def test_supports_all_scheduled_indian_languages_plus_english(self):
+        self.assertEqual(len(SUPPORTED_LANGUAGES), 23)
+        self.assertTrue({"brx", "doi", "ks", "kok", "mai", "mni", "ne", "sa", "sat", "sd", "ur"}.issubset(SUPPORTED_LANGUAGES))
+
     def test_detects_distinct_indian_scripts(self):
         cases = {
             "வணக்கம் எப்படி இருக்கிறீர்கள்": "ta",
@@ -39,6 +47,11 @@ class LanguageDetectionTests(unittest.TestCase):
         self.assertEqual(result.language, "ta")
         self.assertGreater(result.confidence, 0.6)
 
+    def test_detects_unique_scheduled_language_scripts(self):
+        self.assertEqual(detect_text_language("ᱡᱚᱦᱟᱨ ᱟᱢ ᱪᱮᱫ ᱞᱮᱠᱟ").language, "sat")
+        self.assertEqual(detect_text_language("ꯈꯨꯔꯨꯝꯖꯔꯤ").language, "mni")
+        self.assertEqual(detect_text_language("آپ کیسے ہیں").language, "ur")
+
 
 class ProfileStoreTests(unittest.TestCase):
     def test_profile_round_trip_and_activation(self):
@@ -52,8 +65,77 @@ class ProfileStoreTests(unittest.TestCase):
             store.activate("one")
             self.assertEqual(store.get()["id"], "one")
 
+    def test_delete_changes_active_profile(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            store = AvatarProfileStore(str(root / "media"), str(root / "profiles.json"))
+            store.save({"id": "one", "created_at": "1"})
+            store.save({"id": "two", "created_at": "2"})
+            store.delete("two")
+            self.assertEqual(store.get()["id"], "one")
+
+
+class FaceSafetyTests(unittest.TestCase):
+    def test_mediapipe_rotation_matrix_produces_bounded_head_pose(self):
+        angle = np.radians(8.0)
+        matrix = np.array([
+            [np.cos(angle), -np.sin(angle), 0.0, 0.0],
+            [np.sin(angle), np.cos(angle), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+        pose = FacePipeline._rotation_matrix_to_pose(matrix)
+        self.assertAlmostEqual(pose["roll"], 8.0, places=1)
+        self.assertAlmostEqual(pose["yaw"], 0.0, places=1)
+
+    def test_liveportrait_crop_returns_inverse_affine_transform(self):
+        image = np.zeros((300, 400, 3), dtype=np.uint8)
+        landmarks = np.array([
+            [160, 120], [240, 120], [200, 155], [175, 190], [225, 190],
+        ], dtype=np.float32)
+        result = crop_image(image, landmarks, dsize=256)
+        recovered = result["pt_crop"] @ result["M_c2o"][:2, :2].T + result["M_c2o"][:2, 2]
+        np.testing.assert_allclose(recovered, landmarks, atol=1e-3)
+        self.assertEqual(result["img_crop"].shape, (256, 256, 3))
+
+    def test_identity_comparison_uses_normalized_cosine_similarity(self):
+        service = FaceIdentityService()
+        service.model_name = "test-model"
+        result = service.compare_embeddings(
+            np.asarray([3.0, 0.0], dtype=np.float32),
+            np.asarray([4.0, 0.0], dtype=np.float32),
+        )
+        self.assertTrue(result["verified"])
+        self.assertAlmostEqual(result["similarity"], 1.0)
+
+    def test_quality_gate_flags_small_blurry_image(self):
+        import cv2
+
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "flat.png"
+            cv2.imwrite(str(path), np.full((128, 128, 3), 20, dtype=np.uint8))
+            result = FaceRestorationService.needs_restoration(str(path))
+            self.assertTrue(result["required"])
+            self.assertIn("low_resolution", result["reasons"])
+            self.assertIn("blur", result["reasons"])
+            self.assertIn("low_light", result["reasons"])
+
 
 class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
+    async def test_signed_runtime_asset_rejects_tampering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            media = root / "media"
+            asset = media / "profile" / "asset.txt"
+            asset.parent.mkdir(parents=True)
+            asset.write_text("safe", encoding="utf-8")
+            store = AvatarProfileStore(str(media), str(root / "profiles.json"))
+            runtime = AvatarRuntimeService(store=store)
+            url = runtime._runtime_url(str(asset))
+            self.assertIn("signature=", url)
+            with self.assertRaises(PermissionError):
+                runtime.resolve_signed_asset("../asset.txt", 4102444800, "0" * 64)
+
     async def test_multilingual_lexicon_overrides_neutral_emotion(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

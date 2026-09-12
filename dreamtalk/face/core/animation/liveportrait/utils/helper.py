@@ -83,8 +83,18 @@ def load_model(cp, model_config, device, model_type):
             sub_net = StitchingRetargetingNetwork(**sub_cfg)
             ret[key] = sub_net.to(device)
         state_dict = torch.load(cp, map_location=lambda storage, loc: storage, weights_only=False)
+        checkpoint_keys = {
+            'stitching': 'retarget_shoulder',
+            'lip': 'retarget_mouth',
+            'eye': 'retarget_eye',
+        }
         for key in ret.keys():
-            ret[key].load_state_dict(state_dict[key])
+            weights = state_dict[checkpoint_keys[key]]
+            weights = {
+                name.removeprefix('module.'): value
+                for name, value in weights.items()
+            }
+            ret[key].load_state_dict(weights)
             ret[key].eval()
         return ret
     else:

@@ -12,11 +12,13 @@ original source image.
 
 import logging
 import os
+import json
 import subprocess
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
+from datetime import datetime, timezone
 
 import cv2
 import numpy as np
@@ -33,6 +35,7 @@ LIVEPORTRAIT_VENV_FALLBACK = os.environ.get(
     "D:/venvs/indicf5/Scripts/python.exe",
 )
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LIVEPORTRAIT_VALIDATION = PROJECT_ROOT / "media" / "avatar_runtime" / "validation" / "liveportrait.json"
 
 # ── Lazy LivePortrait imports (heavy torch deps) ──────────────────────
 _live_portrait_api = None
@@ -268,6 +271,20 @@ class LivePortraitAnimationPipeline:
         self._api = None
         self._pipeline = None
 
+    @staticmethod
+    def _record_validation(result: Dict[str, Any]) -> None:
+        LIVEPORTRAIT_VALIDATION.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "validated_at": datetime.now(timezone.utc).isoformat(),
+            "method": result.get("method"),
+            "frame_count": result.get("frame_count"),
+            "fps": result.get("fps"),
+            "duration_seconds": result.get("duration_seconds"),
+        }
+        temporary = LIVEPORTRAIT_VALIDATION.with_suffix(".tmp")
+        temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        os.replace(temporary, LIVEPORTRAIT_VALIDATION)
+
     @property
     def is_available(self) -> bool:
         if _can_import_direct():
@@ -371,7 +388,7 @@ class LivePortraitAnimationPipeline:
                 import shutil
                 shutil.copy2(wfp, final_path)
 
-            return {
+            result = {
                 "video_path": final_path if os.path.exists(final_path) else wfp,
                 "concat_video_path": wfp_concat,
                 "frame_count": frame_count,
@@ -381,6 +398,9 @@ class LivePortraitAnimationPipeline:
                 "output_dir": output_dir,
                 "method": "direct",
             }
+            if result["video_path"] and os.path.exists(result["video_path"]):
+                self._record_validation(result)
+            return result
 
         except Exception as e:
             logger.error(f"LivePortrait drive_from_video (direct) failed: {e}. Trying venv...")
@@ -614,6 +634,7 @@ class LivePortraitAnimationPipeline:
             "spade_generator.pth",
             "warping_module.pth",
             "landmark.onnx",
+            "stitching_retargeting_module.pth",
         ]
 
         status = {}

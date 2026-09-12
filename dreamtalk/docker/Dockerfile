@@ -101,7 +101,9 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 # ── Layer 4: Face pipeline ──────────────────────────────────────────
 COPY requirements-face.txt /tmp/requirements-face.txt
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install --ignore-installed blinker -r /tmp/requirements-face.txt
+    pip install --no-build-isolation --no-deps "basicsr==1.4.2" && \
+    pip install --force-reinstall --no-deps blinker && \
+    pip install -r /tmp/requirements-face.txt
 
 # ── Layer 5: Voice pipeline ─────────────────────────────────────────
 COPY requirements-voice.txt /tmp/requirements-voice.txt

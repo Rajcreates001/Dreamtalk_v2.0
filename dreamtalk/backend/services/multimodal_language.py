@@ -22,16 +22,27 @@ logger = logging.getLogger("dreamtalk.avatar.language")
 SUPPORTED_LANGUAGES = {
     "as": "Assamese",
     "bn": "Bengali",
+    "brx": "Bodo",
+    "doi": "Dogri",
     "en": "English",
     "gu": "Gujarati",
     "hi": "Hindi",
     "kn": "Kannada",
+    "kok": "Konkani",
+    "ks": "Kashmiri",
+    "mai": "Maithili",
     "ml": "Malayalam",
+    "mni": "Manipuri",
     "mr": "Marathi",
+    "ne": "Nepali",
     "or": "Odia",
     "pa": "Punjabi",
+    "sa": "Sanskrit",
+    "sat": "Santali",
+    "sd": "Sindhi",
     "ta": "Tamil",
     "te": "Telugu",
+    "ur": "Urdu",
 }
 
 
@@ -45,6 +56,9 @@ SCRIPT_RANGES = {
     "telugu": (0x0C00, 0x0C7F),
     "kannada": (0x0C80, 0x0CFF),
     "malayalam": (0x0D00, 0x0D7F),
+    "meetei_mayek": (0xABC0, 0xABFF),
+    "ol_chiki": (0x1C50, 0x1C7F),
+    "arabic": (0x0600, 0x06FF),
     "latin": (0x0041, 0x007A),
 }
 
@@ -57,6 +71,8 @@ SCRIPT_TO_LANGUAGE = {
     "telugu": "te",
     "kannada": "kn",
     "malayalam": "ml",
+    "meetei_mayek": "mni",
+    "ol_chiki": "sat",
 }
 
 
@@ -70,6 +86,9 @@ ROMANIZED_MARKERS = {
     "mr": {"namaskar", "kase", "mi", "tumhi", "nahi", "aahe", "dhanyavad"},
     "gu": {"namaste", "kem", "chho", "hu", "tame", "nathi", "aabhar"},
     "pa": {"sat", "sri", "akal", "tusi", "mainu", "nahi", "dhannvaad"},
+    "ur": {"salaam", "aap", "kaise", "hain", "shukriya", "mujhe", "nahi"},
+    "ne": {"namaste", "tapai", "sanchai", "chha", "dhanyabad", "chaina"},
+    "kok": {"dev", "bare", "asa", "tumkam", "namaskar", "deu"},
 }
 
 
@@ -130,14 +149,19 @@ def _shared_script_language(script: str, text: str, preferred: Optional[str]) ->
             return "mr", min(0.98, 0.76 + mr_score * 0.06)
         if hi_score > mr_score:
             return "hi", min(0.98, 0.76 + hi_score * 0.06)
-        if preferred in {"hi", "mr"}:
+        if preferred in {"hi", "mr", "brx", "doi", "kok", "mai", "ne", "sa"}:
             return preferred, 0.68
         return "hi", 0.58
+
+    if script == "arabic":
+        if preferred in {"ur", "ks", "sd"}:
+            return preferred, 0.72
+        return "ur", 0.62
 
     # Assamese has two characters not normally used in Bengali.
     if any(ch in text for ch in ("ৰ", "ৱ")):
         return "as", 0.94
-    if preferred in {"as", "bn"}:
+    if preferred in {"as", "bn", "mni"}:
         return preferred, 0.68
     return "bn", 0.72
 

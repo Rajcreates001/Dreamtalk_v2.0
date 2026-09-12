@@ -22,7 +22,15 @@ logger = logging.getLogger("dreamtalk.avatar.speech")
 # IndicF5 is published for these 11 Indian languages. English remains in the
 # wider runtime because ASR, the LLM, and generic TTS support it, but it is not
 # a documented IndicF5 reference/synthesis language.
-INDICF5_LANGUAGES = frozenset(code for code in SUPPORTED_LANGUAGES if code != "en")
+INDICF5_LANGUAGES = frozenset({"as", "bn", "gu", "hi", "kn", "ml", "mr", "or", "pa", "ta", "te"})
+INDICMIO_LANGUAGES = frozenset(SUPPORTED_LANGUAGES)
+
+INDICMIO_EMOTION_TAGS = {
+    "happy": "happy", "excited": "happy", "loving": "happy",
+    "sad": "sad", "angry": "angry", "frustrated": "angry",
+    "disgusted": "disgust", "fearful": "fear", "surprised": "surprise",
+    "confused": "confused",
+}
 
 
 EDGE_VOICES = {
@@ -153,6 +161,7 @@ class ClonedSpeechService:
         self.output_dir = Path(output_dir) if output_dir else _default_output_dir()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._active_url: Optional[str] = None
+        self._active_engine: Optional[str] = None
         self._health: dict[str, Any] = {}
         self._health_checked_at = 0.0
         self._discovery_lock = asyncio.Lock()
@@ -176,6 +185,16 @@ class ClonedSpeechService:
                     candidates.append(normalized)
         return candidates
 
+    @staticmethod
+    def _indicmio_candidates() -> list[str]:
+        values = [
+            os.environ.get("INDICMIO_BASE_URL"),
+            "http://indic-mio:8001",
+            "http://host.docker.internal:8001",
+            "http://localhost:8001",
+        ]
+        return list(dict.fromkeys(value.rstrip("/") for value in values if value))
+
     async def discover(self, force: bool = False) -> dict[str, Any]:
         if not force and self._health and time.monotonic() - self._health_checked_at < 30:
             return self._health
@@ -183,6 +202,31 @@ class ClonedSpeechService:
             failures = []
             timeout = httpx.Timeout(5.0, connect=2.0)
             async with httpx.AsyncClient(timeout=timeout) as client:
+                for candidate in self._indicmio_candidates():
+                    try:
+                        response = await client.get(f"{candidate}/health")
+                        response.raise_for_status()
+                        payload = response.json()
+                        if payload.get("status") == "ok":
+                            self._active_url = candidate
+                            self._active_engine = "indic-mio"
+                            self._health = {
+                                "available": True,
+                                "engine": "indic-mio",
+                                "url": candidate,
+                                "model_loaded": True,
+                                "device": payload.get("device", "cuda"),
+                                "sample_rate": 44100,
+                                "zero_shot_clone": True,
+                                "emotion_tags": True,
+                                "code_mixed": True,
+                                "supported_languages": SUPPORTED_LANGUAGES,
+                            }
+                            self._health_checked_at = time.monotonic()
+                            return self._health
+                        failures.append(f"{candidate}: model not loaded")
+                    except Exception as exc:
+                        failures.append(f"{candidate}: {type(exc).__name__}")
                 for candidate in self._service_candidates():
                     try:
                         response = await client.get(f"{candidate}/health")
@@ -190,8 +234,10 @@ class ClonedSpeechService:
                         payload = response.json()
                         if payload.get("status") == "ok" and payload.get("model_loaded") is True:
                             self._active_url = candidate
+                            self._active_engine = "indicf5"
                             self._health = {
                                 "available": True,
+                                "engine": "indicf5",
                                 "url": candidate,
                                 "model_loaded": True,
                                 "device": payload.get("device", "unknown"),
@@ -209,6 +255,7 @@ class ClonedSpeechService:
                     except Exception as exc:
                         failures.append(f"{candidate}: {type(exc).__name__}")
             self._active_url = None
+            self._active_engine = None
             self._health = {
                 "available": False,
                 "model_loaded": False,
@@ -230,12 +277,10 @@ class ClonedSpeechService:
         reference_language: Optional[str] = None,
     ) -> SpeechResult:
         language = normalize_language(language)
-        if language not in INDICF5_LANGUAGES:
-            raise ValueError(f"IndicF5 does not support language '{language}'")
+        if language not in INDICMIO_LANGUAGES:
+            raise ValueError(f"No clone engine supports language '{language}'")
         if not text.strip():
             raise ValueError("Text to synthesize is empty")
-        if not reference_text.strip():
-            raise ValueError("Reference transcript is required for reliable voice cloning")
         reference_path = Path(reference_audio)
         if not reference_path.exists():
             raise FileNotFoundError(reference_path)
@@ -244,40 +289,56 @@ class ClonedSpeechService:
             normalize_language(reference_language) if reference_language else None
         )
         quality_warnings: list[str] = []
-        if normalized_reference_language and normalized_reference_language not in INDICF5_LANGUAGES:
-            quality_warnings.append(
-                "The reference sample language is outside IndicF5's documented 11 Indian languages; "
-                "speaker similarity or intelligibility may be reduced. Upload a clean reference in any "
-                "supported Indian language for production cloning."
-            )
-
         health = await self.discover()
         if not health.get("available") or not self._active_url:
-            raise RuntimeError("IndicF5 voice-cloning service is unavailable or its model is not loaded")
+            raise RuntimeError("No voice-cloning service is available or its model is not loaded")
 
-        output_path = self.output_dir / f"clone_{language}_{uuid.uuid4().hex}.wav"
+        if self._active_engine == "indicf5":
+            if language not in INDICF5_LANGUAGES:
+                raise ValueError(
+                    f"IndicF5 cannot synthesize '{language}'; Indic-Mio is required for all 22 languages"
+                )
+            if not reference_text.strip():
+                raise ValueError("Reference transcript is required for reliable IndicF5 voice cloning")
+            if normalized_reference_language and normalized_reference_language not in INDICF5_LANGUAGES:
+                quality_warnings.append(
+                    "The reference language is outside IndicF5's documented 11-language set"
+                )
+
+        output_path = self.output_dir / f"clone_{self._active_engine}_{language}_{uuid.uuid4().hex}.wav"
         default_timeout = "900" if health.get("device") == "cpu" else "300"
         timeout_seconds = float(os.environ.get("INDICF5_TIMEOUT", default_timeout))
         timeout = httpx.Timeout(timeout_seconds, connect=10.0)
         async with self._synthesis_lock:
             with reference_path.open("rb") as ref_file:
-                files = {"ref_audio": (reference_path.name, ref_file, "audio/wav")}
-                data = {"gen_text": text, "ref_text": reference_text, "lang": language}
+                if self._active_engine == "indic-mio":
+                    files = {"reference_audio": (reference_path.name, ref_file, "audio/wav")}
+                    tag = INDICMIO_EMOTION_TAGS.get(emotion)
+                    tagged_text = f"{text.rstrip()} <{tag}>" if tag else text
+                    data = {"text": tagged_text, "output_format": "wav"}
+                    endpoint = "/v1/tts/file"
+                else:
+                    files = {"ref_audio": (reference_path.name, ref_file, "audio/wav")}
+                    data = {"gen_text": text, "ref_text": reference_text, "lang": language}
+                    endpoint = "/synthesize"
                 async with httpx.AsyncClient(timeout=timeout) as client:
-                    response = await client.post(f"{self._active_url}/synthesize", files=files, data=data)
+                    response = await client.post(f"{self._active_url}{endpoint}", files=files, data=data)
                     if response.status_code >= 400:
                         detail = response.text[:500]
-                        raise RuntimeError(f"IndicF5 synthesis failed ({response.status_code}): {detail}")
+                        raise RuntimeError(
+                            f"{self._active_engine} synthesis failed ({response.status_code}): {detail}"
+                        )
                     if len(response.content) < 256:
-                        raise RuntimeError("IndicF5 returned an invalid audio payload")
+                        raise RuntimeError(f"{self._active_engine} returned an invalid audio payload")
                     output_path.write_bytes(response.content)
 
-        await asyncio.to_thread(self._apply_emotional_prosody, output_path, emotion)
+        if self._active_engine != "indic-mio":
+            await asyncio.to_thread(self._apply_emotional_prosody, output_path, emotion)
         duration, sample_rate = _audio_metadata(output_path)
         return SpeechResult(
             path=str(output_path),
             audio_url=f"/outputs/{output_path.name}",
-            engine="indicf5",
+            engine=self._active_engine or "unknown",
             cloned=True,
             language=language,
             duration=duration,

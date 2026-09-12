@@ -4,7 +4,11 @@
 
 # Note: frontend/ is NOT excluded because the frontend Dockerfile needs it
 .next/
+**/.next/
 node_modules/
+**/node_modules/
+frontend/playwright-report/
+frontend/test-results/
 
 # Git
 .git
@@ -131,5 +135,4 @@ voice_module/*.ogg
 # BrainCog/SpikingJelly large data
 brain/benchmarks/
 brain/paper_results/
-
 

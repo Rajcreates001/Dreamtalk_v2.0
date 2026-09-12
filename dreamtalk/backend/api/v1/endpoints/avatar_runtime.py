@@ -9,11 +9,14 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, WebSocket
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, WebSocket
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from dreamtalk.backend.api.v1.endpoints.auth import get_current_user
+from dreamtalk.backend.api.v1.endpoints.auth import JWT_ALGORITHM, JWT_SECRET
 from dreamtalk.backend.services.avatar_runtime import get_avatar_runtime
-from dreamtalk.backend.services.cloned_speech import INDICF5_LANGUAGES
+from dreamtalk.backend.services.cloned_speech import INDICF5_LANGUAGES, INDICMIO_LANGUAGES
 from dreamtalk.backend.services.multimodal_language import (
     SUPPORTED_LANGUAGES,
     detect_text_language,
@@ -65,6 +68,8 @@ def _raise_api_error(exc: Exception) -> None:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if isinstance(exc, RuntimeError):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if isinstance(exc, PermissionError):
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     logger.exception("Avatar runtime request failed")
     raise HTTPException(status_code=500, detail="Avatar runtime request failed") from exc
 
@@ -111,14 +116,18 @@ async def supported_languages():
     return {
         "languages": SUPPORTED_LANGUAGES,
         "automatic_detection": True,
-        "voice_clone_engine": "indicf5",
+        "voice_clone_engine": "indic-mio",
         "voice_clone_languages": {
+            code: SUPPORTED_LANGUAGES[code] for code in sorted(INDICMIO_LANGUAGES)
+        },
+        "indicf5_fallback_languages": {
             code: SUPPORTED_LANGUAGES[code] for code in sorted(INDICF5_LANGUAGES)
         },
         "english": {
             "asr": True,
             "conversation": True,
             "generic_tts": True,
+            "indic_mio_clone": True,
             "indicf5_clone": False,
         },
     }
@@ -132,12 +141,15 @@ async def detect_language(request: LanguageRequest):
 @router.post("/profiles")
 async def create_profile(
     name: str = Form("DreamTalk Avatar"),
-    user_id: str = Form("default"),
     reference_text: str = Form(""),
     language: str = Form("auto"),
     validate_clone: bool = Form(True),
+    consent_confirmed: bool = Form(...),
+    consent_subject_name: str = Form(""),
+    consent_version: str = Form("1.0"),
     voice_sample: UploadFile = File(...),
     face_images: list[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user),
 ):
     """Create and validate a human avatar from face image(s) and voice audio."""
     try:
@@ -150,35 +162,68 @@ async def create_profile(
             ]
             return await get_avatar_runtime().create_profile(
                 name=name,
-                user_id=user_id,
+                user_id=current_user["sub"],
                 voice_sample_path=voice_path,
                 face_image_paths=image_paths,
                 reference_text=reference_text,
                 language=language,
                 validate_clone=validate_clone,
+                consent={
+                    "confirmed": consent_confirmed,
+                    "subject_name": consent_subject_name or name,
+                    "scopes": ["face", "voice", "animation"],
+                    "version": consent_version,
+                },
             )
     except Exception as exc:
         _raise_api_error(exc)
 
 
 @router.get("/profiles")
-async def list_profiles():
+async def list_profiles(current_user: dict = Depends(get_current_user)):
     runtime = get_avatar_runtime()
-    return {"profiles": [runtime.public_profile(item) for item in runtime.store.list()]}
+    return {
+        "profiles": [
+            runtime.public_profile(item)
+            for item in runtime.store.list()
+            if str(item.get("user_id")) == str(current_user["sub"])
+        ]
+    }
 
 
-@router.get("/profiles/{profile_id}")
-async def get_profile(profile_id: str):
+def _owned_profile(profile_id: str, current_user: dict) -> tuple[Any, dict[str, Any]]:
     runtime = get_avatar_runtime()
     profile = runtime.store.get(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Avatar profile not found")
+    if str(profile.get("user_id")) != str(current_user["sub"]):
+        raise HTTPException(status_code=403, detail="Avatar profile belongs to another user")
+    return runtime, profile
+
+
+def _latest_user_profile(current_user: dict) -> tuple[Any, dict[str, Any]]:
+    runtime = get_avatar_runtime()
+    profile = next(
+        (
+            item for item in runtime.store.list()
+            if str(item.get("user_id")) == str(current_user["sub"])
+        ),
+        None,
+    )
+    if not profile:
+        raise HTTPException(status_code=404, detail="No avatar profile exists for this user")
+    return runtime, profile
+
+
+@router.get("/profiles/{profile_id}")
+async def get_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    runtime, profile = _owned_profile(profile_id, current_user)
     return runtime.public_profile(profile)
 
 
 @router.post("/profiles/{profile_id}/activate")
-async def activate_profile(profile_id: str):
-    runtime = get_avatar_runtime()
+async def activate_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    runtime, _ = _owned_profile(profile_id, current_user)
     try:
         return runtime.public_profile(runtime.store.activate(profile_id))
     except Exception as exc:
@@ -186,11 +231,8 @@ async def activate_profile(profile_id: str):
 
 
 @router.get("/profiles/{profile_id}/manifest")
-async def avatar_manifest(profile_id: str):
-    runtime = get_avatar_runtime()
-    profile = runtime.store.get(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Avatar profile not found")
+async def avatar_manifest(profile_id: str, current_user: dict = Depends(get_current_user)):
+    runtime, profile = _owned_profile(profile_id, current_user)
     public = runtime.public_profile(profile)
     return {
         "profile": public,
@@ -201,6 +243,30 @@ async def avatar_manifest(profile_id: str):
             "audio_chat": f"/api/v1/avatar/profiles/{profile_id}/respond/audio",
         },
     }
+
+
+@router.delete("/profiles/{profile_id}")
+async def delete_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        return get_avatar_runtime().delete_profile(profile_id, current_user["sub"])
+    except Exception as exc:
+        _raise_api_error(exc)
+
+
+@router.get("/assets/{relative_path:path}", include_in_schema=False)
+async def signed_avatar_asset(
+    relative_path: str,
+    expires: int = Query(...),
+    signature: str = Query(..., min_length=64, max_length=64),
+):
+    """Serve biometric media only through short-lived HMAC-signed URLs."""
+    try:
+        path = get_avatar_runtime().resolve_signed_asset(relative_path, expires, signature)
+        return FileResponse(path, headers={"Cache-Control": "private, max-age=300"})
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Avatar asset not found") from exc
 
 
 async def _run_chat(request: AvatarChatRequest, forced_profile_id: Optional[str] = None) -> dict[str, Any]:
@@ -222,13 +288,24 @@ async def _run_chat(request: AvatarChatRequest, forced_profile_id: Optional[str]
 
 
 @router.post("/chat")
-async def avatar_chat(request: AvatarChatRequest):
+async def avatar_chat(request: AvatarChatRequest, current_user: dict = Depends(get_current_user)):
     """Compatibility chat endpoint using the active profile by default."""
-    return await _run_chat(request)
+    if request.profile_id:
+        _owned_profile(request.profile_id, current_user)
+        profile_id = request.profile_id
+    else:
+        _, profile = _latest_user_profile(current_user)
+        profile_id = profile["id"]
+    return await _run_chat(request, forced_profile_id=profile_id)
 
 
 @router.post("/profiles/{profile_id}/respond")
-async def respond(profile_id: str, request: AvatarChatRequest):
+async def respond(
+    profile_id: str,
+    request: AvatarChatRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    _owned_profile(profile_id, current_user)
     return await _run_chat(request, forced_profile_id=profile_id)
 
 
@@ -241,8 +318,10 @@ async def respond_to_audio(
     synthesize: bool = Form(True),
     strict_clone: bool = Form(True),
     render_video: bool = Form(False),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        _owned_profile(profile_id, current_user)
         parsed_history = _parse_history(history)
         with tempfile.TemporaryDirectory(prefix="dreamtalk_audio_input_") as temp:
             audio_path = await _save_upload(audio, Path(temp), MAX_AUDIO_BYTES)
@@ -265,9 +344,11 @@ async def render_uploaded_audio_2d(
     audio: UploadFile = File(...),
     emotion: str = Form("neutral"),
     engine: str = Form("auto"),
+    current_user: dict = Depends(get_current_user),
 ):
     """Lip-sync an existing speech track to the profile's appearance."""
     try:
+        _owned_profile(profile_id, current_user)
         with tempfile.TemporaryDirectory(prefix="dreamtalk_2d_audio_") as temp:
             audio_path = await _save_upload(audio, Path(temp), MAX_AUDIO_BYTES)
             result = await get_avatar_runtime().render_2d(
@@ -284,12 +365,13 @@ async def render_uploaded_audio_2d(
 
 
 @router.post("/profiles/{profile_id}/speak-2d")
-async def speak_as_2d_avatar(profile_id: str, request: TwoDSpeakRequest):
+async def speak_as_2d_avatar(
+    profile_id: str,
+    request: TwoDSpeakRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """Generate cloned speech and return a synchronized 2D talking-head MP4."""
-    runtime = get_avatar_runtime()
-    profile = runtime.store.get(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Avatar profile not found")
+    runtime, profile = _owned_profile(profile_id, current_user)
     language = request.language
     if language == "auto":
         language = detect_text_language(request.text).language
@@ -325,9 +407,11 @@ async def speak_as_2d_avatar(profile_id: str, request: TwoDSpeakRequest):
 
 
 @router.post("/tts/generate")
-async def generate_tts(request: TTSRequest):
-    runtime = get_avatar_runtime()
-    profile = runtime.store.get(request.profile_id)
+async def generate_tts(request: TTSRequest, current_user: dict = Depends(get_current_user)):
+    if request.profile_id:
+        runtime, profile = _owned_profile(request.profile_id, current_user)
+    else:
+        runtime, profile = _latest_user_profile(current_user)
     language = request.language
     if language == "auto":
         language = detect_text_language(request.text).language
@@ -352,6 +436,7 @@ async def analyze_lipsync(
     audio: UploadFile = File(...),
     emotion: str = Form("neutral"),
     text: str = Form(""),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
         with tempfile.TemporaryDirectory(prefix="dreamtalk_lipsync_") as temp:
@@ -372,6 +457,19 @@ _runtime_ws_handler = None
 @router.websocket("/ws/realtime")
 async def realtime_avatar(websocket: WebSocket):
     global _runtime_ws_handler
+    token = websocket.query_params.get("access_token")
+    if not token:
+        await websocket.close(code=4401, reason="Authentication required")
+        return
+    try:
+        import jwt
+
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access" or not payload.get("sub"):
+            raise ValueError("invalid token")
+    except Exception:
+        await websocket.close(code=4401, reason="Invalid or expired token")
+        return
     if _runtime_ws_handler is None:
         from dreamtalk.backend.websocket.chat_handler import WebSocketChatHandler
         _runtime_ws_handler = WebSocketChatHandler()

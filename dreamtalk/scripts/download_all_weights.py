@@ -4,7 +4,7 @@ DreamTalk — Comprehensive Weight Downloader
 
 Downloads ALL required model weights for:
 - Voice: Kokoro, GPT-SoVITS, IndicF5, RVC
-- Face: LivePortrait, MuseTalk, FLAME, RetinaFace
+- Face: LivePortrait, MuseTalk, FLAME, RetinaFace, GFPGAN, Real-ESRGAN
 - Brain: SNN models
 - Embeddings: BGE-M3
 
@@ -121,9 +121,10 @@ WEIGHTS = [
     {
         "component": "face",
         "name": "LivePortrait Stitching Retargeting",
-        "url": "https://huggingface.co/KlingTeam/LivePortrait/resolve/main/liveportrait/base_models/stitching_retargeting_module.pth",
+        "url": "https://huggingface.co/KlingTeam/LivePortrait/resolve/main/liveportrait/retargeting_models/stitching_retargeting_module.pth",
         "dest": "weights/liveportrait/stitching_retargeting_module.pth",
-        "size": "~100 MB",
+        "size": "~2.3 MB",
+        "sha256": "3652d5a3f95099141a56986aaddec92fadf0a73c87a20fac9a2c07c32b28b611",
     },
 
     # ── Face: MuseTalk ───────────────────────────────────────────────
@@ -143,6 +144,40 @@ WEIGHTS = [
         "dest": "weights/face/detection/mobilenet0.25_Final.pth",
         "size": "~4 MB",
         "already_present": True,
+    },
+
+    # ── Face: restoration and identity-preserving enhancement ───────
+    {
+        "component": "face",
+        "name": "GFPGAN v1.4 Face Restoration",
+        "url": "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth",
+        "dest": "weights/face/restoration/GFPGANv1.4.pth",
+        "size": "~333 MB",
+        "sha256": "e2cd4703ab14f4d01fd1383a8a8b266f9a5833dacee8e6a79d3bf21a1b6be5ad",
+    },
+    {
+        "component": "face",
+        "name": "Real-ESRGAN x2plus Background Upscaler",
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
+        "dest": "weights/face/restoration/RealESRGAN_x2plus.pth",
+        "size": "~64 MB",
+        "sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
+    },
+    {
+        "component": "face",
+        "name": "facexlib ResNet50 Face Detector",
+        "url": "https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth",
+        "dest": "weights/face/restoration/detection_Resnet50_Final.pth",
+        "size": "~104 MB",
+        "sha256": "6d1de9c2944f2ccddca5f5e010ea5ae64a39845a86311af6fdf30841b0a5a16d",
+    },
+    {
+        "component": "face",
+        "name": "facexlib ParseNet Face Parser",
+        "url": "https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth",
+        "dest": "weights/face/restoration/parsing_parsenet.pth",
+        "size": "~81 MB",
+        "sha256": "3d558d8d0e42c20224f13cf5a29c79eba2d59913419f945545d8cf7b72920de2",
     },
 
     # ── Brain: SNN Models ────────────────────────────────────────────
@@ -185,16 +220,33 @@ def check_status() -> List[Dict]:
         else:
             status = "missing"
 
+        actual_sha256 = None
+        expected_sha256 = w.get("sha256")
+        if status == "present" and expected_sha256 and dest_path.is_file():
+            actual_sha256 = _sha256(dest_path)
+            if actual_sha256.lower() != expected_sha256.lower():
+                status = "corrupt"
+
         results.append({
             **w,
             "status": status,
             "local_path": str(dest_path),
             "exists": dest_path.exists(),
+            "actual_sha256": actual_sha256,
+            "checksum_verified": bool(expected_sha256 and actual_sha256 == expected_sha256.lower()),
         })
     return results
 
 
-def download_file(url: str, dest: Path, desc: str = ""):
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def download_file(url: str, dest: Path, desc: str = "", expected_sha256: str = ""):
     """Download a file with progress bar."""
     if not HAS_REQUESTS:
         print(f"  [SKIP] requests not installed. Manual download: {url}")
@@ -214,6 +266,9 @@ def download_file(url: str, dest: Path, desc: str = ""):
                     f.write(chunk)
                     pbar.update(len(chunk))
 
+        if expected_sha256 and _sha256(dest).lower() != expected_sha256.lower():
+            dest.unlink(missing_ok=True)
+            raise ValueError("downloaded file failed SHA-256 verification")
         print(f"  ✓ Saved: {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
         return True
 
@@ -228,7 +283,10 @@ def download_weights(component: Optional[str] = None, force: bool = False):
     """Download missing weights."""
     results = check_status()
 
-    to_download = [r for r in results if r["status"] == "missing" and r.get("url")]
+    to_download = [
+        r for r in results
+        if r["status"] in {"missing", "partial", "corrupt"} and r.get("url")
+    ]
     if component:
         to_download = [r for r in to_download if r["component"] == component]
 
@@ -253,7 +311,7 @@ def download_weights(component: Optional[str] = None, force: bool = False):
             print(f"         Manual download needed: {w.get('note', '')}")
             continue
 
-        if download_file(w["url"], dest, w["name"]):
+        if download_file(w["url"], dest, w["name"], w.get("sha256", "")):
             success += 1
         else:
             failed += 1
@@ -281,7 +339,7 @@ def print_status():
     for comp, items in by_component.items():
         print(f"  [{comp.upper()}]")
         for item in items:
-            status_icon = "✓" if item["status"] == "present" else "✗" if item["status"] == "missing" else "~"
+            status_icon = "✓" if item["status"] == "present" else "✗" if item["status"] in {"missing", "corrupt"} else "~"
             print(f"    {status_icon} {item['name']}: {item['size']} ({item['status']})")
         print()
 

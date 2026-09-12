@@ -99,6 +99,38 @@ class MuseTalkInference:
             logger.error(f"ffmpeg {desc} failed: {e.stderr}")
             raise
 
+    def _assemble_video(self, image_pattern: str, output_path: str, fps: int,
+                        hw_video_encode: bool) -> str:
+        """Encode generated frames, falling back when NVENC is not usable.
+
+        ``ffmpeg -encoders`` can list h264_nvenc even when the container cannot
+        load the driver's encode library.  A real encode attempt is therefore
+        the only reliable capability probe.
+        """
+        encoders = [("libx264", "medium", ["-crf", "18"])]
+        if hw_video_encode:
+            encoders.insert(0, ("h264_nvenc", "p4", ["-cq", "18", "-b:v", "0"]))
+
+        last_error = None
+        for codec, preset, quality_args in encoders:
+            cmd = [
+                "ffmpeg", "-y", "-v", "warning", "-r", str(fps),
+                "-f", "image2", "-i", image_pattern, "-vcodec", codec,
+                "-preset", preset, "-vf", "format=yuv420p", *quality_args,
+                output_path,
+            ]
+            try:
+                self._run_ffmpeg(cmd, f"video assembly ({codec})")
+                return codec
+            except subprocess.CalledProcessError as exc:
+                last_error = exc
+                if codec != "h264_nvenc":
+                    raise
+                logger.warning("NVENC is unavailable; retrying with libx264")
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+        raise last_error or RuntimeError("No usable H.264 encoder")
+
     @torch.no_grad()
     def inference(self, video_path, audio_path, bbox_shift=0, fps=25, batch_size=8,
                   extra_margin=10, parsing_mode="jaw", version="v15",
@@ -218,14 +250,11 @@ class MuseTalkInference:
 
         # Assemble video with optional HW encoding
         temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
-        codec = "h264_nvenc" if hw_video_encode else "libx264"
-        preset = "p4" if hw_video_encode else "medium"
-        self._run_ffmpeg(
-            ["ffmpeg", "-y", "-v", "warning", "-r", str(fps), "-f", "image2",
-             "-i", f"{result_img_save_path}/%08d.png",
-             "-vcodec", codec, "-preset", preset, "-vf", "format=yuv420p", "-crf", "18",
-             temp_vid_path],
-            "video assembly",
+        self._assemble_video(
+            f"{result_img_save_path}/%08d.png",
+            temp_vid_path,
+            fps,
+            hw_video_encode,
         )
 
         self._run_ffmpeg(

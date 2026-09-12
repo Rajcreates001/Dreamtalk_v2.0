@@ -391,7 +391,9 @@ _avatar_runtime_dir = Path(os.environ.get(
     Path(__file__).resolve().parent.parent / "media" / "avatar_runtime",
 ))
 os.makedirs(str(_avatar_runtime_dir), exist_ok=True)
-app.mount("/avatar-runtime", StaticFiles(directory=str(_avatar_runtime_dir)), name="avatar_runtime_assets")
+if os.environ.get("AVATAR_ALLOW_PUBLIC_ASSETS", "false").lower() == "true":
+    logger.warning("Public avatar-runtime media serving is enabled; disable it in production")
+    app.mount("/avatar-runtime", StaticFiles(directory=str(_avatar_runtime_dir)), name="avatar_runtime_assets")
 
 # ── Routers ────────────────────────────────────────────────────────────
 app.include_router(auth_router)

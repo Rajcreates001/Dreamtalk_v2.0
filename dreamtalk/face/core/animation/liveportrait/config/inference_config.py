@@ -31,7 +31,7 @@ class InferenceConfig(PrintableConfig):
     checkpoint_M: str = _resolve_weights("weights/liveportrait/motion_extractor.pth")
     checkpoint_G: str = _resolve_weights("weights/liveportrait/spade_generator.pth")
     checkpoint_W: str = _resolve_weights("weights/liveportrait/warping_module.pth")
-    checkpoint_S: str = _resolve_weights("weights/liveportrait/landmark.onnx")
+    checkpoint_S: str = _resolve_weights("weights/liveportrait/stitching_retargeting_module.pth")
 
     version_animals = "_v1.1"
     checkpoint_F_animal: str = make_abs_path(f'../../pretrained_weights/liveportrait_animals/base_models{version_animals}/appearance_feature_extractor.pth')

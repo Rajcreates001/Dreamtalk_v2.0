@@ -50,6 +50,7 @@ x-shared-env: &shared-env
   INDICF5_MICROSERVICE_URL: ${INDICF5_MICROSERVICE_URL:-http://indicf5:8002}
   INDICF5_TIMEOUT: ${INDICF5_TIMEOUT:-900}
   INDICF5_NFE_STEPS: ${INDICF5_NFE_STEPS:-8}
+  INDICMIO_BASE_URL: ${INDICMIO_BASE_URL:-http://indic-mio:8001}
   WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
   WHISPER_DEVICE: ${WHISPER_DEVICE:-auto}
   AVATAR_LLM_MAX_TOKENS: ${AVATAR_LLM_MAX_TOKENS:-120}
@@ -57,6 +58,11 @@ x-shared-env: &shared-env
   AVATAR_2D_MAX_SIDE: ${AVATAR_2D_MAX_SIDE:-768}
   MUSETALK_BATCH_SIZE: ${MUSETALK_BATCH_SIZE:-4}
   MUSETALK_ALLOW_CPU: ${MUSETALK_ALLOW_CPU:-false}
+  AVATAR_REQUIRE_GPU: ${AVATAR_REQUIRE_GPU:-true}
+  AVATAR_GPU_UNLOAD_AFTER_RENDER: ${AVATAR_GPU_UNLOAD_AFTER_RENDER:-true}
+  CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}
+  NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+  PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True,max_split_size_mb:128}
   AVATAR_RUNTIME_DIR: /app/dreamtalk/media/avatar_runtime
   BACKEND_PUBLIC_PORT: "5050"
   JWT_SECRET: ${JWT_SECRET:-dreamtalk-dev-jwt-secret-2026-change-in-production}
@@ -135,6 +141,7 @@ services:
     image: dreamtalk-backend:latest
     container_name: dreamtalk-backend
     restart: unless-stopped
+    gpus: all
     ports:
       - "5050:5000"
     environment:
@@ -144,6 +151,7 @@ services:
     volumes:
       - ../:/app/dreamtalk/
       - ../weights:/app/weights:ro
+      - dreamtalk-deepface:/root/.deepface
     depends_on:
       postgres:
         condition: service_healthy
@@ -241,6 +249,66 @@ services:
     networks:
       - dreamtalk
 
+  # ── Indic-Mio: all 22 scheduled Indian languages + English ────────
+  # The 0.6B speech-token model and MioCodec are isolated so the API can
+  # schedule GPU-heavy avatar rendering without importing them in-process.
+  indic-mio-llm:
+    image: vllm/vllm-openai:v0.29.0-cu129
+    container_name: dreamtalk-indic-mio-llm
+    restart: unless-stopped
+    gpus: all
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      HF_HOME: /models/huggingface
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+    volumes:
+      - dreamtalk-huggingface:/models/huggingface
+    command:
+      - --model
+      - SPRINGLab/Indic-Mio
+      - --max-model-len
+      - "1536"
+      - --gpu-memory-utilization
+      - ${INDICMIO_GPU_MEMORY_UTILIZATION:-0.35}
+      - --dtype
+      - bfloat16
+      - --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 300s
+      retries: 10
+    networks:
+      - dreamtalk
+
+  indic-mio:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.indicmio
+    image: dreamtalk-indic-mio:latest
+    container_name: dreamtalk-indic-mio
+    restart: unless-stopped
+    gpus: all
+    ports:
+      - "8001:8001"
+    environment:
+      MIOTTS_LLM_BASE_URL: http://indic-mio-llm:8000/v1
+      MIOTTS_LLM_MODEL: SPRINGLab/Indic-Mio
+      MIOTTS_CODEC_MODEL: Aratako/MioCodec-25Hz-44.1kHz-v2
+      MIOTTS_DEVICE: cuda
+      MIOTTS_BEST_OF_N_ENABLED: "false"
+      MIOTTS_MAX_TEXT_LENGTH: "600"
+      HF_HOME: /models/huggingface
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+    volumes:
+      - dreamtalk-huggingface:/models/huggingface
+    depends_on:
+      indic-mio-llm:
+        condition: service_healthy
+    networks:
+      - dreamtalk
+
 # ── Named Volumes ─────────────────────────────────────────────────────
 # Docker Desktop manages these. If Docker is configured to use D: drive,
 # all volume data automatically lives on D:.
@@ -252,6 +320,8 @@ volumes:
   dreamtalk-pipeline:
   dreamtalk-avatar-static:
   dreamtalk-weights:
+  dreamtalk-huggingface:
+  dreamtalk-deepface:
 
 # ── Network ───────────────────────────────────────────────────────────
 # Isolated network — DreamTalk containers only.
