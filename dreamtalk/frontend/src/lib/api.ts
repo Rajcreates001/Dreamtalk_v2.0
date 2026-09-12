@@ -337,8 +337,14 @@ export const avatarApi = {
   knowledge: () =>
     request<any[]>("/api/v1/avatar/knowledge", { auth: true }),
 
+  // The runtime returns `{ languages: { "hi": "Hindi", ... }, ... }` — a dict,
+  // not an array. Typing it as an array made callers do `.map()` on an object,
+  // which threw and blocked the create-twin flow. Normalise with
+  // `toLanguageList()` in features/create/useCreateTwin.
   languages: () =>
-    request<Array<{ code: string; name: string; native: string }>>("/api/v1/avatar/languages", { auth: true }),
+    request<{ languages: Record<string, string>; [k: string]: unknown }>(
+      "/api/v1/avatar/languages", { auth: true },
+    ),
 
   setLanguage: (code: string) =>
     request<any>("/api/v1/avatar/language", {

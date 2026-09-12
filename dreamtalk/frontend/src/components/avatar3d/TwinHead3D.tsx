@@ -220,7 +220,13 @@ export function TwinHead3D({
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 2.4], fov: 28, near: 0.01, far: 1000 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-        style={{ background: "transparent", touchAction: "none" }}
+        style={{
+          background: "transparent",
+          touchAction: "none",
+          // Fade to transparent, not to a colour — see GLBAvatar.
+          maskImage: "linear-gradient(to bottom, #000 78%, transparent 98%)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 78%, transparent 98%)",
+        }}
       >
         <ambientLight intensity={0.9} />
         <directionalLight position={[2, 3, 4]} intensity={1.15} color="#fff3e6" />
@@ -233,8 +239,6 @@ export function TwinHead3D({
         />
         <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-1/4"
-        style={{ background: "linear-gradient(to top, var(--background), transparent)" }} />
       {audioUrl && <audio ref={audioRef} src={audioUrl} onEnded={onEnded} hidden />}
     </div>
   )

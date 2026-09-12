@@ -58,7 +58,11 @@ function Model({ url, skinColor, reduced, onFit }: {
             if (m.emissive) m.emissive.setScalar(0)
             m.emissiveIntensity = 0
             m.emissiveMap = null
-            if ("alphaTest" in m && m.alphaTest > 0) m.alphaTest = 0.22
+            // The asset ships baseColorFactor.a = 0.747, which multiplies into
+            // the alpha test and eats the strands at the crown (the bald patch).
+            // In cutout mode partial opacity is meaningless, so take it to 1.
+            m.opacity = 1
+            if ("alphaTest" in m && m.alphaTest > 0) m.alphaTest = 0.18
             m.transparent = false
             m.depthWrite = true
             if ("roughness" in m) m.roughness = 0.55
@@ -192,7 +196,16 @@ export function GLBAvatar({
         dpr={[1, 1.25]}
         camera={{ position: [0, 0, 3], fov: 28, near: 0.01, far: 1000 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-        style={{ background: "transparent", touchAction: "none" }}
+        style={{
+          background: "transparent",
+          touchAction: "none",
+          // Fade the base of the avatar to TRANSPARENT rather than painting a
+          // background colour over it — the stage sits on panels of different
+          // shades (hero, login, signup) and a painted gradient showed up as a
+          // hard rectangle on all but one of them.
+          maskImage: "linear-gradient(to bottom, #000 78%, transparent 98%)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 78%, transparent 98%)",
+        }}
       >
         {/* Balanced portrait lighting — bright enough to read the face, low
             enough that the iris and skin textures don't blow out to white. */}
@@ -204,9 +217,6 @@ export function GLBAvatar({
           onFit={(center, radius) => setFit({ center, radius })} />
         <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />
       </Canvas>
-      {/* Blend the base of the avatar into the page background (no hard edge). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-1/4"
-        style={{ background: "linear-gradient(to top, var(--background), transparent)" }} />
     </div>
   )
 }

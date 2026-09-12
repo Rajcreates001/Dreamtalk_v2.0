@@ -10,6 +10,7 @@ import { DigitalHumanScene } from "./DigitalHumanScene"
 import { AvatarStage } from "@/components/avatar3d/AvatarStage"
 import { AuthenticationPanel } from "./AuthenticationPanel"
 import { storeAuth } from "@/lib/api"
+import { navigateAfterAuth } from "@/lib/navigate"
 
 type RoleId = "personal" | "healthcare" | "business" | null | ""
 
@@ -53,7 +54,7 @@ export function LoginExperience() {
     const oauthRefresh = searchParams.get("oauth_refresh")
     if (oauthToken && oauthRefresh) {
       storeAuth({ access_token: oauthToken, refresh_token: oauthRefresh })
-      router.push("/dashboard/user")
+      navigateAfterAuth(router, "/dashboard/user")
     }
   }, [searchParams, router])
 

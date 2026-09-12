@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { User, Stethoscope, Briefcase, Mail, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, Sparkles, Check } from "lucide-react"
 import { authApi, storeAuth, loginWithGoogle, loginWithGitHub, loginWithMicrosoft } from "@/lib/api"
+import { navigateAfterAuth, dashboardPathForRole } from "@/lib/navigate"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -100,9 +101,7 @@ export function SignupWizard() {
         const userStr = localStorage.getItem("user")
         const role = userStr ? JSON.parse(userStr).role : null
         timeoutRef.current.push(setTimeout(() => {
-          if (role === "healthcare") router.push("/dashboard/healthcare")
-          else if (role === "business") router.push("/dashboard/business")
-          else router.push("/dashboard/user")
+          navigateAfterAuth(router, dashboardPathForRole(role))
         }, 1500))
       },
     ]

@@ -164,8 +164,12 @@ class VoiceSampleInfo(BaseModel):
     speaker_confidence: float = 0.0
     speech_rate_wpm: float = 0.0
     prosody_features: dict[str, Any] = {}
-    emotion_profile: dict[str, float] = {}
-    pitch_stats: dict[str, float] = {}
+    # Analysis blobs, not pure float maps: `emotion_profile` carries a string
+    # `label` and `pitch_stats` a `quartiles` list. Declaring them as
+    # dict[str, float] made GET /voice/result raise a ValidationError (500),
+    # which surfaced in the UI as "Failed to fetch" and blocked create-twin.
+    emotion_profile: dict[str, Any] = {}
+    pitch_stats: dict[str, Any] = {}
 
 
 class SynthesizedVoiceConfig(BaseModel):

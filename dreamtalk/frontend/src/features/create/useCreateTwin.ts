@@ -22,6 +22,33 @@ const TERMINAL_FAIL = new Set(["failed", "error"])
 const isOk = (s?: string) => !!s && TERMINAL_OK.has(String(s).toLowerCase())
 const isFail = (s?: string) => !!s && TERMINAL_FAIL.has(String(s).toLowerCase())
 
+/** Native scripts for the scheduled languages; falls back to the English name. */
+const NATIVE_NAMES: Record<string, string> = {
+  as: "অসমীয়া", bn: "বাংলা", brx: "बर'", doi: "डोगरी", en: "English",
+  gu: "ગુજરાતી", hi: "हिन्दी", kn: "ಕನ್ನಡ", kok: "कोंकणी", ks: "کٲشُر",
+  mai: "मैथिली", ml: "മലയാളം", mni: "ꯃꯤꯇꯩꯂꯣꯟ", mr: "मराठी", ne: "नेपाली",
+  or: "ଓଡ଼ିଆ", pa: "ਪੰਜਾਬੀ", sa: "संस्कृतम्", sat: "ᱥᱟᱱᱛᱟᱲᱤ", sd: "سنڌي",
+  ta: "தமிழ்", te: "తెలుగు", ur: "اردو",
+}
+
+/**
+ * Normalise `/api/v1/avatar/languages` into the view model.
+ *
+ * The runtime returns a dict (`{ languages: { hi: "Hindi" } }`). Older code
+ * assumed an array and called `.map()` on it, which threw a TypeError and
+ * hard-crashed the voice step. Tolerates both shapes.
+ */
+export function toLanguageList(res: unknown): Language[] {
+  const dict = (res as { languages?: Record<string, string> })?.languages
+  if (dict && typeof dict === "object" && !Array.isArray(dict)) {
+    return Object.entries(dict)
+      .map(([code, name]) => ({ code, name, native: NATIVE_NAMES[code] ?? name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
+  if (Array.isArray(res)) return res as Language[]
+  return []
+}
+
 async function pollUntil<T>(
   fn: () => Promise<T>,
   done: (v: T) => boolean,
@@ -63,7 +90,9 @@ export function useCreateTwin() {
 
   // Languages
   const [languages, setLanguages] = useState<Language[]>([])
-  const [selectedLangs, setSelectedLangs] = useState<string[]>(["en-IN"])
+  // Must match the runtime's codes ("en", "hi", …) — "en-IN" matched nothing,
+  // so the default language never appeared selected in the picker.
+  const [selectedLangs, setSelectedLangs] = useState<string[]>(["en"])
 
   // Processing
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
@@ -80,7 +109,7 @@ export function useCreateTwin() {
   useEffect(() => {
     let alive = true
     avatarApi.languages()
-      .then((l) => alive && setLanguages(l as Language[]))
+      .then((l) => alive && setLanguages(toLanguageList(l)))
       .catch(() => { /* backend offline — languages stay empty, surfaced in UI */ })
     return () => { alive = false }
   }, [])

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle, Sparkles, User, Stethoscope, Briefcase } from "lucide-react"
 import { authApi, storeAuth, loginWithGoogle, loginWithGitHub, loginWithMicrosoft } from "@/lib/api"
+import { navigateAfterAuth, dashboardPathForRole } from "@/lib/navigate"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -98,9 +99,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
         const userStr = localStorage.getItem("user")
         const role = userStr ? JSON.parse(userStr).role : null
         timeoutRef.current.push(setTimeout(() => {
-          if (role === "healthcare") router.push("/dashboard/healthcare")
-          else if (role === "business") router.push("/dashboard/business")
-          else router.push("/dashboard/user")
+          navigateAfterAuth(router, dashboardPathForRole(role))
         }, 1200))
       },
     ]
