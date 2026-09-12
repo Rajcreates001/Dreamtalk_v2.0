@@ -31,6 +31,11 @@ export interface AvatarVideo {
 export interface AvatarAudio {
   audio_url?: string
   duration?: number
+  /** false when the runtime fell back to a stand-in voice (e.g. the clone
+   *  engine does not cover this language yet). Always surface this. */
+  cloned?: boolean
+  engine?: string
+  fallback_reason?: string
   [k: string]: unknown
 }
 
@@ -59,7 +64,19 @@ export interface AvatarAppearance {
   glb_url?: string
   texture_url?: string
   render_modes?: string[]
-  capabilities?: { talkinghead_2d?: boolean; realtime_3d?: boolean; [k: string]: unknown }
+  /** Morph targets actually baked into the GLB (visemes + blink + emotions).
+   *  Empty means the head is a static bust and must not be driven. */
+  blendshape_names?: string[]
+  capabilities?: {
+    talkinghead_2d?: boolean
+    realtime_3d?: boolean
+    browser_glb?: boolean
+    arkit_blendshapes?: boolean
+    vrm_expressions?: boolean
+    visemes?: string[]
+    animation_driver?: string
+    [k: string]: unknown
+  }
   [k: string]: unknown
 }
 

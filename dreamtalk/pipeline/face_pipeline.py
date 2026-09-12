@@ -1,6 +1,7 @@
 """Face Pipeline v2 — Super-resolution → Multi-backend Face Detection → FLAME 3D Mesh → Emotion."""
 
 import json
+import importlib.util
 import logging
 import math
 import os
@@ -36,11 +37,7 @@ try:
 except Exception:
     MEDIAPIPE_TASKS_AVAILABLE = False
 
-try:
-    from deepface import DeepFace
-    DEEPFACE_AVAILABLE = True
-except Exception:
-    DEEPFACE_AVAILABLE = False
+DEEPFACE_AVAILABLE = importlib.util.find_spec("deepface") is not None
 
 try:
     import torch
@@ -91,6 +88,25 @@ class FacePipeline:
         "neutral": {"_neutral"},
     }
 
+    @staticmethod
+    def _rotation_matrix_to_pose(matrix: np.ndarray) -> Dict[str, float]:
+        """Convert MediaPipe's facial transform rotation to Euler degrees."""
+        rotation = np.asarray(matrix, dtype=np.float64)[:3, :3]
+        horizontal = math.sqrt(rotation[0, 0] ** 2 + rotation[1, 0] ** 2)
+        if horizontal > 1e-6:
+            pitch = math.atan2(rotation[2, 1], rotation[2, 2])
+            yaw = math.atan2(-rotation[2, 0], horizontal)
+            roll = math.atan2(rotation[1, 0], rotation[0, 0])
+        else:
+            pitch = math.atan2(-rotation[1, 2], rotation[1, 1])
+            yaw = math.atan2(-rotation[2, 0], horizontal)
+            roll = 0.0
+        return {
+            "yaw": round(math.degrees(yaw), 2),
+            "pitch": round(math.degrees(pitch), 2),
+            "roll": round(math.degrees(roll), 2),
+        }
+
     def __init__(self, assets_dir: str = None, flame_model_path: str = None):
         self.assets_dir = assets_dir or os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -104,6 +120,7 @@ class FacePipeline:
         self._face_landmarker_task = None
         self._flame = None
         self._flame_translator = None
+        self._embedding_model = "unavailable"
 
         # FLAME fitter for 3D mesh generation
         self._flame_fitter = None
@@ -235,8 +252,8 @@ class FacePipeline:
             "aspect_ratio": round(w / h, 4) if h > 0 else 0,
         }
 
-    def apply_super_resolution(self, image: np.ndarray, factor: float = 2.0) -> np.ndarray:
-        """Enhance low-quality/blurry images using OpenCV upscaling + sharpening."""
+    def apply_classical_enhancement(self, image: np.ndarray, factor: float = 2.0) -> np.ndarray:
+        """Apply deterministic interpolation and contrast enhancement (not neural SR)."""
         h, w = image.shape[:2]
         q = self._assess_quality(image)
 
@@ -269,8 +286,12 @@ class FacePipeline:
             lab = cv2.merge([l, a, b])
             sharpened = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-        logger.info(f"Super-resolution applied: {w}x{h} -> {new_w}x{new_h} (factor={actual_factor})")
+        logger.info(f"Classical enhancement applied: {w}x{h} -> {new_w}x{new_h} (factor={actual_factor})")
         return sharpened
+
+    # Backward-compatible method name. Capability reporting intentionally calls
+    # this classical enhancement, never neural super-resolution.
+    apply_super_resolution = apply_classical_enhancement
 
     # ─── Face Detection ─────────────────────────────────────────────────────
 
@@ -429,20 +450,14 @@ class FacePipeline:
                     name = category.category_name or category.display_name
                     if name:
                         blendshapes[name] = round(float(category.score), 5)
-            nose = np.array([primary[1].x, primary[1].y, primary[1].z])
-            left_eye = np.array([primary[33].x, primary[33].y, primary[33].z])
-            right_eye = np.array([primary[263].x, primary[263].y, primary[263].z])
-            eye_center = (left_eye + right_eye) / 2
-            forward = nose - eye_center
-            yaw = float(np.degrees(np.arctan2(forward[0], forward[2])))
-            pitch = float(np.degrees(np.arctan2(forward[1], forward[2])))
-            eye_line = np.array([right_eye[0] - left_eye[0], right_eye[1] - left_eye[1]])
-            roll = float(np.degrees(np.arctan2(eye_line[1], eye_line[0])))
+            head_pose = None
+            if results.facial_transformation_matrixes:
+                head_pose = self._rotation_matrix_to_pose(results.facial_transformation_matrixes[0])
             return {
                 "landmarks": landmarks,
                 "landmark_count": len(landmarks),
                 "blendshapes": blendshapes,
-                "head_pose": {"yaw": round(yaw, 2), "pitch": round(pitch, 2), "roll": round(roll, 2)},
+                "head_pose": head_pose,
                 "method": "mediapipe_tasks_landmarker_478",
             }
 
@@ -845,29 +860,24 @@ class FacePipeline:
         }
 
     def get_face_embedding(self, image_path: str) -> Optional[List[float]]:
-        """Generate face embedding using DeepFace or fallback."""
+        """Generate a biometric face embedding using a real recognition model.
+
+        Never substitute pixel statistics for a face embedding: doing so makes
+        identity-similarity gates look operational while providing no biometric
+        identity signal.
+        """
+        self._embedding_model = "unavailable"
         if DEEPFACE_AVAILABLE and os.path.exists(image_path):
             try:
-                embedding = DeepFace.represent(
-                    img_path=image_path, model_name="Facenet",
-                    enforce_detection=False,
-                )
-                if isinstance(embedding, list) and len(embedding) > 0:
-                    emb = embedding[0].get("embedding", []) if isinstance(embedding[0], dict) else embedding[0]
-                    if isinstance(emb, (list, np.ndarray)):
-                        return [float(v) for v in emb]
+                from dreamtalk.backend.services.image_identity import get_face_identity_service
+
+                service = get_face_identity_service()
+                embedding = service.embed(image_path)
+                self._embedding_model = service.model_name
+                return [float(value) for value in embedding]
             except Exception as e:
                 logger.warning(f"DeepFace embedding failed: {e}")
-
-        # Statistical embedding fallback
-        try:
-            img = Image.open(image_path).convert("L").resize((64, 64))
-            pixels = np.array(img).flatten().astype(float)
-            pixels = (pixels - pixels.mean()) / (pixels.std() + 1e-8)
-            emb = pixels[:128].tolist()
-            return emb + [0.0] * (128 - len(emb))
-        except Exception:
-            return None
+        return None
 
     # ─── Compute Quality Score ──────────────────────────────────────────────
 
@@ -896,6 +906,59 @@ class FacePipeline:
 
     # ─── Main Run ──────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _export_glb(
+        mesh_path: Optional[str],
+        output_dir: str,
+        texture_path: Optional[str] = None,
+    ) -> Tuple[Optional[str], List[str]]:
+        """Package the textured mesh as a browser-native binary glTF asset.
+
+        Also bakes FLAME morph targets (visemes, blink, emotions) into the GLB
+        so the browser can animate the user's own head directly — without them
+        the mesh is a static bust and the runtime's `arkit_blendshapes`
+        capability would be a promise we cannot keep.
+
+        Returns (glb_path, blendshape_names).
+        """
+        if not mesh_path or not os.path.exists(mesh_path):
+            return None, []
+        try:
+            from dreamtalk.pipeline.avatar_export import AvatarExporter
+            from dreamtalk.pipeline.face_blendshapes import (
+                build_blendshapes, load_flame_masks,
+            )
+
+            exporter = AvatarExporter()
+            vertices, _normals, _uvs, _faces = exporter._parse_obj(mesh_path)
+
+            targets = {}
+            masks_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "weights", "flame", "FLAME_masks.pkl",
+            )
+            # Masks index FLAME's canonical 5023-vertex topology; only build
+            # blendshapes when the mesh actually is that topology.
+            if os.path.exists(masks_path) and len(vertices) == 5023:
+                try:
+                    targets = build_blendshapes(vertices, load_flame_masks(masks_path))
+                except Exception as exc:
+                    logger.warning("Blendshape build failed: %s", exc)
+            elif len(vertices) != 5023:
+                logger.info("Mesh has %d verts (not FLAME topology) — no blendshapes",
+                            len(vertices))
+
+            destination = os.path.join(output_dir, f"avatar_mesh_{uuid.uuid4().hex[:8]}.glb")
+            exporter.obj_to_glb(
+                mesh_path, texture_path, destination,
+                morph_targets=targets or None,
+            )
+            if os.path.exists(destination) and os.path.getsize(destination) > 1024:
+                return destination, sorted(targets)
+        except Exception as exc:
+            logger.warning("GLB export failed: %s", exc)
+        return None, []
+
     async def run(self, image_paths: List[str], output_dir: str = None, enable_sr: bool = True) -> FaceAnalysisResult:
         if not image_paths:
             return FaceAnalysisResult(error="No image paths provided")
@@ -916,10 +979,12 @@ class FacePipeline:
         result.quality_factors = quality
         result.original_image_quality = quality["quality_label"]
 
-        # Step 1: Super-resolution
+        # Step 1: legacy classical enhancement. Production avatar creation runs
+        # GFPGAN/Real-ESRGAN before this pipeline and disables this branch.
         if enable_sr and (quality["is_blurry"] or quality["low_light"] or quality["width"] < 200):
-            image = self.apply_super_resolution(image)
-            result.super_resolution_applied = True
+            image = self.apply_classical_enhancement(image)
+            result.image_enhancement_applied = True
+            result.image_enhancement_engine = "opencv-cubic-clahe-unsharp"
             result.super_resolution_factor = image.shape[1] / quality["width"] if quality["width"] > 0 else 1.0
 
         # Step 2: Multi-backend face detection
@@ -946,6 +1011,9 @@ class FacePipeline:
                 blendshapes, image, output_dir, image_path=primary_path,
             )
             result.mesh_3d_path = mesh_path
+            result.mesh_glb_path, result.mesh_blendshape_names = self._export_glb(
+                mesh_path, output_dir, texture_path=tex_path,
+            )
             result.texture_path = tex_path
             result.mesh_vertex_count = mesh_info["vertex_count"]
             result.mesh_face_count = mesh_info["face_count"]
@@ -955,7 +1023,8 @@ class FacePipeline:
         # Step 5: Face embedding
         result.face_embedding = self.get_face_embedding(primary_path)
         result.identity_embedding = result.face_embedding
-        result.embedding_dim = len(result.face_embedding) if result.face_embedding else 128
+        result.embedding_model = self._embedding_model
+        result.embedding_dim = len(result.face_embedding) if result.face_embedding else 0
         result.identity_confidence = 0.85 if result.face_embedding else 0.0
 
         # Step 6: Facial emotion

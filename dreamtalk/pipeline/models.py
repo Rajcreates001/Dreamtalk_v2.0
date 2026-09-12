@@ -89,6 +89,8 @@ class FaceAnalysisResult(BaseModel):
 
     super_resolution_applied: bool = False
     super_resolution_factor: float = 1.0
+    image_enhancement_applied: bool = False
+    image_enhancement_engine: Optional[str] = None
     original_image_quality: str = "unknown"
 
     landmarks: Optional[list] = None
@@ -103,8 +105,8 @@ class FaceAnalysisResult(BaseModel):
     flame_eye_pose: Optional[list] = None
 
     face_embedding: Optional[list] = None
-    embedding_model: str = "facenet"
-    embedding_dim: int = 128
+    embedding_model: str = "unavailable"
+    embedding_dim: int = 0
 
     head_pose: Optional[dict] = None
     head_pose_confidence: float = 0.0
@@ -114,9 +116,13 @@ class FaceAnalysisResult(BaseModel):
     emotion_scores: Optional[dict] = None
 
     mesh_3d_path: Optional[str] = None
+    mesh_glb_path: Optional[str] = None
     mesh_vertex_count: int = 0
     mesh_face_count: int = 0
     mesh_format: str = "obj"
+    # Morph targets baked into the GLB (visemes/blink/emotions) — empty when
+    # the mesh is not FLAME topology, which is what gates `arkit_blendshapes`.
+    mesh_blendshape_names: List[str] = Field(default_factory=list)
 
     texture_path: Optional[str] = None
     texture_mapped: bool = False

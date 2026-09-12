@@ -92,3 +92,8 @@ Thumbs.db
 
 # Local-only backups (old frontend git history)
 local_backup/
+
+# Local scratch from model-inspection runs and E2E artifacts
+dreamtalk/.tmp_miocodec_inspect/
+dreamtalk/.tmp_miotts_inspect/
+e2e_out/

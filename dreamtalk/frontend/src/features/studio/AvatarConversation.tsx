@@ -81,6 +81,16 @@ export function AvatarConversation() {
           )}
         </div>
 
+        {chat.speech?.audio && chat.speech.audio.cloned === false && (
+          <div className="mx-4 mb-2 flex items-start gap-2 rounded-xl border border-border bg-surface/60 p-3 text-xs text-foreground-muted">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <span>
+              Stand-in voice — your cloned voice doesn&apos;t cover this language yet
+              {chat.speech.audio.engine ? ` (via ${chat.speech.audio.engine})` : ""}.
+            </span>
+          </div>
+        )}
+
         {chat.error && (
           <div className="mx-4 mb-2 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/8 p-3 text-xs">
             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" /> {chat.error}

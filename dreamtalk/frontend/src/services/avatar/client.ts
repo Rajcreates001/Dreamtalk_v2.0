@@ -62,12 +62,17 @@ export const avatarRuntime = {
       .then((r) => json<AvatarProfile>(r))
   },
 
+  // `strict_clone: false` — the clone engine (IndicF5) covers 11 Indic
+  // languages but not English, and strict mode turns that into a hard 422.
+  // Non-strict returns speech with `audio.cloned === false` plus a reason,
+  // which the UI surfaces, so the user gets a reply instead of an error.
+
   /** Text → spoken reply (+ optional rendered video). */
   respond: (profileId: string, req: RespondRequest) =>
     fetch(`${BASE}/profiles/${profileId}/respond`, {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ synthesize: true, strict_clone: true, ...req }),
+      body: JSON.stringify({ synthesize: true, strict_clone: false, ...req }),
     }).then((r) => json<RespondResult>(r)),
 
   /** Compatibility chat against the active profile. */
@@ -75,7 +80,7 @@ export const avatarRuntime = {
     fetch(`${BASE}/chat`, {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ synthesize: true, strict_clone: true, ...req }),
+      body: JSON.stringify({ synthesize: true, strict_clone: false, ...req }),
     }).then((r) => json<RespondResult>(r)),
 
   /** Audio in → spoken reply (records mic, ASR + reply). */

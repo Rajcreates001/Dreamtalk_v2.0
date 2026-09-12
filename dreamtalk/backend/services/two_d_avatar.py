@@ -8,6 +8,7 @@ an honestly-labelled, synchronized MP4 instead of a static image with audio.
 from __future__ import annotations
 
 import importlib.util
+import json
 import logging
 import math
 import os
@@ -17,6 +18,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 import cv2
@@ -26,6 +28,7 @@ logger = logging.getLogger("dreamtalk.avatar.2d")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 MUSE_ROOT = PROJECT_ROOT / "weights" / "musetalk"
+MUSETALK_VALIDATION = PROJECT_ROOT / "media" / "avatar_runtime" / "validation" / "musetalk.json"
 
 
 class TwoDAvatarRenderer:
@@ -59,6 +62,12 @@ class TwoDAvatarRenderer:
             pass
         allow_cpu_neural = os.environ.get("MUSETALK_ALLOW_CPU", "false").lower() == "true"
         neural_usable = neural_ready and (cuda or allow_cpu_neural)
+        validation = None
+        if MUSETALK_VALIDATION.exists():
+            try:
+                validation = json.loads(MUSETALK_VALIDATION.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                pass
         return {
             "ready": True,
             "preferred_engine": "musetalk",
@@ -66,6 +75,8 @@ class TwoDAvatarRenderer:
             "neural_usable": neural_usable,
             "neural_loaded": self._musetalk is not None,
             "neural_error": self._musetalk_error,
+            "inference_validated": validation is not None,
+            "last_validation": validation,
             "device": "cuda" if cuda else "cpu",
             "quality_tier": "neural_realtime" if cuda and neural_ready else "audio_reactive",
             "cpu_neural_enabled": allow_cpu_neural,
@@ -74,9 +85,90 @@ class TwoDAvatarRenderer:
             "dependencies": dependencies,
         }
 
+    @staticmethod
+    def _release_host_llm_vram() -> bool:
+        """Ask the host Ollama runtime to drop its model from VRAM.
+
+        On a single-GPU box the LLM fallback (llama3.1:8b ≈ 5.3 GB) can occupy
+        nearly all of an 8 GB card, which starves MuseTalk at load time. Ollama
+        unloads a model when asked with ``keep_alive: 0``; it reloads on demand
+        for the next reply. Returns True if we unloaded anything.
+        """
+        import json as _json
+        import urllib.request
+
+        base = os.environ.get("LLM_FALLBACK_BASE_URL", "http://host.docker.internal:11434/v1")
+        base = base.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[:-3]
+        try:
+            with urllib.request.urlopen(f"{base}/api/ps", timeout=5) as resp:
+                loaded = _json.loads(resp.read()).get("models") or []
+        except Exception as exc:
+            logger.debug("Could not query host LLM runtime for VRAM reclaim: %s", exc)
+            return False
+
+        released = False
+        for model in loaded:
+            name = model.get("model") or model.get("name")
+            if not name or not model.get("size_vram"):
+                continue
+            try:
+                payload = _json.dumps({"model": name, "keep_alive": 0}).encode()
+                req = urllib.request.Request(
+                    f"{base}/api/generate", data=payload,
+                    headers={"Content-Type": "application/json"}, method="POST",
+                )
+                urllib.request.urlopen(req, timeout=15).read()
+                logger.info("Released host LLM '%s' (%.1f GB) to free VRAM for MuseTalk",
+                            name, model["size_vram"] / 1e9)
+                released = True
+            except Exception as exc:
+                logger.warning("Failed to unload host LLM '%s': %s", name, exc)
+        return released
+
+    def _ensure_vram_headroom(self) -> None:
+        """Make room on the GPU *before* loading MuseTalk.
+
+        Recovering from a CUDA OOM in-process is unreliable — PyTorch's caching
+        allocator can be left in a state where even a freed GPU won't reload
+        (INTERNAL ASSERT in CUDACachingAllocator) — so we check headroom up
+        front and evict the host LLM rather than retrying after a failure.
+        """
+        try:
+            import torch
+
+            if not torch.cuda.is_available():
+                return
+            # MuseTalk's UNet+VAE+Whisper stack effectively wants the whole
+            # card (measured: free drops to ~0 after load on an 8 GB GPU), so
+            # the bar is high on purpose.
+            need = float(os.environ.get("MUSETALK_MIN_FREE_VRAM_GB", "6.5")) * 1e9
+            free, _total = torch.cuda.mem_get_info()
+            if free >= need:
+                return
+            logger.info("Only %.1f GB VRAM free (need %.1f) — reclaiming before MuseTalk load",
+                        free / 1e9, need / 1e9)
+            if not self._release_host_llm_vram():
+                return
+            # The host driver (and WSL2's GPU paravirtualisation) can take
+            # several seconds to actually hand the memory back, so poll rather
+            # than guessing a fixed sleep.
+            deadline = time.monotonic() + float(os.environ.get("VRAM_RECLAIM_TIMEOUT", "25"))
+            while time.monotonic() < deadline:
+                time.sleep(1.0)
+                free, _total = torch.cuda.mem_get_info()
+                if free >= need:
+                    break
+            logger.info("VRAM after reclaim: %.1f GB free", free / 1e9)
+        except Exception as exc:
+            logger.debug("VRAM headroom check skipped: %s", exc)
+
     def _get_musetalk(self):
         if self._musetalk is not None:
             return self._musetalk
+
+        self._ensure_vram_headroom()
         try:
             from dreamtalk.face.core.lipsync.musetalk.musetalk_api import MuseTalkAPI
 
@@ -86,9 +178,40 @@ class TwoDAvatarRenderer:
             self._musetalk_error = None
             return api
         except Exception as exc:
-            self._musetalk_error = str(exc)
-            logger.exception("MuseTalk initialization failed")
+            if "out of memory" in str(exc).lower():
+                self._musetalk_error = (
+                    "CUDA out of memory — the GPU is shared with another process "
+                    "(set MUSETALK_MIN_FREE_VRAM_GB or free the LLM). "
+                    f"{exc}"
+                )
+                logger.error("MuseTalk OOM even after reclaim: %s", exc)
+            else:
+                self._musetalk_error = str(exc)
+                logger.exception("MuseTalk initialization failed")
+            self._unload_musetalk()
             return None
+
+    def _unload_musetalk(self) -> None:
+        api = self._musetalk
+        self._musetalk = None
+        if api is not None:
+            try:
+                engine = api.inference_engine
+                for attribute in ("vae", "unet", "pe", "whisper", "fp", "timesteps"):
+                    setattr(engine, attribute, None)
+                api.inference_engine = None
+            except Exception:
+                pass
+        try:
+            import gc
+            import torch
+
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
+        except Exception:
+            pass
 
     def render(
         self,
@@ -130,13 +253,20 @@ class TwoDAvatarRenderer:
                         path = Path(result["video_path"])
                         if not path.exists() or path.stat().st_size < 1024:
                             raise RuntimeError("MuseTalk returned no usable video")
-                        return self._result(
+                        self._write_provenance_metadata(path)
+                        rendered = self._result(
                             path, "musetalk", emotion, started,
                             neural=True, lipsync=True, fallback_reason=None,
                         )
+                        self._record_validation(rendered)
+                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "true").lower() == "true":
+                            self._unload_musetalk()
+                        return rendered
                     except Exception as exc:
                         neural_error = str(exc)
                         self._musetalk_error = neural_error
+                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "true").lower() == "true":
+                            self._unload_musetalk()
                         logger.exception("MuseTalk rendering failed; using audio-reactive renderer")
                 else:
                     neural_error = self._musetalk_error or "MuseTalk failed to load"
@@ -157,6 +287,21 @@ class TwoDAvatarRenderer:
                 output, "audio-reactive-2d", emotion, started,
                 neural=False, lipsync=True, fallback_reason=neural_error,
             )
+
+    @staticmethod
+    def _record_validation(result: dict[str, Any]) -> None:
+        MUSETALK_VALIDATION.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "validated_at": datetime.now(timezone.utc).isoformat(),
+            "engine": result.get("engine"),
+            "frames": result.get("frames"),
+            "fps": result.get("fps"),
+            "duration": result.get("duration"),
+            "neural": result.get("neural"),
+        }
+        temporary = MUSETALK_VALIDATION.with_suffix(".tmp")
+        temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        os.replace(temporary, MUSETALK_VALIDATION)
 
     @staticmethod
     def _audio_envelope(audio_path: Path, fps: int) -> tuple[np.ndarray, float]:
@@ -270,12 +415,32 @@ class TwoDAvatarRenderer:
         command = [
             "ffmpeg", "-y", "-v", "error", "-i", str(silent_path), "-i", str(audio),
             "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-preset", "veryfast",
-            "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(output),
+            "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest",
+            "-metadata", "title=DreamTalk AI Avatar",
+            "-metadata", "comment=AI-generated synthetic talking-avatar media",
+            "-metadata", "artist=DreamTalk", str(output),
         ]
         completed = subprocess.run(command, capture_output=True, text=True, timeout=300)
         silent_path.unlink(missing_ok=True)
         if completed.returncode != 0 or not output.exists():
             raise RuntimeError(f"ffmpeg could not finalize avatar video: {completed.stderr[-400:]}")
+
+    @staticmethod
+    def _write_provenance_metadata(path: Path) -> None:
+        """Embed a durable synthetic-media disclosure in the MP4 container."""
+        stamped = path.with_suffix(".provenance.mp4")
+        command = [
+            "ffmpeg", "-y", "-v", "error", "-i", str(path), "-map", "0", "-c", "copy",
+            "-metadata", "title=DreamTalk AI Avatar",
+            "-metadata", "comment=AI-generated synthetic talking-avatar media",
+            "-metadata", "artist=DreamTalk",
+            str(stamped),
+        ]
+        completed = subprocess.run(command, capture_output=True, text=True, timeout=120)
+        if completed.returncode == 0 and stamped.exists() and stamped.stat().st_size > 1024:
+            os.replace(stamped, path)
+        else:
+            stamped.unlink(missing_ok=True)
 
     @staticmethod
     def _result(
@@ -305,6 +470,11 @@ class TwoDAvatarRenderer:
             "frames": frames,
             "processing_ms": round((time.perf_counter() - started) * 1000, 2),
             "fallback_reason": fallback_reason,
+            "provenance": {
+                "synthetic_media": True,
+                "generator": "DreamTalk",
+                "disclosure": "AI-generated synthetic talking-avatar media",
+            },
         }
 
 

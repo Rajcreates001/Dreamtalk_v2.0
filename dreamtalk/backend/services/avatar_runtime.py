@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import hashlib
+import hmac
 import importlib.util
 import json
 import logging
@@ -43,6 +45,10 @@ from dreamtalk.backend.services.multimodal_language import (
     normalize_language,
 )
 from dreamtalk.backend.services.two_d_avatar import get_two_d_avatar_renderer
+from dreamtalk.backend.services.image_identity import (
+    get_face_identity_service,
+    get_face_restoration_service,
+)
 
 logger = logging.getLogger("dreamtalk.avatar.runtime")
 
@@ -200,6 +206,22 @@ class AvatarProfileStore:
         self._write(data)
         return copy.deepcopy(data["profiles"][profile_id])
 
+    def delete(self, profile_id: str) -> dict[str, Any]:
+        """Remove one profile record and return it for controlled media cleanup."""
+        data = self._read()
+        profile = data["profiles"].pop(profile_id, None)
+        if profile is None:
+            raise KeyError(profile_id)
+        if data.get("active_profile_id") == profile_id:
+            remaining = list(data["profiles"].values())
+            remaining.sort(
+                key=lambda item: item.get("updated_at", item.get("created_at", "")),
+                reverse=True,
+            )
+            data["active_profile_id"] = remaining[0]["id"] if remaining else None
+        self._write(data)
+        return copy.deepcopy(profile)
+
 
 class AvatarRuntimeService:
     def __init__(
@@ -212,56 +234,112 @@ class AvatarRuntimeService:
         self.speech = speech or get_cloned_speech_service()
         self.asr = asr or get_multilingual_asr()
         self.two_d = get_two_d_avatar_renderer()
+        self.restoration = get_face_restoration_service()
+        self.identity = get_face_identity_service()
+
+    def _asset_signature(self, relative_path: str, expires: int) -> str:
+        secret = os.environ.get(
+            "AVATAR_ASSET_SIGNING_SECRET",
+            os.environ.get("JWT_SECRET", "dreamtalk-secret-change-in-production"),
+        )
+        payload = f"{relative_path}:{expires}".encode("utf-8")
+        return hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     def _runtime_url(self, path: Optional[str]) -> Optional[str]:
         if not path:
             return None
         try:
             relative = Path(path).resolve().relative_to(self.store.runtime_root.resolve())
-            return "/avatar-runtime/" + relative.as_posix()
+            relative_path = relative.as_posix()
+            ttl = max(60, int(os.environ.get("AVATAR_ASSET_URL_TTL_SECONDS", "3600")))
+            expires = int(time.time()) + ttl
+            signature = self._asset_signature(relative_path, expires)
+            return (
+                f"/api/v1/avatar/assets/{relative_path}"
+                f"?expires={expires}&signature={signature}"
+            )
         except Exception:
             return None
+
+    def resolve_signed_asset(self, relative_path: str, expires: int, signature: str) -> Path:
+        if expires < int(time.time()):
+            raise PermissionError("Avatar asset URL has expired")
+        clean = Path(relative_path.replace("\\", "/"))
+        if clean.is_absolute() or ".." in clean.parts:
+            raise PermissionError("Invalid avatar asset path")
+        normalized = clean.as_posix()
+        expected = self._asset_signature(normalized, expires)
+        if not hmac.compare_digest(expected, signature):
+            raise PermissionError("Invalid avatar asset signature")
+        target = (self.store.runtime_root / clean).resolve()
+        try:
+            target.relative_to(self.store.runtime_root.resolve())
+        except ValueError as exc:
+            raise PermissionError("Invalid avatar asset path") from exc
+        if not target.is_file():
+            raise FileNotFoundError(target)
+        return target
 
     def public_profile(self, profile: dict[str, Any]) -> dict[str, Any]:
         value = copy.deepcopy(profile)
         voice = value.get("voice") or {}
-        voice.pop("reference_audio_path", None)
+        reference_audio_path = voice.pop("reference_audio_path", None)
+        if reference_audio_path:
+            voice["reference_audio_url"] = self._runtime_url(reference_audio_path)
         sample_language = normalize_language(voice.get("sample_language"))
-        voice["sample_language_supported_by_clone"] = sample_language != "en"
-        if sample_language == "en":
-            warning = (
-                "English is supported by the wider avatar runtime but is outside IndicF5's "
-                "documented 11 Indian languages. Use a clean Indian-language reference sample "
-                "for production-quality cross-language cloning."
-            )
-            warnings = voice.setdefault("clone_quality_warnings", [])
-            if warning not in warnings:
-                warnings.append(warning)
+        voice["sample_language_supported_by_clone"] = sample_language in SUPPORTED_LANGUAGES
         if isinstance(voice.get("quality"), dict):
             voice["quality"].pop("path", None)
         if isinstance(voice.get("validation"), dict):
             voice["validation"].pop("path", None)
             voice["validation"].pop("service_url", None)
         appearance = value.get("appearance") or {}
-        appearance.pop("source_image_paths", None)
+        source_paths = appearance.pop("source_image_paths", None) or []
+        primary_path = appearance.pop("primary_image_path", None)
+        if primary_path or source_paths:
+            appearance["primary_image_url"] = self._runtime_url(primary_path or source_paths[0])
         analysis = appearance.get("analysis") or {}
         analysis.pop("face_embedding", None)
         analysis.pop("identity_embedding", None)
         analysis.pop("mesh_3d_path", None)
+        analysis.pop("mesh_glb_path", None)
         analysis.pop("texture_path", None)
         render_modes = appearance.setdefault("render_modes", [])
         for mode in ("talkinghead_2d", "realtime_3d"):
             if mode not in render_modes:
                 render_modes.append(mode)
+        mesh_path = appearance.pop("mesh_path", None) or analysis.get("mesh_3d_path")
+        glb_path = appearance.pop("glb_path", None)
+        texture_path = appearance.pop("texture_path", None) or analysis.get("texture_path")
+        if mesh_path:
+            appearance["mesh_url"] = self._runtime_url(mesh_path)
+        if glb_path:
+            appearance["glb_url"] = self._runtime_url(glb_path)
+        if texture_path:
+            appearance["texture_url"] = self._runtime_url(texture_path)
         if appearance.get("mesh_url") and appearance.get("texture_url"):
             analysis["texture_mapped"] = True
+        # Report the morph targets actually baked into the GLB. Claiming
+        # blendshape support the mesh does not have makes the frontend render
+        # a head it cannot animate, so this is derived, never hardcoded.
+        blendshape_names = list(
+            appearance.pop("blendshape_names", None)
+            or analysis.get("mesh_blendshape_names")
+            or []
+        )
+        appearance["blendshape_names"] = blendshape_names
+        has_shapes = bool(appearance.get("glb_url")) and bool(blendshape_names)
         appearance["capabilities"] = {
             "talkinghead_2d": True,
             "lip_sync_video": True,
             "textured_3d_mesh": bool(appearance.get("mesh_url") and appearance.get("texture_url")),
-            "arkit_blendshapes": True,
-            "vrm_expressions": True,
-            "animation_driver": "timestamped_external_blendshapes",
+            "browser_glb": bool(appearance.get("glb_url")),
+            "arkit_blendshapes": has_shapes,
+            "vrm_expressions": has_shapes,
+            "visemes": [n for n in blendshape_names if n in ("aa", "ih", "ou", "ee", "oh")],
+            "animation_driver": (
+                "glb_morph_targets" if has_shapes else "timestamped_external_blendshapes"
+            ),
         }
         return value
 
@@ -274,16 +352,20 @@ class AvatarRuntimeService:
         language: str = "auto",
         user_id: str = "default",
         validate_clone: bool = True,
+        consent: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         if not face_image_paths:
             raise ValueError("At least one clear face image is required")
+        if not consent or not consent.get("confirmed"):
+            raise ValueError("Explicit consent is required to clone a person's face and voice")
         profile_id = str(uuid.uuid4())
         profile_dir = self.store.runtime_root / profile_id
         voice_dir = profile_dir / "voice"
         appearance_dir = profile_dir / "appearance"
         source_dir = appearance_dir / "source"
+        restored_dir = appearance_dir / "restored"
         generated_dir = appearance_dir / "generated"
-        for directory in (voice_dir, source_dir, generated_dir):
+        for directory in (voice_dir, source_dir, restored_dir, generated_dir):
             directory.mkdir(parents=True, exist_ok=True)
 
         voice_path = voice_dir / "reference.wav"
@@ -313,9 +395,66 @@ class AvatarRuntimeService:
         if not copied_images:
             raise ValueError("No valid face images could be stored")
 
+        quality_assessment = await asyncio.to_thread(
+            self.restoration.needs_restoration, copied_images[0]
+        )
+        canonical_images = list(copied_images)
+        restoration_result: dict[str, Any] = {
+            "applied": False,
+            "quality_assessment": quality_assessment,
+            "service": self.restoration.status(),
+        }
+        if quality_assessment["required"]:
+            if self.restoration.status()["ready"]:
+                restored_path = restored_dir / "primary.png"
+                restored = await asyncio.to_thread(
+                    self.restoration.restore, copied_images[0], str(restored_path)
+                )
+                restoration_result.update({"applied": True, **restored})
+                canonical_images[0] = str(restored_path)
+            else:
+                restoration_result["warning"] = (
+                    "Input quality needs restoration, but the GFPGAN service is unavailable"
+                )
+
+        identity_result: dict[str, Any]
+        try:
+            if restoration_result["applied"]:
+                identity_result = await asyncio.to_thread(
+                    self.identity.verify, copied_images[0], canonical_images[0]
+                )
+                identity_result["gate"] = "restoration_identity_preservation"
+            else:
+                embedding = await asyncio.to_thread(self.identity.embed, canonical_images[0])
+                identity_result = {
+                    "verified": True,
+                    "gate": "single_reference_enrollment",
+                    "model": self.identity.model_name,
+                    "embedding_dim": int(embedding.size),
+                }
+            for candidate_path in copied_images[1:]:
+                comparison = await asyncio.to_thread(
+                    self.identity.verify, copied_images[0], candidate_path
+                )
+                if not comparison["verified"]:
+                    raise ValueError("The supplied face images do not appear to show the same person")
+            if not identity_result["verified"]:
+                raise ValueError("Face restoration changed the person's identity beyond the safety threshold")
+        except ValueError:
+            raise
+        except Exception as exc:
+            identity_result = {
+                "verified": False,
+                "gate": "unavailable",
+                "error": str(exc),
+                "service": self.identity.status(),
+            }
+            if os.environ.get("AVATAR_REQUIRE_IDENTITY_GATE", "true").lower() == "true":
+                raise RuntimeError(f"Real face identity verification is required: {exc}") from exc
+
         face_analysis = await asyncio.to_thread(
             self._run_face_pipeline,
-            copied_images,
+            canonical_images,
             str(generated_dir),
         )
         if not face_analysis.get("face_detected"):
@@ -329,16 +468,19 @@ class AvatarRuntimeService:
             "status": "processing",
             "created_at": created_at,
             "updated_at": created_at,
+            "consent": {
+                "confirmed": True,
+                "subject_name": str(consent.get("subject_name") or name).strip(),
+                "scopes": list(consent.get("scopes") or ["face", "voice", "animation"]),
+                "version": str(consent.get("version") or "1.0"),
+                "recorded_at": created_at,
+            },
             "voice": {
-                "engine": "indicf5",
+                "engine": "auto-indic-mio-then-indicf5",
                 "ready": False,
                 "sample_language": sample_language,
-                "sample_language_supported_by_clone": sample_language != "en",
-                "clone_quality_warnings": [] if sample_language != "en" else [
-                    "English is supported by the wider avatar runtime but is outside IndicF5's "
-                    "documented 11 Indian languages. Use a clean Indian-language reference sample "
-                    "for production-quality cross-language cloning."
-                ],
+                "sample_language_supported_by_clone": sample_language in SUPPORTED_LANGUAGES,
+                "clone_quality_warnings": [],
                 "reference_text": reference_text.strip(),
                 "reference_audio_path": str(voice_path),
                 "reference_audio_url": self._runtime_url(str(voice_path)),
@@ -349,11 +491,18 @@ class AvatarRuntimeService:
             "appearance": {
                 "ready": bool(face_analysis.get("face_detected")),
                 "source_image_paths": copied_images,
-                "primary_image_url": self._runtime_url(copied_images[0]),
+                "primary_image_path": canonical_images[0],
+                "primary_image_url": self._runtime_url(canonical_images[0]),
+                "mesh_path": face_analysis.get("mesh_3d_path"),
+                "glb_path": face_analysis.get("mesh_glb_path"),
+                "blendshape_names": face_analysis.get("mesh_blendshape_names") or [],
+                "texture_path": face_analysis.get("texture_path"),
                 "mesh_url": self._runtime_url(face_analysis.get("mesh_3d_path")),
                 "texture_url": self._runtime_url(face_analysis.get("texture_path")),
                 "mesh_format": face_analysis.get("mesh_format", "obj"),
                 "analysis": face_analysis,
+                "restoration": restoration_result,
+                "identity_verification": identity_result,
                 "render_modes": ["talkinghead_2d", "realtime_3d", "liveportrait_video"],
             },
             "preferences": {"language": "auto", "strict_clone": True},
@@ -386,11 +535,24 @@ class AvatarRuntimeService:
         self.store.save(profile, activate=True)
         return self.public_profile(profile)
 
+    def delete_profile(self, profile_id: str, user_id: str) -> dict[str, Any]:
+        profile = self.store.get(profile_id)
+        if not profile:
+            raise KeyError(profile_id)
+        if str(profile.get("user_id")) != str(user_id):
+            raise PermissionError("Avatar profile belongs to another user")
+        removed = self.store.delete(profile_id)
+        profile_dir = (self.store.runtime_root / profile_id).resolve()
+        profile_dir.relative_to(self.store.runtime_root.resolve())
+        if profile_dir.is_dir():
+            shutil.rmtree(profile_dir)
+        return {"deleted": True, "profile_id": removed["id"]}
+
     @staticmethod
     def _run_face_pipeline(image_paths: list[str], output_dir: str) -> dict[str, Any]:
         from dreamtalk.pipeline.face_pipeline import FacePipeline
 
-        result = asyncio.run(FacePipeline().run(image_paths, output_dir=output_dir, enable_sr=True))
+        result = asyncio.run(FacePipeline().run(image_paths, output_dir=output_dir, enable_sr=False))
         return _json_safe(result.model_dump())
 
     async def _detect_text_emotion(self, text: str) -> dict[str, Any]:
@@ -784,6 +946,31 @@ class AvatarRuntimeService:
 
     async def status(self) -> dict[str, Any]:
         speech = await self.speech.discover(force=True)
+        hardware: dict[str, Any] = {
+            "gpu_required": os.environ.get("AVATAR_REQUIRE_GPU", "false").lower() == "true",
+            "cuda_available": False,
+            "device_count": 0,
+            "devices": [],
+        }
+        try:
+            import torch
+
+            hardware["torch_version"] = torch.__version__
+            hardware["torch_cuda_build"] = torch.version.cuda
+            hardware["cuda_available"] = bool(torch.cuda.is_available())
+            hardware["device_count"] = int(torch.cuda.device_count())
+            for index in range(torch.cuda.device_count()):
+                properties = torch.cuda.get_device_properties(index)
+                hardware["devices"].append({
+                    "index": index,
+                    "name": properties.name,
+                    "total_vram_mb": round(properties.total_memory / (1024 * 1024), 1),
+                    "allocated_vram_mb": round(torch.cuda.memory_allocated(index) / (1024 * 1024), 1),
+                    "reserved_vram_mb": round(torch.cuda.memory_reserved(index) / (1024 * 1024), 1),
+                    "capability": list(torch.cuda.get_device_capability(index)),
+                })
+        except Exception as exc:
+            hardware["error"] = str(exc)
         liveportrait_dir = PROJECT_ROOT / "weights" / "liveportrait"
         liveportrait_required = [
             "appearance_feature_extractor.pth",
@@ -791,12 +978,23 @@ class AvatarRuntimeService:
             "spade_generator.pth",
             "warping_module.pth",
             "landmark.onnx",
+            "stitching_retargeting_module.pth",
         ]
         liveportrait_weights = {
             name: (liveportrait_dir / name).exists() for name in liveportrait_required
         }
+        liveportrait_validation_path = DEFAULT_RUNTIME_ROOT / "validation" / "liveportrait.json"
+        liveportrait_validation = None
+        if liveportrait_validation_path.exists():
+            try:
+                liveportrait_validation = json.loads(liveportrait_validation_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                pass
         liveportrait = {
-            "ready": all(liveportrait_weights.values()),
+            "ready": all(liveportrait_weights.values()) and hardware["cuda_available"],
+            "weights_ready": all(liveportrait_weights.values()),
+            "inference_validated": liveportrait_validation is not None,
+            "last_validation": liveportrait_validation,
             "weights": liveportrait_weights,
             "loading": "lazy",
         }
@@ -808,11 +1006,15 @@ class AvatarRuntimeService:
         asr_available = importlib.util.find_spec("faster_whisper") is not None or importlib.util.find_spec("transformers") is not None
         profiles = self.store.list()
         ready_profiles = sum(1 for item in profiles if item.get("status") == "ready")
+        gpu_ok = hardware["cuda_available"] or not hardware["gpu_required"]
         return {
-            "status": "ready" if speech.get("available") and asr_available and all(face_weights.values()) else "degraded",
+            "status": "ready" if speech.get("available") and asr_available and all(face_weights.values()) and gpu_ok else "degraded",
+            "hardware": hardware,
             "voice_cloning": speech,
             "asr": {"available": asr_available, "loaded_engine": self.asr.engine},
             "appearance": face_weights,
+            "image_restoration": self.restoration.status(),
+            "identity_verification": self.identity.status(),
             "liveportrait": liveportrait,
             "avatar_2d": self.two_d.status(),
             "profiles": {"total": len(profiles), "ready": ready_profiles},

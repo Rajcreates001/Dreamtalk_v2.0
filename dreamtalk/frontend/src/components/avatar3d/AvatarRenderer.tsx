@@ -10,7 +10,13 @@ const loader = (
   </div>
 )
 
-// Rigged VRM head with real viseme-driven lip-sync (Phase 2).
+// The user's own reconstructed FLAME head, animated via the morph targets the
+// backend bakes into the GLB.
+const TwinHead3D = dynamic(() => import("./TwinHead3D").then((m) => m.TwinHead3D), {
+  ssr: false, loading: () => loader,
+})
+
+// Stand-in rigged VRM, used only when a profile has no 3D head yet.
 const VRMAvatar = dynamic(() => import("./VRMAvatar").then((m) => m.VRMAvatar), {
   ssr: false, loading: () => loader,
 })
@@ -29,15 +35,21 @@ export interface AvatarRendererProps {
 
 /**
  * Single surface for the digital human. `2d` plays the backend's talking-head
- * (real lip-sync of the user's face); `3d` shows the rigged VRM head, whose
- * mouth visemes are driven off the same cloned-voice audio + lipsync track.
- * Consumers switch modes without touching either implementation.
+ * (real lip-sync of the user's face); `3d` renders the user's own FLAME head
+ * with its baked morph targets, falling back to a stand-in rig only when the
+ * profile has no head yet. Both modes share one lipsync track + audio clock.
  */
 export function AvatarRenderer({
   mode = "2d", profile, speech, className = "", glow = "#CC3A63", interactive = true, onEnded,
 }: AvatarRendererProps) {
   if (mode === "3d") {
-    return <VRMAvatar className={className} speech={speech} glow={glow} interactive={interactive} onEnded={onEnded} />
+    // Only drive the real head when the backend actually baked blendshapes in;
+    // otherwise it is a static bust and the stand-in rig reads better.
+    const caps = profile?.appearance?.capabilities
+    const hasAnimatableHead = !!profile?.appearance?.glb_url && !!caps?.arkit_blendshapes
+    return hasAnimatableHead
+      ? <TwinHead3D className={className} profile={profile} speech={speech} glow={glow} interactive={interactive} onEnded={onEnded} />
+      : <VRMAvatar className={className} speech={speech} glow={glow} interactive={interactive} onEnded={onEnded} />
   }
   return (
     <TalkingHeadVideo profile={profile} speech={speech} className={className} glow={glow} onEnded={onEnded} />
