@@ -25,7 +25,7 @@ export function SignupExperience() {
     return (
       <main className="min-h-dvh flex bg-background" suppressHydrationWarning>
         <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8A8178]/30 border-t-[#CC3A63]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
         </div>
       </main>
     )
@@ -89,7 +89,7 @@ export function SignupExperience() {
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-center mb-6">
               <span className="text-xs uppercase tracking-[0.3em] text-white/20 font-mono">DreamTalk</span>
               <h1 className="text-2xl font-bold mt-2" style={{
-                backgroundImage: "linear-gradient(135deg, #F3F4F4, #CC3A63, #A2AB73)",
+                backgroundImage: "linear-gradient(135deg, var(--foreground), #CC3A63, #A2AB73)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -107,7 +107,7 @@ export function SignupExperience() {
                 background: "var(--card)",
                 backdropFilter: "blur(32px)",
                 WebkitBackdropFilter: "blur(32px)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                border: "1px solid var(--border)",
               }}
             >
               <SignupWizard />
@@ -115,7 +115,7 @@ export function SignupExperience() {
 
             {/* Footer */}
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-[10px] text-foreground-muted mt-6">
-              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-[#CC3A63] hover:text-[#A2AB73] transition-colors">Terms</a> and <a href="#" className="text-[#CC3A63] hover:text-[#A2AB73] transition-colors">Privacy Policy</a>
+              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-[#CC3A63] hover:text-secondary transition-colors">Terms</a> and <a href="#" className="text-[#CC3A63] hover:text-secondary transition-colors">Privacy Policy</a>
             </motion.p>
           </div>
         </motion.div>

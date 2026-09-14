@@ -118,9 +118,9 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
             style={{
-              background: "rgba(15,23,42,0.6)",
+              background: "var(--surface-glass)",
               backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid var(--border)",
             }}
           >
             <Sparkles className="h-2.5 w-2.5" style={{ color: accentColor }} />

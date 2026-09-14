@@ -72,7 +72,7 @@ export function LoginExperience() {
     return (
       <main className="min-h-dvh flex bg-background" suppressHydrationWarning>
         <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8A8178]/30 border-t-[#CC3A63]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
         </div>
       </main>
     )
@@ -121,7 +121,7 @@ export function LoginExperience() {
                   <div
                     className="w-2 h-2 rounded-full transition-all duration-500"
                     style={{
-                      background: progressIndex >= i ? accentColor : "rgba(255,255,255,0.1)",
+                      background: progressIndex >= i ? accentColor : "var(--border)",
                       boxShadow: progressIndex >= i ? `0 0 8px ${accentColor}50` : "none",
                     }}
                   />
@@ -131,7 +131,7 @@ export function LoginExperience() {
                 </div>
                 <span
                   className="text-[10px] font-mono tracking-wider transition-all duration-500"
-                  style={{ color: progressIndex >= i ? `${accentColor}CC` : "rgba(255,255,255,0.2)" }}
+                  style={{ color: progressIndex >= i ? `${accentColor}CC` : "var(--foreground-muted)" }}
                 >
                   {label}
                 </span>
@@ -163,9 +163,9 @@ export function LoginExperience() {
               transition={{ delay: 0.2 }}
               className="text-center mb-8"
             >
-              <span className="text-xs uppercase tracking-[0.3em] text-white/20 font-mono">DreamTalk</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-foreground-muted font-mono">DreamTalk</span>
               <h1 className="text-2xl font-bold mt-2" style={{
-                backgroundImage: `linear-gradient(135deg, #F3F4F4, ${accentColor}, #A2AB73)`,
+                backgroundImage: `linear-gradient(135deg, var(--foreground), ${accentColor}, var(--secondary))`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -179,23 +179,23 @@ export function LoginExperience() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="relative rounded-[24px] p-6 sm:p-8"
+              // The card is glass so it picks up the ambient field behind it in
+              // both themes; `glass-strong` because it carries form labels and
+              // error text, which need a dependable contrast floor.
+              className="glass-strong glass-rim relative rounded-[24px] p-6 sm:p-8"
               style={{
-                background: "var(--card)",
-                backdropFilter: "blur(32px)",
-                WebkitBackdropFilter: "blur(32px)",
-                border: "1px solid",
-                borderColor: selectedRole ? `${accentColor}25` : "rgba(255,255,255,0.06)",
-                boxShadow: selectedRole ? `0 0 40px ${accentColor}08` : "none",
-                transition: "border-color 0.5s, box-shadow 0.5s",
+                // Only the role accent is inline — everything else comes from
+                // the glass tokens, so light and dark stay in step.
+                borderColor: selectedRole ? `${accentColor}40` : undefined,
+                transition: "border-color 0.5s",
               }}
             >
               <div className="flex items-center justify-center gap-2 mb-6">
                 {PROGRESS_STEPS.map((label, i) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full transition-all duration-300" style={{ background: progressIndex >= i ? accentColor : "rgba(255,255,255,0.1)" }} />
-                      <span className="text-[8px] font-mono tracking-wider hidden sm:inline" style={{ color: progressIndex >= i ? `${accentColor}99` : "rgba(255,255,255,0.15)" }}>{label}</span>
+                      <div className="w-1.5 h-1.5 rounded-full transition-all duration-300" style={{ background: progressIndex >= i ? accentColor : "var(--border)" }} />
+                      <span className="text-[8px] font-mono tracking-wider hidden sm:inline" style={{ color: progressIndex >= i ? `${accentColor}99` : "var(--foreground-muted)" }}>{label}</span>
                     </div>
                     {i < PROGRESS_STEPS.length - 1 && <div className="w-6 h-px bg-foreground/[0.06]" />}
                   </div>

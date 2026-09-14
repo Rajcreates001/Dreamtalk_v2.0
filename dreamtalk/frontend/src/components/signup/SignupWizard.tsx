@@ -121,10 +121,10 @@ export function SignupWizard() {
         {STEP_LABELS.map((label, i) => (
           <div key={label} className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full transition-all duration-400`} style={{ background: i <= stepIndex ? accentColor : "rgba(255,255,255,0.1)" }} />
-              <span className="text-[9px] font-mono tracking-wider hidden sm:inline" style={{ color: i <= stepIndex ? `${accentColor}CC` : "rgba(255,255,255,0.15)" }}>{label}</span>
+              <div className={`w-2 h-2 rounded-full transition-all duration-400`} style={{ background: i <= stepIndex ? accentColor : "var(--border)" }} />
+              <span className="text-[9px] font-mono tracking-wider hidden sm:inline" style={{ color: i <= stepIndex ? `${accentColor}CC` : "var(--foreground-muted)" }}>{label}</span>
             </div>
-            {i < STEP_LABELS.length - 1 && <div className="w-8 h-px" style={{ background: i < stepIndex ? accentColor : "rgba(255,255,255,0.06)" }} />}
+            {i < STEP_LABELS.length - 1 && <div className="w-8 h-px" style={{ background: i < stepIndex ? accentColor : "var(--border)" }} />}
           </div>
         ))}
       </div>
@@ -181,7 +181,7 @@ export function SignupWizard() {
                       style={{
                         background: isSelected ? `${rc}15` : "var(--card)",
                         border: "1px solid",
-                        borderColor: isSelected ? `${rc}50` : "rgba(255,255,255,0.06)",
+                        borderColor: isSelected ? `${rc}50` : "var(--border)",
                         backdropFilter: "blur(20px)",
                       }}
                     >
@@ -198,7 +198,7 @@ export function SignupWizard() {
                             ))}
                           </div>
                         </div>
-                        <ArrowRight className="h-4 w-4 mt-2 shrink-0" style={{ color: isSelected ? rc : "#8A8178" }} />
+                        <ArrowRight className="h-4 w-4 mt-2 shrink-0" style={{ color: isSelected ? rc : "var(--foreground-muted)" }} />
                       </div>
                     </motion.button>
                   )
@@ -247,7 +247,7 @@ export function SignupWizard() {
                     <div className="mt-2 space-y-1.5">
                       <div className="flex gap-1">
                         {[0, 1, 2, 3].map((i) => (
-                          <div key={i} className="flex-1 h-1 rounded-full transition-all duration-300" style={{ background: i < strength.score ? strength.color : "rgba(255,255,255,0.06)" }} />
+                          <div key={i} className="flex-1 h-1 rounded-full transition-all duration-300" style={{ background: i < strength.score ? strength.color : "var(--border)" }} />
                         ))}
                       </div>
                       <p className="text-[10px]" style={{ color: strength.color }}>{strength.label}</p>
@@ -319,7 +319,7 @@ export function SignupWizard() {
       {step !== "welcome" && (
         <div className="mt-4">
           <div className="relative text-center text-[10px] text-foreground-muted mb-3">
-            <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or sign up with</span>
+            <span className="relative z-10 px-2" style={{ background: "var(--card)" }}>or sign up with</span>
             <div className="absolute inset-x-0 top-1/2 h-px bg-foreground/[0.06]" />
           </div>
           <div className="grid grid-cols-3 gap-2">

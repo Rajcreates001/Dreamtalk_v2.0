@@ -194,7 +194,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                   style={{
                     background: isSelected ? `${rc}12` : "var(--card)",
                     border: "1px solid",
-                    borderColor: isSelected ? `${rc}50` : "rgba(255,255,255,0.06)",
+                    borderColor: isSelected ? `${rc}50` : "var(--border)",
                     backdropFilter: "blur(20px)",
                   }}
                 >
@@ -214,7 +214,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
 
             <div className="pt-2">
               <div className="relative text-center text-[10px] text-foreground-muted mb-3">
-                <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or continue with</span>
+                <span className="relative z-10 px-2" style={{ background: "var(--card)" }}>or continue with</span>
                 <div className="absolute inset-x-0 top-1/2 h-px bg-foreground/[0.06]" />
               </div>
               <div className="flex gap-2">
@@ -232,7 +232,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
         ) : (
           <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
             <div className="text-center">
-              <button onClick={handleBack} className="text-[10px] hover:text-[#A2AB73] mb-2 inline-block" style={{ color: accentColor }}>← Change role</button>
+              <button onClick={handleBack} className="text-[10px] hover:text-secondary mb-2 inline-block" style={{ color: accentColor }}>← Change role</button>
               <h2 className="text-lg font-bold text-foreground">Welcome</h2>
               <p className="text-xs text-foreground-muted">Sign in to your account</p>
             </div>
@@ -289,9 +289,9 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                     <button key={role.id} onClick={() => handleDemoFill(role.id)}
                       className="flex-1 py-1.5 rounded-xl border text-[10px] font-medium transition-all"
                       style={{
-                        borderColor: selectedRole === role.id ? `${rc}50` : "rgba(255,255,255,0.06)",
-                        background: selectedRole === role.id ? `${rc}10` : "rgba(255,255,255,0.04)",
-                        color: selectedRole === role.id ? rc : "#B0A79C",
+                        borderColor: selectedRole === role.id ? `${rc}50` : "var(--border)",
+                        background: selectedRole === role.id ? `${rc}10` : "var(--surface)",
+                        color: selectedRole === role.id ? rc : "var(--foreground-muted)",
                       }}
                     >
                       {role.label}
@@ -302,7 +302,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
             </div>
 
             <div className="relative text-center text-[10px] text-foreground-muted mt-4">
-              <span className="relative z-10 px-2" style={{ background: "#2C2929" }}>or continue with</span>
+              <span className="relative z-10 px-2" style={{ background: "var(--card)" }}>or continue with</span>
               <div className="absolute inset-x-0 top-1/2 h-px bg-foreground/[0.06]" />
             </div>
             <div className="flex gap-2 mt-3">
