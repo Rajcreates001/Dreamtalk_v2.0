@@ -80,7 +80,22 @@ x-shared-env: &shared-env
   AVATAR_GPU_UNLOAD_AFTER_RENDER: ${AVATAR_GPU_UNLOAD_AFTER_RENDER:-true}
   CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}
   NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
-  PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True,max_split_size_mb:128}
+  # expandable_segments is deliberately OFF.
+  #
+  # It backs the caching allocator with CUDA's virtual-memory API
+  # (cuMemCreate/cuMemMap) instead of plain cudaMalloc. WSL2's GPU
+  # paravirtualisation implements that API incompletely, and under memory
+  # pressure MuseTalk's load died with
+  #   RuntimeError: !handles_.at(i) INTERNAL ASSERT FAILED at
+  #   "../c10/cuda/CUDACachingAllocator.cpp":393
+  # which is the expandable-segments unmap path failing. Worse than the
+  # error: it left the allocator wedged, and every thread in the process
+  # ended up in futex_wait_queue with no GPU work, no disk I/O and a request
+  # that never returned — a hard deadlock, not a clean OOM.
+  #
+  # max_split_size_mb is kept: it limits fragmentation and uses the ordinary
+  # cudaMalloc path, which WSL2 handles correctly.
+  PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-max_split_size_mb:128}
   AVATAR_RUNTIME_DIR: /app/dreamtalk/media/avatar_runtime
   BACKEND_PUBLIC_PORT: "5050"
   JWT_SECRET: ${JWT_SECRET:-dreamtalk-dev-jwt-secret-2026-change-in-production}
