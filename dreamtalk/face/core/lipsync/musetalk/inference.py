@@ -49,9 +49,19 @@ class MuseTalkInference:
         self.timesteps = torch.tensor([0], device=device)
 
         if use_float16:
-            pe = pe.half()
-            vae.vae = vae.vae.half()
-            unet.model = unet.model.half()
+            # Convert on the CPU, then move. load_all_model() has already put
+            # these on the GPU, so calling .half() here allocated an fp16 copy
+            # of every parameter while the fp32 original was still resident —
+            # a ~1.5x spike that made enabling fp16 fail at LOAD time with
+            # "RuntimeError: CUDA driver error: out of memory", which is worse
+            # than the fp32 inference OOM it was meant to cure.
+            #
+            # Round-tripping through host RAM keeps the peak on the GPU equal
+            # to the fp16 weights alone. Host RAM is plentiful; VRAM is not.
+            pe = pe.cpu().half()
+            vae.vae = vae.vae.cpu().half()
+            unet.model = unet.model.cpu().half()
+            torch.cuda.empty_cache()
 
         pe = pe.to(device)
         vae.vae = vae.vae.to(device)
