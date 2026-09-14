@@ -129,3 +129,10 @@ dreamtalk/e2e_deep/
 # Cloned-voice comparison output (biometric - never commit)
 tts_samples/
 dreamtalk/media/tts_compare/
+
+# Ad-hoc API probe dumps and tokens from manual testing.
+# kb_token.txt held a live JWT and reached the remote; never track these.
+/kb_*.json
+/kb_*.txt
+/wiz_*.json
+/wiz_*.txt
