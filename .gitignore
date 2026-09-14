@@ -125,3 +125,7 @@ dreamtalk/media/healthcare_user/
 
 # Deep E2E verification artifacts
 dreamtalk/e2e_deep/
+
+# Cloned-voice comparison output (biometric - never commit)
+tts_samples/
+dreamtalk/media/tts_compare/

@@ -30,9 +30,16 @@ import type { LanguagesResponse } from "@/services/avatar/types"
    ────────────────────────────────────────────────────────────── */
 
 export default function LivePage() {
-  // renderVideo is state, not a constant: the old studio hardcoded `false`,
-  // which is why the 2D avatar never actually moved its mouth.
-  const [renderVideo, setRenderVideo] = useState(false)
+  /* renderVideo is state, not a constant: the old studio hardcoded `false`,
+   * which is why the 2D avatar never actually moved its mouth.
+   *
+   * It now defaults ON. Defaulting it off made the toggle honest about cost
+   * but left the product's central promise switched off out of the box — a
+   * user who never found the checkbox watched a still photograph "speak" and
+   * reasonably concluded the 2D avatar was broken. Lip-sync IS the 2D avatar;
+   * the slower path is the correct default, and the toggle stays so it can be
+   * turned off for quick text-only exchanges. */
+  const [renderVideo, setRenderVideo] = useState(true)
   const chat = useAvatarChat({ renderVideo })
 
   const [mode, setMode] = useState<AvatarMode>("2d")
@@ -225,8 +232,8 @@ export default function LivePage() {
                 <Clapperboard className="h-3.5 w-3.5" /> Render lip-sync video
               </span>
               <span className="mt-0.5 block text-[11px] text-foreground-muted">
-                Animates the 2D face with MuseTalk. Much slower — leave off for
-                quick text replies.
+                Animates the 2D face with MuseTalk. Adds render time — turn off
+                for quick text-only replies.
               </span>
             </span>
           </label>

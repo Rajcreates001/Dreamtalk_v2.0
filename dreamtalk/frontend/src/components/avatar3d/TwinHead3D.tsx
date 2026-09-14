@@ -118,6 +118,34 @@ function HeadModel({ url, audioRef, keyframesRef, emotionRef, reduced, onFit }: 
     }
   }
 
+  /* Debug handle, opt-in via ?debug3d.
+   *
+   * R3F v9 no longer hangs a `__r3f` store off the canvas element, and walking
+   * the React fiber tree to reach the scene is fragile enough that it failed
+   * outright while diagnosing "the eye blinking is not working". Without a way
+   * to read the live morph influences, that question can only be answered by
+   * staring at the render, which is exactly how a subtle-but-working blink and
+   * a broken one become indistinguishable. `hold` pins a morph so a still
+   * screenshot can prove the geometry moves. */
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (!new URLSearchParams(window.location.search).has("debug3d")) return
+    ;(window as any).__dtTwin = {
+      meshes: meshes.current,
+      names: () => meshes.current.map((m) => m.name),
+      targets: () => Object.keys(meshes.current[0]?.morphTargetDictionary ?? {}),
+      read: (name: string) => {
+        const m = meshes.current[0]
+        const i = (m?.morphTargetDictionary as any)?.[name]
+        return i === undefined ? null : m.morphTargetInfluences?.[i]
+      },
+      /** Pin a morph at `value` (or release with null) despite the frame loop. */
+      hold: (name: string | null, value = 1) => {
+        ;(window as any).__dtHold = name ? { name, value } : null
+      },
+    }
+  }, [model])
+
   useFrame((state, delta) => {
     if (reduced || meshes.current.length === 0) return
     const audio = audioRef.current
@@ -151,6 +179,10 @@ function HeadModel({ url, audioRef, keyframesRef, emotionRef, reduced, onFit }: 
     let v = 0
     if (b.closing > 0) { b.closing -= delta; v = Math.sin(Math.max(0, b.closing / 0.12) * Math.PI) }
     setTarget("blink", v)
+
+    // Applied last so it wins over this frame's computed influences.
+    const hold = typeof window !== "undefined" ? (window as any).__dtHold : null
+    if (hold?.name) setTarget(hold.name, hold.value)
 
     // Gentle idle sway so the head reads alive between utterances.
     const t = state.clock.elapsedTime

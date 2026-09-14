@@ -31,9 +31,17 @@ EMOTIONS = ("happy", "sad", "angry", "surprised")
 ALL_SHAPES = VISEMES + ("blink",) + EMOTIONS
 
 # Peak displacement per shape, as a fraction of total head height.
+#
+# `blink` was 0.030, and at that value the upper lid travelled only 33.1% of
+# the eyeball's vertical diameter (measured on a fitted head: lid displacement
+# 0.02094 against a 0.06333 eyeball). A lid that covers a third of the eye is
+# not a blink, it is a twitch — the animation was driving correctly and
+# reaching influence 0.999, so the fault was amplitude alone, and the eye
+# simply never shut. Scaled to close the aperture fully with a little margin,
+# since the smooth falloff means only the lid margin reaches peak travel.
 AMPLITUDE = {
     "aa": 0.055, "ih": 0.022, "ou": 0.030, "ee": 0.026, "oh": 0.045,
-    "blink": 0.030, "happy": 0.026, "sad": 0.020,
+    "blink": 0.095, "happy": 0.026, "sad": 0.020,
     "angry": 0.018, "surprised": 0.048,
 }
 
