@@ -17,9 +17,26 @@ export interface TwinHead3DProps {
   onEnded?: () => void
 }
 
-/** Backend emotion label → the emotion morph target baked into the GLB. */
-function emotionTarget(emotion?: string): string | null {
-  switch ((emotion || "").toLowerCase()) {
+/** Backend emotion label → the emotion morph target baked into the GLB.
+ *
+ *  The emotion field is NOT reliably a string: the pipeline returns a richer
+ *  object ({ primary_mood, valence, intensity, ... }) on some paths. Calling
+ *  .toLowerCase() on that threw "(A || '').toLowerCase is not a function" on
+ *  every single frame inside the render loop, so the 3D head never drew at all
+ *  — the canvas mounted, the GLB downloaded 200 OK, and the viewport stayed
+ *  empty. Normalise before matching. */
+function emotionLabel(emotion: unknown): string {
+  if (typeof emotion === "string") return emotion
+  if (emotion && typeof emotion === "object") {
+    const o = emotion as Record<string, unknown>
+    const v = o.primary_mood ?? o.mood ?? o.label ?? o.emotion ?? o.name
+    if (typeof v === "string") return v
+  }
+  return ""
+}
+
+function emotionTarget(emotion?: unknown): string | null {
+  switch (emotionLabel(emotion).toLowerCase()) {
     case "happy": case "joy": case "excited": case "loving": return "happy"
     case "sad": case "sorrow": return "sad"
     case "angry": case "frustrated": return "angry"
@@ -33,7 +50,9 @@ function HeadModel({ url, audioRef, keyframesRef, emotionRef, reduced, onFit }: 
   url: string
   audioRef: React.RefObject<HTMLAudioElement | null>
   keyframesRef: React.MutableRefObject<RespondResult["lipsync"] | undefined>
-  emotionRef: React.MutableRefObject<string | undefined>
+  // `unknown` on purpose: the backend sends a string on some paths and an
+  // object on others. emotionLabel() normalises it.
+  emotionRef: React.MutableRefObject<unknown>
   reduced: boolean
   onFit: (center: THREE.Vector3, radius: number) => void
 }) {
