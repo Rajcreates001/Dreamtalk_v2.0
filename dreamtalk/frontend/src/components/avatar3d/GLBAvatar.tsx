@@ -26,21 +26,19 @@ function Model({ url, skinColor, reduced, onFit }: {
   const { scene } = useGLTF(url, true) as any
   const root = useRef<THREE.Group>(null)
   const headMesh = useRef<THREE.Object3D | null>(null)
-  const eyeball = useRef<THREE.Object3D | null>(null)
   const eyes = useRef<THREE.Object3D[]>([])
   const blink = useRef({ next: 3, closing: 0 })
-  const saccade = useRef({ next: 1.5, x: 0, y: 0, tx: 0, ty: 0 })
 
   const model = useMemo(() => {
     const c = scene.clone(true)
-    eyes.current = []; headMesh.current = null; eyeball.current = null
+    eyes.current = []; headMesh.current = null
     const strip: any[] = []
     c.traverse((o: any) => {
       if (o.isCamera || o.isLight || /camera|sun|light/i.test(o.name)) { strip.push(o); return }
       o.frustumCulled = false
       if (/Head/.test(o.name) && o.isMesh && !headMesh.current) headMesh.current = o
-      // The eyeball node (holds the iris) — rotated for subtle life (saccades).
-      if (o.name === "Eye") eyeball.current = o
+      // The eyeball is deliberately NOT captured for rotation here — see the
+      // note in useFrame for why saccades are disabled on this asset.
       // Wet-eye reflection layers render as a white film over the iris — hide them.
       if (/^(EyeScleraReflect|MeniscusEye)/.test(o.name) && o.isMesh) { o.visible = false; return }
       if (/^Eye($|_|lashes)/.test(o.name)) eyes.current.push(o)
@@ -115,20 +113,26 @@ function Model({ url, skinColor, reduced, onFit }: {
       g.rotation.x = Math.sin(t * 0.37) * 0.018
       g.position.y = Math.sin(t * 0.8) * 0.004
     }
-    // Eye saccades — the eyeball flicks to a new point every ~2s, giving life
-    // without blendshapes (this mesh has none).
-    const s = saccade.current
-    s.next -= delta
-    if (s.next <= 0) { s.tx = (Math.random() - 0.5) * 0.14; s.ty = (Math.random() - 0.5) * 0.08; s.next = 1.2 + Math.random() * 2.5 }
-    s.x += (s.tx - s.x) * Math.min(1, delta * 10)
-    s.y += (s.ty - s.y) * Math.min(1, delta * 10)
-    if (eyeball.current) { eyeball.current.rotation.y = s.x; eyeball.current.rotation.x = s.y }
-    // Subtle blink — never fully collapses the eye
+    // Eye saccades are DISABLED for this asset, and this is the "avatar has no
+    // eyes" fix.
+    //
+    // The only rotatable handle is the "Eye" node, whose origin is 457 world
+    // units from the eyeballs (measured in-browser). A 0.07 rad saccade there
+    // displaces them by 32 units against a 17.8-unit eyeball diameter — 1.8x
+    // their own size — pushing them inside the skull so only the head's own
+    // blank eye surface shows. Giving the mesh a local pivot instead was tried
+    // and put the eyeballs at world y -19.8 against a head spanning 279..462,
+    // because the mesh's local offset is multiplied by the node's 105.7 scale.
+    // A still, correct eye beats a moving, invisible one.
+
+    // Blink. Only the lashes are squashed: the eyeball's mesh origin sits 28.8
+    // local units below the eyeball itself, so scaling its Y drags it far down
+    // the face — the same lever-arm bug as the saccade, just intermittent.
     const b = blink.current
     if (t > b.next && b.closing <= 0) { b.closing = 0.14; b.next = t + 3 + Math.random() * 3.5 }
     let eyeSy = 1
     if (b.closing > 0) { b.closing -= delta; eyeSy = 1 - 0.62 * Math.abs(Math.sin((b.closing / 0.14) * Math.PI)) }
-    eyes.current.forEach((e) => { e.scale.y = eyeSy })
+    eyes.current.forEach((e) => { if (/lashes/i.test(e.name)) e.scale.y = eyeSy })
   })
 
   return <group ref={root}><primitive object={model} /></group>
