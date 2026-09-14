@@ -317,8 +317,24 @@ services:
       - SPRINGLab/Indic-Mio
       - --max-model-len
       - "1536"
+      # 0.35 of an 8 GiB card is 2865 MiB, and after 1157 MiB of weights,
+      # activations and captured CUDA graphs there was nothing left:
+      #   Available KV cache memory: -1.13 GiB
+      #   ValueError: No available memory for the cache blocks
+      # 0.45 leaves roughly 2.5 GiB for activations and KV, which is ample
+      # for a 0.6B model capped at 1536 tokens, while still fitting beside
+      # MuseTalk (~2 GiB, and it unloads after each render).
       - --gpu-memory-utilization
-      - ${INDICMIO_GPU_MEMORY_UTILIZATION:-0.35}
+      - ${INDICMIO_GPU_MEMORY_UTILIZATION:-0.45}
+      # No CUDA graph capture. Graphs bought throughput we do not need - this
+      # model emits short speech-token sequences - and cost both the captured
+      # graph memory and a profiling reservation on top, on the exact card
+      # MuseTalk also has to fit on.
+      - --enforce-eager
+      # Bound concurrent sequences so activation memory cannot spike into
+      # MuseTalk's headroom. Speech synthesis here is one request at a time.
+      - --max-num-seqs
+      - "8"
       - --dtype
       - bfloat16
       - --trust-remote-code
