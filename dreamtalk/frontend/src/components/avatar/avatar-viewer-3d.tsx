@@ -353,7 +353,7 @@ export function AvatarViewer3D({
       </Canvas>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#201D1D]/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-accent-foreground/80 to-transparent pointer-events-none" />
 
       {/* Controls hint */}
       {showControls && (

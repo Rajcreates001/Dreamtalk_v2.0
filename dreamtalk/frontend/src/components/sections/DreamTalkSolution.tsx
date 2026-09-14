@@ -27,15 +27,15 @@ const features = [
     icon: Heart,
     title: "Emotion AI",
     desc: "Real-time sentiment analysis and emotion-aware responses for natural conversations.",
-    color: "#D84C63",
-    gradient: "from-[#D84C63]/20 to-[#D84C63]/5",
+    color: "var(--destructive)",
+    gradient: "from-destructive/20 to-destructive/5",
   },
   {
     icon: BookOpen,
     title: "Knowledge Engine",
     desc: "Process PDFs, websites, videos, and documents. Your avatar learns from everything.",
-    color: "#D6A44C",
-    gradient: "from-[#D6A44C]/20 to-[#D6A44C]/5",
+    color: "var(--warning)",
+    gradient: "from-warning/20 to-warning/5",
   },
   {
     icon: Cpu,
@@ -62,8 +62,8 @@ const features = [
     icon: Zap,
     title: "Real-time Streaming",
     desc: "Sub-200ms response time with streaming conversations and live avatar animations.",
-    color: "#D6A44C",
-    gradient: "from-[#D6A44C]/20 to-[#D6A44C]/5",
+    color: "var(--warning)",
+    gradient: "from-warning/20 to-warning/5",
   },
 ]
 

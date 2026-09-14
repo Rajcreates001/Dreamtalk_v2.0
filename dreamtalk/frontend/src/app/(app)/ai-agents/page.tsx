@@ -11,8 +11,8 @@ const AGENTS = [
   { name: "Research Agent", icon: Network, color: "var(--secondary)", status: "active", desc: "Deep research and analysis" },
   { name: "Voice Agent", icon: Mic, color: "var(--secondary)", status: "active", desc: "Speech synthesis and recognition" },
   { name: "Memory Agent", icon: Cpu, color: "var(--primary)", status: "idle", desc: "Long-term memory management" },
-  { name: "Knowledge Agent", icon: Brain, color: "#D6A44C", status: "active", desc: "Knowledge retrieval and indexing" },
-  { name: "Vision Agent", icon: Eye, color: "#B03A5E", status: "idle", desc: "Image and video analysis" },
+  { name: "Knowledge Agent", icon: Brain, color: "var(--warning)", status: "active", desc: "Knowledge retrieval and indexing" },
+  { name: "Vision Agent", icon: Eye, color: "var(--primary)", status: "idle", desc: "Image and video analysis" },
 ]
 
 export default function AIAgentsPage() {

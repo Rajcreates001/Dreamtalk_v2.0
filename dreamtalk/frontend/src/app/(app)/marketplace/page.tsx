@@ -10,8 +10,8 @@ const ITEMS = [
   { name: "Premium Voice Pack", type: "Voice", downloads: "1.8K", rating: 4.9, color: "var(--secondary)", desc: "12 high-quality natural voices" },
   { name: "Medical Knowledge Base", type: "Knowledge", downloads: "3.2K", rating: 4.7, color: "var(--secondary)", desc: "HIPAA-compliant medical training data" },
   { name: "Japanese Language Pack", type: "Language", downloads: "892", rating: 4.6, color: "var(--primary)", desc: "Fluency pack for Japanese" },
-  { name: "Enterprise Analytics", type: "Integration", downloads: "1.1K", rating: 4.5, color: "#D6A44C", desc: "Connect with your BI tools" },
-  { name: "Emotion Engine Pro", type: "Module", downloads: "567", rating: 4.9, color: "#B03A5E", desc: "Advanced emotional intelligence module" },
+  { name: "Enterprise Analytics", type: "Integration", downloads: "1.1K", rating: 4.5, color: "var(--warning)", desc: "Connect with your BI tools" },
+  { name: "Emotion Engine Pro", type: "Module", downloads: "567", rating: 4.9, color: "var(--primary)", desc: "Advanced emotional intelligence module" },
 ]
 
 const CATEGORIES = ["All", "Templates", "Voices", "Knowledge", "Languages", "Integrations", "Modules"]
@@ -70,7 +70,7 @@ export default function MarketplacePage() {
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-[#D6A44C]" />
+                  <Star className="h-3 w-3 text-warning" />
                   <span className="text-xs text-foreground">{item.rating}</span>
                 </div>
               </div>

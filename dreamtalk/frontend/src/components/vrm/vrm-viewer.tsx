@@ -105,7 +105,7 @@ function VRMScene({
                 child.receiveShadow = true;
                 if (!child.material || (child.material as any).constructor?.name === 'Material') {
                   child.material = new THREE.MeshPhysicalMaterial({
-                    color: '#E6D9C4',
+                    color: 'var(--border)',
                     metalness: 0.02,
                     roughness: 0.6,
                     clearcoat: 0.05,

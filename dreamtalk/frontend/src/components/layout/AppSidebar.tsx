@@ -26,9 +26,9 @@ const MODULES = [
   { href: "/voice-cloning", label: "Voice Cloning", icon: Mic, color: "var(--primary)" },
   { href: "/digital-brain", label: "Digital Brain", icon: Brain, color: "var(--secondary)" },
   { href: "/voice-chat", label: "Voice Chat", icon: Headphones, color: "var(--secondary)" },
-  { href: "/avatar-studio", label: "Avatar Studio", icon: Camera, color: "#D6A44C" },
-  { href: "/builder", label: "Complete Builder", icon: Puzzle, color: "#B03A5E" },
-  { href: "/brain-manager", label: "Brain Management", icon: Sliders, color: "#D84C63" },
+  { href: "/avatar-studio", label: "Avatar Studio", icon: Camera, color: "var(--warning)" },
+  { href: "/builder", label: "Complete Builder", icon: Puzzle, color: "var(--primary)" },
+  { href: "/brain-manager", label: "Brain Management", icon: Sliders, color: "var(--destructive)" },
 ]
 
 export function AppSidebar() {
@@ -49,7 +49,7 @@ export function AppSidebar() {
       try {
         const twins = await digitalTwinApi.list()
         if (twins && twins.length > 0) {
-          const colors = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "#D6A44C", "#B03A5E", "#D84C63"]
+          const colors = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "var(--warning)", "var(--primary)", "var(--destructive)"]
           const mapped = twins.map((twin: any, i: number) => {
             const name = twin.name || twin.digital_twin_name || "Digital Human"
             const id = twin.id || twin._id || twin.twin_id
@@ -323,7 +323,7 @@ export function AppSidebar() {
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground-muted hover:text-[#D84C63] hover:bg-[#D84C63]/5",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground-muted hover:text-destructive hover:bg-destructive/5",
             collapsed && "justify-center px-0"
           )}
         >

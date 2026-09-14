@@ -10,10 +10,10 @@ import { Spinner } from "@/components/loading-states"
 
 const BRAIN_AREAS = [
   { key: "pfc", name: "Prefrontal Cortex", icon: Brain, color: "var(--burgundy)", desc: "Executive function, response planning" },
-  { key: "dacc", name: "dACC", icon: AlertTriangle, color: "#D84C63", desc: "Conflict monitoring, intent validation" },
-  { key: "insula", name: "Insula", icon: Heart, color: "#9E3B6B", desc: "Emotion processing, interoception" },
-  { key: "ipl", name: "IPL", icon: Eye, color: "#8F9A5E", desc: "Context integration, multimodal binding" },
-  { key: "bg", name: "Basal Ganglia", icon: Zap, color: "#D6A44C", desc: "Action selection, response gating" },
+  { key: "dacc", name: "dACC", icon: AlertTriangle, color: "var(--destructive)", desc: "Conflict monitoring, intent validation" },
+  { key: "insula", name: "Insula", icon: Heart, color: "var(--burgundy)", desc: "Emotion processing, interoception" },
+  { key: "ipl", name: "IPL", icon: Eye, color: "var(--secondary)", desc: "Context integration, multimodal binding" },
+  { key: "bg", name: "Basal Ganglia", icon: Zap, color: "var(--warning)", desc: "Action selection, response gating" },
 ]
 
 export default function DigitalBrainPage() {

@@ -5,11 +5,11 @@ import { BookOpen, FileText, Globe, Video, Mic, Image, Code, Download, ArrowRigh
 import { SectionWrapper, SectionHeading, GlassCard } from "./SectionWrapper"
 
 const sources = [
-  { icon: FileText, label: "PDF", color: "#D84C63" },
+  { icon: FileText, label: "PDF", color: "var(--destructive)" },
   { icon: FileText, label: "Word", color: "var(--burgundy)" },
   { icon: Globe, label: "Websites", color: "var(--secondary)" },
-  { icon: Video, label: "YouTube", color: "#D84C63" },
-  { icon: Mic, label: "Audio", color: "#D6A44C" },
+  { icon: Video, label: "YouTube", color: "var(--destructive)" },
+  { icon: Mic, label: "Audio", color: "var(--warning)" },
   { icon: Image, label: "Images", color: "var(--secondary)" },
   { icon: Code, label: "Code", color: "var(--primary)" },
   { icon: Download, label: "Any Format", color: "var(--secondary)" },
@@ -37,7 +37,7 @@ export function KnowledgeEngine() {
             { label: "Upload", icon: Download, color: "var(--primary)", desc: "Documents, media, links" },
             { label: "Process", icon: Code, color: "var(--secondary)", desc: "Parse, embed, index" },
             { label: "Graph", icon: Globe, color: "var(--secondary)", desc: "Knowledge graph" },
-            { label: "Reason", icon: BookOpen, color: "#D6A44C", desc: "Query & learn" },
+            { label: "Reason", icon: BookOpen, color: "var(--warning)", desc: "Query & learn" },
           ].map((stage, i) => (
             <motion.div
               key={stage.label}

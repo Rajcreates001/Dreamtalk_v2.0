@@ -11,8 +11,8 @@ import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 const stages = [
   { id: "photo", icon: Camera, label: "Photo", color: "var(--primary)", desc: "Upload a reference photo or generate procedurally" },
   { id: "voice", icon: Mic, label: "Voice", color: "var(--secondary)", desc: "Clone or synthesize a voice in 50+ languages" },
-  { id: "personality", icon: Heart, label: "Personality", color: "#D84C63", desc: "Define traits, tone, and behavioral patterns" },
-  { id: "knowledge", icon: BookOpen, label: "Knowledge", color: "#D6A44C", desc: "Upload documents, websites, and media" },
+  { id: "personality", icon: Heart, label: "Personality", color: "var(--destructive)", desc: "Define traits, tone, and behavioral patterns" },
+  { id: "knowledge", icon: BookOpen, label: "Knowledge", color: "var(--warning)", desc: "Upload documents, websites, and media" },
   { id: "memory", icon: Brain, label: "Memory", color: "var(--secondary)", desc: "Configure memory architecture and persistence" },
   { id: "deploy", icon: Globe, label: "Deploy", color: "var(--primary)", desc: "Deploy to web, mobile, API, or platform" },
 ]

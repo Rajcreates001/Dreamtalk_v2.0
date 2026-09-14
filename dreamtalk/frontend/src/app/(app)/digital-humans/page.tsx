@@ -39,7 +39,7 @@ type AvatarData = {
   description?: string | null
 }
 
-const DEFAULT_COLORS = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "#D6A44C", "#D84C63"]
+const DEFAULT_COLORS = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "var(--warning)", "var(--destructive)"]
 const FALLBACK_AVATARS: AvatarData[] = [
   { id: "demo-1", name: "Dr. Aria", role: "AI Companion", status: "active", emotion: "Calm", memory: 92, relationship: 87, languages: 4, voice: "Natural", model: "GPT-4o", knowledgeSize: "1.2 GB", conversations: 1247, color: "var(--primary)" },
   { id: "demo-2", name: "Prof. Orion", role: "Knowledge Expert", status: "active", emotion: "Focused", memory: 78, relationship: 62, languages: 3, voice: "Professional", model: "Claude 3.5", knowledgeSize: "4.8 GB", conversations: 892, color: "var(--secondary)" },
@@ -49,7 +49,7 @@ const FALLBACK_AVATARS: AvatarData[] = [
 
 const STATUS_CONFIG = {
   active: { label: "Active", color: "var(--secondary)" },
-  idle: { label: "Idle", color: "#D6A44C" },
+  idle: { label: "Idle", color: "var(--warning)" },
   offline: { label: "Offline", color: "var(--foreground-muted)" },
 }
 
@@ -159,9 +159,9 @@ export default function DigitalHumansPage() {
 
       {/* Error banner */}
       {error && !loading && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20">
-          <AlertCircle className="h-4 w-4 text-[#D84C63] shrink-0" />
-          <p className="text-xs text-[#D84C63]">{error} — showing sample data</p>
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20">
+          <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+          <p className="text-xs text-destructive">{error} — showing sample data</p>
         </div>
       )}
 

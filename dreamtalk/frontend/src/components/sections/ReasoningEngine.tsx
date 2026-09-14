@@ -8,8 +8,8 @@ const steps = [
   { icon: CircuitBoard, label: "Input", desc: "User query or command", color: "var(--primary)" },
   { icon: Brain, label: "Context", desc: "Session history & persona", color: "var(--secondary)" },
   { icon: Network, label: "Memory", desc: "Relevant past interactions", color: "var(--secondary)" },
-  { icon: Cpu, label: "Knowledge", desc: "Structured knowledge graph", color: "#D6A44C" },
-  { icon: Zap, label: "Reasoning", desc: "Multi-step analysis", color: "#D84C63" },
+  { icon: Cpu, label: "Knowledge", desc: "Structured knowledge graph", color: "var(--warning)" },
+  { icon: Zap, label: "Reasoning", desc: "Multi-step analysis", color: "var(--destructive)" },
 ]
 
 export function ReasoningEngine() {

@@ -137,7 +137,7 @@ export default function StudioPage() {
             </span>
           )}
           {saveStatus === "error" && (
-            <span className="flex items-center gap-1 text-xs text-[#D84C63]">Save failed</span>
+            <span className="flex items-center gap-1 text-xs text-destructive">Save failed</span>
           )}
           <button
             onClick={handleSave}
@@ -291,7 +291,7 @@ function AppearanceTab() {
         </Field>
         <Field label="Color Scheme">
           <div className="flex flex-wrap gap-2">
-            {["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "#D6A44C", "#D84C63"].map((c) => (
+            {["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "var(--warning)", "var(--destructive)"].map((c) => (
               <button key={c} className="w-7 h-7 rounded-lg border border-foreground/[0.1] hover:scale-110 transition-transform" style={{ background: c }} />
             ))}
           </div>
@@ -437,7 +437,7 @@ function KnowledgeTab() {
               </div>
               <div className={cn(
                 "px-1.5 py-0.5 rounded text-[9px] font-medium",
-                src.status === "synced" ? "bg-secondary/10 text-secondary" : "bg-[#D6A44C]/10 text-[#D6A44C]"
+                src.status === "synced" ? "bg-secondary/10 text-secondary" : "bg-warning/10 text-warning"
               )}>
                 {src.status}
               </div>
@@ -735,7 +735,7 @@ function TestingTab() {
                 <span className="text-xs text-foreground-muted">{r.label}</span>
                 <span className={cn(
                   "text-[10px] font-medium",
-                  r.status === "passed" ? "text-secondary" : r.status === "failed" ? "text-[#D84C63]" : "text-[#D6A44C]"
+                  r.status === "passed" ? "text-secondary" : r.status === "failed" ? "text-destructive" : "text-warning"
                 )}>
                   {r.status === "passed" ? "✓ Passed" : r.status === "failed" ? "✗ Failed" : "○ Pending"}
                 </span>
@@ -771,7 +771,7 @@ function PreviewTab() {
         </Field>
         <Field label="Background">
           <div className="grid grid-cols-4 gap-2">
-            {["var(--card)", "#1a1f35", "#8F9A5E", "var(--primary)"].map((bg) => (
+            {["var(--card)", "#1a1f35", "var(--secondary)", "var(--primary)"].map((bg) => (
               <button
                 key={bg}
                 className="aspect-video rounded-lg border border-foreground/[0.1] hover:scale-105 transition-transform"
@@ -802,7 +802,7 @@ function DeployTab() {
         <Field label="Environment">
           <div className="grid grid-cols-3 gap-2">
             {[
-              { id: "dev", label: "Development", color: "#D6A44C" },
+              { id: "dev", label: "Development", color: "var(--warning)" },
               { id: "staging", label: "Staging", color: "var(--secondary)" },
               { id: "prod", label: "Production", color: "var(--secondary)" },
             ].map((env) => (

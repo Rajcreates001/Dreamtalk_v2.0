@@ -58,9 +58,9 @@ function SectionInner({
   const bgClasses: Record<string, string> = {
     default: "bg-transparent",
     alt: "bg-foreground/[0.01] border-y border-foreground/[0.04]",
-    dark: "bg-[#050816]",
+    dark: "bg-background",
     aurora: "bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent",
-    problem: "bg-gradient-to-b from-transparent via-[#D84C63]/[0.015] to-transparent",
+    problem: "bg-gradient-to-b from-transparent via-destructive/[0.015] to-transparent",
     solution: "bg-gradient-to-b from-transparent via-primary/[0.025] via-secondary/[0.01] to-transparent",
     memory: "bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent",
     knowledge: "bg-gradient-to-b from-transparent via-secondary/[0.015] to-transparent",
@@ -75,17 +75,17 @@ function SectionInner({
     alt: { primary: "var(--primary)", secondary: "var(--secondary)" },
     dark: { primary: "var(--primary)", secondary: "var(--secondary)" },
     aurora: { primary: "var(--primary)", secondary: "var(--secondary)" },
-    problem: { primary: "#D84C63", secondary: "var(--primary)" },
+    problem: { primary: "var(--destructive)", secondary: "var(--primary)" },
     solution: { primary: "var(--primary)", secondary: "var(--secondary)" },
-    memory: { primary: "var(--primary)", secondary: "#B03A5E" },
+    memory: { primary: "var(--primary)", secondary: "var(--primary)" },
     knowledge: { primary: "var(--secondary)", secondary: "var(--primary)" },
     voice: { primary: "var(--primary)", secondary: "var(--secondary)" },
     deploy: { primary: "var(--primary)", secondary: "var(--secondary)" },
     cta: { primary: "var(--primary)", secondary: "var(--secondary)" },
     avatar: { primary: "var(--primary)", secondary: "var(--primary)" },
     humanization: { primary: "var(--primary)", secondary: "var(--primary)" },
-    reasoning: { primary: "#D6A44C", secondary: "var(--primary)" },
-    industry: { primary: "#8F9A5E", secondary: "var(--primary)" },
+    reasoning: { primary: "var(--warning)", secondary: "var(--primary)" },
+    industry: { primary: "var(--secondary)", secondary: "var(--primary)" },
     security: { primary: "var(--secondary)", secondary: "var(--primary)" },
   }
 
@@ -284,9 +284,12 @@ export function GlassCard({
   return (
     <motion.div
       variants={staggerItem}
-      className={`rounded-[20px] bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 ${
+      // Uses the shared depth system rather than a one-off recipe, so these
+      // cards pick up the specular rim, inner shadow and layered drop shadow
+      // that make glass read as glass — and degrade with the perf tiers.
+      className={`glass glass-rim rounded-[20px] p-6 ${
         hover
-          ? "hover:-translate-y-1 hover:bg-foreground/[0.04] hover:border-primary/20 transition-all duration-300 ease-out group cursor-default"
+          ? "hover:-translate-y-1 hover:border-primary/30 hover:shadow-elev-3 transition-all duration-300 ease-out group cursor-default"
           : ""
       } ${className}`}
     >

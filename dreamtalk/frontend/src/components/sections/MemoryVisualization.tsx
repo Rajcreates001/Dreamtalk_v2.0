@@ -27,7 +27,7 @@ const memoryTypes = [
     icon: GitBranch,
     title: "Procedural Memory",
     desc: "Learned patterns, skills, and response strategies refined through thousands of interactions.",
-    color: "#D6A44C",
+    color: "var(--warning)",
   },
 ]
 
@@ -85,9 +85,9 @@ export function MemoryVisualization() {
             { x: 120, y: 60, color: "var(--secondary)", label: "Process", size: 22 },
             { x: 120, y: 140, color: "var(--secondary)", label: "Analyze", size: 22 },
             { x: 200, y: 100, color: "var(--secondary)", label: "Memory", size: 32 },
-            { x: 280, y: 60, color: "#D6A44C", label: "Store", size: 22 },
-            { x: 280, y: 140, color: "#D6A44C", label: "Recall", size: 22 },
-            { x: 350, y: 100, color: "#D84C63", label: "Output", size: 28 },
+            { x: 280, y: 60, color: "var(--warning)", label: "Store", size: 22 },
+            { x: 280, y: 140, color: "var(--warning)", label: "Recall", size: 22 },
+            { x: 350, y: 100, color: "var(--destructive)", label: "Output", size: 28 },
           ].map((node, i) => (
             <motion.div
               key={node.label}

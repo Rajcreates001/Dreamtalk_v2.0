@@ -269,7 +269,7 @@ export default function ConversationsPage() {
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         <Particles
           quantity={40}
-          color="#8F9A5E"
+          color="var(--secondary)"
           className="absolute inset-0 opacity-20 pointer-events-none"
           staticity={100}
           ease={120}
@@ -406,7 +406,7 @@ export default function ConversationsPage() {
               {/* Reasoning */}
               <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06]">
                 <span className="text-[10px] text-foreground-muted flex items-center gap-1.5 mb-1.5">
-                  <Cpu className="h-3 w-3 text-[#D6A44C]" />
+                  <Cpu className="h-3 w-3 text-warning" />
                   Reasoning
                 </span>
                 <p className="text-[11px] text-foreground-muted leading-relaxed">{THINKING_DATA.reasoning}</p>

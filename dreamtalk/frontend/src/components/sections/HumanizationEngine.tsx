@@ -18,7 +18,7 @@ const stages = [
     icon: Heart,
     label: "Emotion",
     desc: "Feels the context",
-    color: "#D84C63",
+    color: "var(--destructive)",
   },
   {
     icon: Brain,
@@ -30,7 +30,7 @@ const stages = [
     icon: BookOpen,
     label: "Knowledge",
     desc: "Learns continuously",
-    color: "#D6A44C",
+    color: "var(--warning)",
   },
   {
     icon: Zap,

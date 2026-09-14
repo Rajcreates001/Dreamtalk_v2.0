@@ -69,18 +69,14 @@ function Model({ url, skinColor, reduced, onFit }: {
             m.transparent = false
             m.depthWrite = true
             if ("roughness" in m) m.roughness = 0.55
-          } else if (o.name === "Eye_Eye_0" || m.name === "material") {
-            // The cornea is WET. The generic matte default below was being
-            // applied here, which flattens the eye into a painted-on disc:
-            // with roughness 0.7 there is no specular lobe tight enough to
-            // form a catchlight, and an eye without a catchlight reads as
-            // blind. Low roughness restores it; the asset's own
-            // metallicRoughnessTexture still modulates sclera vs iris.
-            m.roughness = 0.12
-            m.envMapIntensity = 1.4
-            // Backfaces of the eyeball are never visible and cost a second
-            // fragment pass over the most shaded material on the model.
-            m.side = THREE.FrontSide
+            // NOTE on the eyes: do not "improve" the eye material without
+            // looking at the render. The baseColor texture is a correct,
+            // detailed eye (blue iris, black pupil, veined sclera) and it is
+            // bound correctly — verified by extracting it from the GLB.
+            // Making the cornea glossier (roughness 0.12 + a close point
+            // light) blew the eyeball out to flat white, and forcing
+            // FrontSide on a mesh the asset deliberately ships as doubleSided
+            // risks culling it outright. The asset's own values are left alone.
           } else if ("roughness" in m && (m.roughness === undefined || m.roughness > 0.9)) {
             m.roughness = 0.7
           }
@@ -228,12 +224,6 @@ export function GLBAvatar({
         <directionalLight position={[2, 3, 4]} intensity={1.15} color="#fff3e6" />
         <directionalLight position={[-3, 1, 2]} intensity={0.35} color="#e9f0ff" />
         <hemisphereLight args={["#ffffff", "#4a3d38", 0.55]} />
-        {/* Catchlight. A glossy cornea still reads as dead without a small,
-            bright source to reflect. Placed high and to the camera side so the
-            highlight lands in the upper-left of each iris, which is where a
-            portrait photographer would put it. Tight distance/decay keeps it
-            off the skin, so it costs one light and changes nothing else. */}
-        <pointLight position={[0.35, 0.55, 1.6]} intensity={2.2} distance={4} decay={2} color="#ffffff" />
         <Model url={url} skinColor={skinColor} reduced={!!reduced}
           onFit={(center, radius) => setFit({ center, radius })} />
         <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />

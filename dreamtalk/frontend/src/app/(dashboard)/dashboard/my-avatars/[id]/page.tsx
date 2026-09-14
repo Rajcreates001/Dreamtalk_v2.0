@@ -73,10 +73,10 @@ type DigitalTwin = {
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
   completed: { bg: "bg-secondary/10", text: "text-secondary", dot: "bg-secondary", label: "Live" },
-  processing: { bg: "bg-[#D6A44C]/10", text: "text-[#D6A44C]", dot: "bg-[#D6A44C]", label: "Processing" },
+  processing: { bg: "bg-warning/10", text: "text-warning", dot: "bg-warning", label: "Processing" },
   draft: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Draft" },
   published: { bg: "bg-secondary/10", text: "text-secondary", dot: "bg-secondary", label: "Published" },
-  failed: { bg: "bg-[#D84C63]/10", text: "text-[#D84C63]", dot: "bg-[#D84C63]", label: "Failed" },
+  failed: { bg: "bg-destructive/10", text: "text-destructive", dot: "bg-destructive", label: "Failed" },
   default: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Unknown" },
 }
 

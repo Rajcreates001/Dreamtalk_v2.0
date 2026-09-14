@@ -6,15 +6,15 @@ import { Globe, CheckCircle, Clock, AlertTriangle, RefreshCw, Eye, Rocket, Cpu }
 const DEPLOYMENTS = [
   { name: "Dr. Aria", env: "Production", status: "live" as const, url: "chat.dreamtalk.ai/aria", uptime: "99.97%", requests: "12.4K", color: "var(--secondary)" },
   { name: "Prof. Orion", env: "Staging", status: "deploying" as const, url: "staging.dreamtalk.ai/orion", uptime: "98.2%", requests: "3.1K", color: "var(--primary)" },
-  { name: "Luna", env: "Development", status: "pending" as const, url: "dev.dreamtalk.ai/luna", uptime: "—", requests: "—", color: "#D6A44C" },
+  { name: "Luna", env: "Development", status: "pending" as const, url: "dev.dreamtalk.ai/luna", uptime: "—", requests: "—", color: "var(--warning)" },
   { name: "Sage Analytics", env: "Production", status: "live" as const, url: "api.dreamtalk.ai/sage", uptime: "99.99%", requests: "87.2K", color: "var(--secondary)" },
 ]
 
 const STATUS_CFG = {
   live: { label: "Live", color: "var(--secondary)", icon: CheckCircle },
-  deploying: { label: "Deploying", color: "#D6A44C", icon: RefreshCw },
+  deploying: { label: "Deploying", color: "var(--warning)", icon: RefreshCw },
   pending: { label: "Pending", color: "var(--foreground-muted)", icon: Clock },
-  error: { label: "Error", color: "#D84C63", icon: AlertTriangle },
+  error: { label: "Error", color: "var(--destructive)", icon: AlertTriangle },
 }
 
 export default function DeploymentsPage() {

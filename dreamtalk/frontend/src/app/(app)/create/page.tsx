@@ -294,7 +294,7 @@ export default function CreateDigitalHumanPage() {
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-lg mx-auto mb-6 px-4 py-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63] text-center"
+          className="max-w-lg mx-auto mb-6 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive text-center"
         >
           {error}
         </motion.div>

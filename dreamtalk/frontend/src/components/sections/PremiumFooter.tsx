@@ -90,7 +90,7 @@ export function PremiumFooter() {
         {/* Bottom bar */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-foreground/[0.04]">
           <p className="text-xs text-foreground-muted flex items-center gap-1.5">
-            © 2026 DreamTalk. Built with <Heart className="h-3 w-3 text-[#D84C63]" /> for Digital Humans
+            © 2026 DreamTalk. Built with <Heart className="h-3 w-3 text-destructive" /> for Digital Humans
           </p>
           <div className="flex items-center gap-4">
             {["Privacy", "Terms", "Cookies", "Licenses"].map((item) => (

@@ -52,7 +52,7 @@ export function PremiumTestimonials() {
             <p className="text-sm text-foreground leading-relaxed mb-4 italic">&ldquo;{t.text}&rdquo;</p>
             <div className="flex items-center gap-2 mb-3">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-3 w-3 fill-[#D6A44C] text-[#D6A44C]" />
+                <Star key={i} className="h-3 w-3 fill-warning text-warning" />
               ))}
             </div>
             <div>

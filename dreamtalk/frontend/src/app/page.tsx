@@ -176,7 +176,17 @@ export default function LandingPage() {
   }, [demoInput, demoLoading])
 
   return (
-    <main className="relative min-h-dvh bg-background overflow-x-hidden" style={{ contain: "paint layout" }}>
+    // No `contain: paint layout` here. Both containment types make this element
+    // a containing block for fixed-position descendants and `paint` clips them,
+    // which was cropping the fixed AuroraBackdrop to this box — leaving the
+    // glass surfaces with nothing behind them to refract.
+    // No `bg-background` either: <html> carries the page colour, and an opaque
+    // background here paints over the ambient layer.
+    <main className="relative min-h-dvh overflow-x-hidden">
+      {/* Start the 4.7MB Draco head downloading immediately, in parallel with
+          the three.js chunk, instead of only after that chunk has parsed and
+          mounted the canvas. This is the avatar's time-to-first-paint. */}
+      <link rel="preload" href="/models/angelica.glb" as="fetch" crossOrigin="anonymous" />
       <Splash />
       <Nav />
 
@@ -219,9 +229,9 @@ export default function LandingPage() {
           >
             <div className="flex items-center gap-3 px-5 py-3 border-b border-foreground/[0.06] bg-foreground/[0.02]">
               <div className="flex gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#D84C63]" />
-                <span className="w-3 h-3 rounded-full bg-[#D6A44C]" />
-                <span className="w-3 h-3 rounded-full bg-[#8F9A5E]" />
+                <span className="w-3 h-3 rounded-full bg-destructive" />
+                <span className="w-3 h-3 rounded-full bg-warning" />
+                <span className="w-3 h-3 rounded-full bg-secondary" />
               </div>
               <div className="flex items-center gap-2 mx-auto">
                 <Bot className="h-4 w-4 text-primary" />

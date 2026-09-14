@@ -49,10 +49,10 @@ export function SignupWizard() {
     if (/[a-z]/.test(pwd)) score++
     if (/[0-9]/.test(pwd)) score++
     if (/[^A-Za-z0-9]/.test(pwd)) score++
-    if (score <= 2) return { score: Math.min(score, 4), label: "Weak", color: "#D84C63" }
-    if (score <= 4) return { score: Math.min(score, 4), label: "Good", color: "#D6A44C" }
+    if (score <= 2) return { score: Math.min(score, 4), label: "Weak", color: "var(--destructive)" }
+    if (score <= 4) return { score: Math.min(score, 4), label: "Good", color: "var(--warning)" }
     if (score <= 5) return { score: Math.min(score, 4), label: "Strong", color: "var(--secondary)" }
-    return { score: 4, label: "Very Strong", color: "#8F9A5E" }
+    return { score: 4, label: "Very Strong", color: "var(--secondary)" }
   }
 
   const strength = getStrength(password)
@@ -282,7 +282,7 @@ export function SignupWizard() {
                     </button>
                   </div>
                   {confirmPassword && (
-                    <p className="text-[10px] flex items-center gap-1" style={{ color: password === confirmPassword ? "var(--secondary)" : "#D84C63" }}>
+                    <p className="text-[10px] flex items-center gap-1" style={{ color: password === confirmPassword ? "var(--secondary)" : "var(--destructive)" }}>
                       <Check className="h-2.5 w-2.5" /> {password === confirmPassword ? "Passwords match" : "Passwords do not match"}
                     </p>
                   )}

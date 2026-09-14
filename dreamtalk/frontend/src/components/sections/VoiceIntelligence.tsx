@@ -84,7 +84,7 @@ export function VoiceIntelligence() {
             { icon: Mic, label: "Voice Cloning", desc: "99% accuracy from 30 seconds of audio", color: "var(--primary)" },
             { icon: Languages, label: "50+ Languages", desc: "Regional accents and dialects supported", color: "var(--secondary)" },
             { icon: Music, label: "Emotion Control", desc: "Happy, calm, urgent, empathetic tones", color: "var(--secondary)" },
-            { icon: Volume2, label: "Real-time Streaming", desc: "Sub-200ms latency for natural conversations", color: "#D6A44C" },
+            { icon: Volume2, label: "Real-time Streaming", desc: "Sub-200ms latency for natural conversations", color: "var(--warning)" },
           ].map((feat, i) => (
             <motion.div
               key={feat.label}

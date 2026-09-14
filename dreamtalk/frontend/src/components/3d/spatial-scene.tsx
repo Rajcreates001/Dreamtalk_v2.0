@@ -5,8 +5,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 import { cn } from "@/lib/utils"
 
-const DARK_COLORS = ["var(--primary)", "#C77B54", "#640D5F", "#0D1164", "#FF8F8F", "#B7A3E3"]
-const LIGHT_COLORS = ["#FF8F8F", "#B7A3E3", "#C2E2FA", "#FFF1CB", "var(--primary)", "#C77B54"]
+const DARK_COLORS = ["var(--primary)", "var(--primary)", "#640D5F", "#0D1164", "#FF8F8F", "#B7A3E3"]
+const LIGHT_COLORS = ["#FF8F8F", "#B7A3E3", "#C2E2FA", "#FFF1CB", "var(--primary)", "var(--primary)"]
 
 interface SpatialSceneProps {
   className?: string
@@ -93,7 +93,7 @@ function Field({ intensity, isDark, mousePos, reduced }: {
     <>
       <ambientLight intensity={isDark ? 0.15 : 0.3} />
       <pointLight position={[3, 3, 3]} intensity={intensity * 0.6} color="var(--primary)" />
-      <pointLight position={[-3, -2, 2]} intensity={intensity * 0.4} color="#C77B54" />
+      <pointLight position={[-3, -2, 2]} intensity={intensity * 0.4} color="var(--primary)" />
 
       <group ref={groupRef}>
         {objects.map((o, i) => (

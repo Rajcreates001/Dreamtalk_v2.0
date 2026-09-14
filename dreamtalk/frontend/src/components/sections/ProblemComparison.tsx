@@ -11,13 +11,13 @@ import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 /* ── DATA ── */
 
 const FRAGMENTED_TOOLS = [
-  { icon: MessageSquare, label: "Chatbot", desc: "Scripted conversations", limit: "No long-term memory", color: "#D84C63", solution: "Persistent memory across sessions" },
-  { icon: Mic, label: "Voice AI", desc: "Speech synthesis", limit: "No emotion or tone", color: "#C77B54", solution: "Emotional voice synthesis" },
-  { icon: Bot, label: "Avatar Gen", desc: "Static 3D models", limit: "No intelligence", color: "#D6A44C", solution: "Living Digital Human brain" },
+  { icon: MessageSquare, label: "Chatbot", desc: "Scripted conversations", limit: "No long-term memory", color: "var(--destructive)", solution: "Persistent memory across sessions" },
+  { icon: Mic, label: "Voice AI", desc: "Speech synthesis", limit: "No emotion or tone", color: "var(--primary)", solution: "Emotional voice synthesis" },
+  { icon: Bot, label: "Avatar Gen", desc: "Static 3D models", limit: "No intelligence", color: "var(--warning)", solution: "Living Digital Human brain" },
   { icon: Search, label: "Search", desc: "Keyword matching", limit: "No understanding", color: "#FFD54F", solution: "Semantic understanding" },
-  { icon: FileText, label: "OCR / Vision", desc: "Text extraction", limit: "No context", color: "#D84C63", solution: "Context-aware processing" },
-  { icon: Cpu, label: "Automation", desc: "Rule-based flows", limit: "No adaptation", color: "#C77B54", solution: "Self-adapting AI" },
-  { icon: BarChart3, label: "Analytics", desc: "Dashboard reports", limit: "No action", color: "#D6A44C", solution: "Autonomous decision-making" },
+  { icon: FileText, label: "OCR / Vision", desc: "Text extraction", limit: "No context", color: "var(--destructive)", solution: "Context-aware processing" },
+  { icon: Cpu, label: "Automation", desc: "Rule-based flows", limit: "No adaptation", color: "var(--primary)", solution: "Self-adapting AI" },
+  { icon: BarChart3, label: "Analytics", desc: "Dashboard reports", limit: "No action", color: "var(--warning)", solution: "Autonomous decision-making" },
   { icon: Database, label: "Knowledge Base", desc: "Static documents", limit: "No reasoning", color: "#FFD54F", solution: "Dynamic reasoning engine" },
 ]
 
@@ -45,8 +45,8 @@ const RING_CONFIGS = [
   { label: "Knowledge", color: "var(--primary)", radius: 150 },
   { label: "Memory", color: "var(--secondary)", radius: 128 },
   { label: "Voice", color: "var(--secondary)", radius: 106 },
-  { label: "Reasoning", color: "#D6A44C", radius: 84 },
-  { label: "Personality", color: "#D84C63", radius: 62 },
+  { label: "Reasoning", color: "var(--warning)", radius: 84 },
+  { label: "Personality", color: "var(--destructive)", radius: 62 },
   { label: "Relationship", color: "var(--primary)", radius: 40 },
   { label: "Deployment", color: "#0EA5E9", radius: 20 },
 ]
@@ -102,7 +102,7 @@ function FragmentedCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="flex items-center gap-1 mt-2 text-[10px] text-[#D84C63] font-mono">
+            <div className="flex items-center gap-1 mt-2 text-[10px] text-destructive font-mono">
               <X className="h-2.5 w-2.5 shrink-0" />
               <span>{tool.limit}</span>
             </div>
@@ -280,7 +280,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       </div>
       <div className="absolute bottom-[12%] right-[4%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
-          <Heart className="h-2 w-2 text-[#D84C63]" />
+          <Heart className="h-2 w-2 text-destructive" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">EMPATHETIC</span>
         </div>
       </div>
@@ -318,7 +318,7 @@ export function ProblemComparison() {
           className="md:col-span-3 lg:col-span-4 relative"
         >
           <div className="mb-4">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#D84C63]/50 font-mono">TODAY</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] text-destructive/50 font-mono">TODAY</span>
             <h3 className="text-lg font-bold text-foreground mt-1">Fragmented AI Ecosystem</h3>
             <p className="text-xs text-foreground-muted mt-1 max-w-md">
               Disconnected tools with no shared memory, intelligence, or personality.
@@ -335,7 +335,7 @@ export function ProblemComparison() {
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.06, zIndex: 0 }}>
             <defs>
               <linearGradient id="broken-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#D84C63" />
+                <stop offset="0%" stopColor="var(--destructive)" />
                 <stop offset="100%" stopColor="transparent" />
               </linearGradient>
             </defs>
@@ -357,9 +357,9 @@ export function ProblemComparison() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 1.2 }}
-            className="mt-3 p-2.5 rounded-xl bg-[#D84C63]/[0.04] border border-[#D84C63]/[0.1]"
+            className="mt-3 p-2.5 rounded-xl bg-destructive/[0.04] border border-destructive/[0.1]"
           >
-            <div className="flex items-center gap-2 text-xs text-[#D84C63]/70">
+            <div className="flex items-center gap-2 text-xs text-destructive/70">
               <X className="h-3 w-3 shrink-0" />
               <span className="font-mono text-[10px] tracking-wider">8 tools • No context • No integration • No memory</span>
             </div>
@@ -385,7 +385,7 @@ export function ProblemComparison() {
           </div>
 
           <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px overflow-hidden opacity-[0.1]">
-            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, #D84C63, var(--primary), var(--secondary), var(--secondary))", animation: "energy-flow 3s ease-in-out infinite" }} />
+            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, var(--destructive), var(--primary), var(--secondary), var(--secondary))", animation: "energy-flow 3s ease-in-out infinite" }} />
           </div>
 
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -394,7 +394,7 @@ export function ProblemComparison() {
                 key={i}
                 className="absolute w-1 h-1 rounded-full"
                 style={{
-                  background: i < 2 ? "#D84C63" : i < 4 ? "var(--primary)" : "var(--secondary)",
+                  background: i < 2 ? "var(--destructive)" : i < 4 ? "var(--primary)" : "var(--secondary)",
                   left: `${45 + (i % 3) * 5}%`,
                   top: "-5%",
                   opacity: 0.6,
@@ -409,7 +409,7 @@ export function ProblemComparison() {
         {/* Mobile pipeline separator — visible only on small screens */}
         <div className="md:col-span-3 lg:hidden flex items-center justify-center py-4">
           <div className="flex items-center gap-2">
-            <div className="h-px w-12 bg-gradient-to-r from-[#D84C63] to-primary" />
+            <div className="h-px w-12 bg-gradient-to-r from-destructive to-primary" />
             <span className="text-[8px] uppercase tracking-[0.3em] text-foreground/20 font-mono">UNIFIED</span>
             <div className="h-px w-12 bg-gradient-to-l from-primary to-secondary" />
           </div>

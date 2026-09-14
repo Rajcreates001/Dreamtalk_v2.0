@@ -15,7 +15,7 @@ export function VrmHero() {
 
   return (
     <section className="relative min-h-dvh w-full overflow-hidden bg-background">
-      <Particles quantity={120} color="#8F9A5E" className="absolute inset-0 z-0" staticity={30} ease={80} />
+      <Particles quantity={120} color="var(--secondary)" className="absolute inset-0 z-0" staticity={30} ease={80} />
 
       <div className="absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-background/20 to-background" />
 
@@ -82,7 +82,7 @@ export function VrmHero() {
           >
             <Link href="/conversations">
               <ShimmerButton
-                shimmerColor="#8F9A5E"
+                shimmerColor="var(--secondary)"
                 background="rgba(16, 185, 129, 0.15)"
                 className="text-foreground font-medium"
               >

@@ -137,7 +137,7 @@ export default function SettingsPage() {
               <div className="p-4 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-foreground-muted">Development Key</span>
-                  <span className="text-[10px] text-[#D6A44C]">Testing</span>
+                  <span className="text-[10px] text-warning">Testing</span>
                 </div>
                 <code className="text-xs text-foreground font-mono">dt_sk_dev_••••••••••••••••</code>
               </div>

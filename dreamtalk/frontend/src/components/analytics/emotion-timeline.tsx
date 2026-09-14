@@ -16,14 +16,14 @@ interface EmotionTimelineProps {
 }
 
 const EMOTION_COLORS: Record<string, string> = {
-  happy: "#8F9A5E",
+  happy: "var(--secondary)",
   sad: "var(--burgundy)",
-  angry: "#D84C63",
-  fear: "#9E3B6B",
-  surprise: "#D6A44C",
+  angry: "var(--destructive)",
+  fear: "var(--burgundy)",
+  surprise: "var(--warning)",
   disgust: "#84cc16",
   neutral: "var(--foreground-muted)",
-  contempt: "#C77B54",
+  contempt: "var(--primary)",
 };
 
 export function EmotionTimeline({ refreshInterval = 5000 }: EmotionTimelineProps) {

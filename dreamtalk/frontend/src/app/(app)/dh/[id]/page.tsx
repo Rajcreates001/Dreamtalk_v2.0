@@ -31,9 +31,9 @@ const INDIAN_LANGUAGES = [
 
 const EMOTIONS = [
   { id: "neutral", label: "Neutral", color: "var(--foreground-muted)" },
-  { id: "happy", label: "Happy", color: "#D6A44C" },
+  { id: "happy", label: "Happy", color: "var(--warning)" },
   { id: "sad", label: "Sad", color: "#6366F1" },
-  { id: "angry", label: "Angry", color: "#D84C63" },
+  { id: "angry", label: "Angry", color: "var(--destructive)" },
   { id: "calm", label: "Calm", color: "var(--secondary)" },
   { id: "excited", label: "Excited", color: "var(--primary)" },
 ]
@@ -114,8 +114,8 @@ export default function DigitalHumanWorkspacePage() {
   if (loadError) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center space-y-4">
-        <div className="w-16 h-16 mx-auto rounded-full bg-[#D84C63]/10 flex items-center justify-center">
-          <Trash2 className="h-6 w-6 text-[#D84C63]" />
+        <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+          <Trash2 className="h-6 w-6 text-destructive" />
         </div>
         <p className="text-foreground-muted">{loadError}</p>
         <button onClick={() => router.push("/home")} className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm">
@@ -402,7 +402,7 @@ export default function DigitalHumanWorkspacePage() {
                       <h3 className="text-sm font-semibold text-foreground">Live Conversation</h3>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
-                      <span className={cn("flex items-center gap-1", isListening && "text-[#D84C63]")}>
+                      <span className={cn("flex items-center gap-1", isListening && "text-destructive")}>
                         <Radio className="h-3 w-3" />
                         {isListening ? "Listening" : "Idle"}
                       </span>
@@ -536,7 +536,7 @@ export default function DigitalHumanWorkspacePage() {
 
               {/* Error state */}
               {scriptError && (
-                <div className="p-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63]">
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                   {scriptError}
                 </div>
               )}
@@ -597,7 +597,7 @@ export default function DigitalHumanWorkspacePage() {
               <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.csv,.md" onChange={handleKnowledgeUpload} className="hidden" />
 
               {knowledgeError && (
-                <div className="p-3 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-xs text-[#D84C63]">
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                   {knowledgeError}
                 </div>
               )}
@@ -633,10 +633,10 @@ export default function DigitalHumanWorkspacePage() {
                             <span className="text-xs text-foreground truncate">{doc.name || doc.filename || doc.file_name || "Unknown"}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", doc.status === "completed" || doc.status === "learned" ? "bg-secondary/10 text-secondary" : "bg-[#D6A44C]/10 text-[#D6A44C]")}>
+                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", doc.status === "completed" || doc.status === "learned" ? "bg-secondary/10 text-secondary" : "bg-warning/10 text-warning")}>
                               {doc.status || "processing"}
                             </span>
-                            <button onClick={() => handleDeleteKnowledge(docId)} className="text-foreground-muted hover:text-[#D84C63] transition-all">
+                            <button onClick={() => handleDeleteKnowledge(docId)} className="text-foreground-muted hover:text-destructive transition-all">
                               <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
@@ -685,7 +685,7 @@ export default function DigitalHumanWorkspacePage() {
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D84C63]/10 border border-[#D84C63]/20 text-sm text-[#D84C63] hover:bg-[#D84C63]/20 transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-sm text-destructive hover:bg-destructive/20 transition-all"
                 >
                   {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {deleting ? "Deleting..." : "Delete"}

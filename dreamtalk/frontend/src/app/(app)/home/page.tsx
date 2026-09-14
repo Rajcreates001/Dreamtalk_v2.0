@@ -29,8 +29,8 @@ const QUICK_ACTIONS = [
   { href: "/dh/demo-1", label: "Start Conversation", icon: MessageSquare, color: "var(--secondary)", desc: "Chat with your digital human" },
   { href: "/dh/demo-1?tab=knowledge", label: "Upload Knowledge", icon: BookOpen, color: "var(--secondary)", desc: "Teach your digital human" },
   { href: "/create", label: "Clone Voice", icon: Mic, color: "var(--primary)", desc: "Upload a voice sample" },
-  { href: "/dh/demo-1?tab=scripts", label: "Generate Script", icon: Upload, color: "#D6A44C", desc: "Create audio in any language" },
-  { href: "/dh/demo-1?tab=settings", label: "Settings", icon: BarChart3, color: "#B03A5E", desc: "Customize your digital human" },
+  { href: "/dh/demo-1?tab=scripts", label: "Generate Script", icon: Upload, color: "var(--warning)", desc: "Create audio in any language" },
+  { href: "/dh/demo-1?tab=settings", label: "Settings", icon: BarChart3, color: "var(--primary)", desc: "Customize your digital human" },
 ]
 
 type DashboardData = {
@@ -338,7 +338,7 @@ export default function HomePage() {
                       <span
                         className={cn(
                           "text-xs font-medium",
-                          insight.positive ? "text-secondary" : "text-[#D84C63]"
+                          insight.positive ? "text-secondary" : "text-destructive"
                         )}
                       >
                         {insight.change}

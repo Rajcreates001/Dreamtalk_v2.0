@@ -50,7 +50,7 @@ const industries = [
     id: "education",
     icon: GraduationCap,
     label: "Education",
-    color: "#D6A44C",
+    color: "var(--warning)",
     solutions: [
       { title: "Virtual Tutor", desc: "One-on-one tutoring adapted to each student's learning style and pace." },
       { title: "Course Assistant", desc: "Answer questions about course material, assignments, and deadlines." },
@@ -61,7 +61,7 @@ const industries = [
     id: "government",
     icon: Building,
     label: "Government",
-    color: "#D84C63",
+    color: "var(--destructive)",
     solutions: [
       { title: "Citizen Services", desc: "Handle permits, forms, and inquiries with multilingual AI assistants." },
       { title: "Policy Advisor", desc: "Answer policy questions and guide citizens through government services." },

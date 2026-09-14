@@ -12,8 +12,8 @@ const features = [
   { icon: Lock, label: "End-to-End Encryption", desc: "All data encrypted at rest and in transit with AES-256", color: "var(--primary)" },
   { icon: Key, label: "Role-Based Access", desc: "Granular permissions for teams and organizations", color: "var(--secondary)" },
   { icon: Fingerprint, label: "Authentication", desc: "SSO, OAuth, SAML, and MFA support", color: "var(--secondary)" },
-  { icon: Server, label: "Private Deployment", desc: "On-premise or VPC deployment options", color: "#D6A44C" },
-  { icon: Database, label: "Data Isolation", desc: "Each Digital Twin's knowledge is isolated", color: "#D84C63" },
+  { icon: Server, label: "Private Deployment", desc: "On-premise or VPC deployment options", color: "var(--warning)" },
+  { icon: Database, label: "Data Isolation", desc: "Each Digital Twin's knowledge is isolated", color: "var(--destructive)" },
   { icon: Cloud, label: "SOC 2 Compliant", desc: "Enterprise-grade security controls and auditing", color: "var(--primary)" },
 ]
 

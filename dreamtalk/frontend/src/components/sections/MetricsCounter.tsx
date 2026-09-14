@@ -7,8 +7,8 @@ const metrics = [
   { value: "50K+", label: "Avatars Created", desc: "Digital Humans brought to life", color: "var(--primary)" },
   { value: "10M+", label: "Conversations", desc: "Intelligent interactions served", color: "var(--secondary)" },
   { value: "50+", label: "Languages", desc: "Multilingual voice & text", color: "var(--secondary)" },
-  { value: "<200ms", label: "Response Time", desc: "Real-time intelligence", color: "#D6A44C" },
-  { value: "99.9%", label: "Uptime", desc: "Enterprise reliability", color: "#D84C63" },
+  { value: "<200ms", label: "Response Time", desc: "Real-time intelligence", color: "var(--warning)" },
+  { value: "99.9%", label: "Uptime", desc: "Enterprise reliability", color: "var(--destructive)" },
   { value: "94%", label: "Satisfaction", desc: "User happiness score", color: "var(--primary)" },
 ]
 
