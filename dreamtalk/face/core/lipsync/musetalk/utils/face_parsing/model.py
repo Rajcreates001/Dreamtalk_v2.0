@@ -154,13 +154,31 @@ class BiSeNet(nn.Module):
 
 
 def _cone_kernel(size: int) -> np.ndarray:
+    """Radial falloff weight: 1.0 at the centre, 0 at the rim.
+
+    This is a per-pixel ALPHA WEIGHT, not a convolution kernel, and the
+    difference is the whole bug. It used to return kernel / kernel.sum(),
+    which is right for convolution and catastrophic here: for the ~373px
+    cone a real crop produces, sum-normalising puts the peak at about
+    2.7e-5, so _get_jaw_mask's `mask * cone` turned 255 into 0.007 and the
+    uint8 cast floored every pixel to zero.
+
+    The result was an entirely empty jaw mask, so MuseTalk pasted nothing and
+    rendered a video in which even the mouth never moved. It stayed hidden
+    because the face parser had never successfully loaded — the geometric
+    fallback ran instead, and this line was dead code until the parser was
+    repaired.
+
+    kernel already peaks at 1.0 by construction, so normalise by max.
+    """
     kernel = np.zeros((size, size), dtype=np.float32)
     center = size // 2
     for i in range(size):
         for j in range(size):
             dist = np.sqrt((i - center) ** 2 + (j - center) ** 2)
             kernel[i, j] = max(0, 1.0 - dist / center)
-    return kernel / kernel.sum()
+    peak = float(kernel.max())
+    return kernel / peak if peak > 0 else kernel
 
 
 def _cheek_erosion(mask: np.ndarray, erode_kernel_size: int = 7) -> np.ndarray:
