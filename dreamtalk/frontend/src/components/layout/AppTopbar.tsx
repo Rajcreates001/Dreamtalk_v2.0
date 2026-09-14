@@ -227,7 +227,9 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
         {/* Credits */}
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
           <Sparkles className="h-3 w-3" />
-          2,450
+          {/* was a hardcoded 2,450 credit balance shown to every user,
+              including brand-new accounts. No billing endpoint exists yet. */}
+          &mdash;
         </div>
 
         {/* User avatar */}

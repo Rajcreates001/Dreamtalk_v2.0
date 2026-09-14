@@ -22,7 +22,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { authApi, digitalTwinApi, digitalHumanApi, avatarApi } from "@/lib/api"
+import { analyticsApi, authApi, digitalTwinApi, digitalHumanApi, avatarApi } from "@/lib/api"
 
 const QUICK_ACTIONS = [
   { href: "/create", label: "Create Digital Human", icon: Plus, color: "var(--primary)", desc: "Create an AI version of someone" },
@@ -41,7 +41,8 @@ type DashboardData = {
     name: string
     role: string
     emotion: string
-    knowledgeSize: string
+    /** null when the backend has not reported a size — rendered as an em dash. */
+    knowledgeSize: string | null
     languages: number
     status: string
   } | null
@@ -93,7 +94,7 @@ export default function HomePage() {
               name: first.name || first.digital_twin_name || "Unnamed",
               role: first.role || first.description || "Digital Human",
               emotion: first.mood || first.current_emotion || "Calm",
-              knowledgeSize: first.knowledge_size || "1.2 GB",
+              knowledgeSize: first.knowledge_size || null,
               languages: Array.isArray(first.languages) ? first.languages.length : first.language ? 1 : 1,
               status: activeStatus,
             }
@@ -109,7 +110,7 @@ export default function HomePage() {
                 name: first.name || "Unnamed",
                 role: first.category || first.description || "Digital Human",
                 emotion: "Calm",
-                knowledgeSize: "1.2 GB",
+                knowledgeSize: null,
                 languages: 1,
                 status: first.is_active ? "Active" : "Draft",
               }
@@ -119,31 +120,33 @@ export default function HomePage() {
 
         setFirstTwinId(firstId)
 
-        if (avatarCount === 0) {
-          avatarCount = 1
-          activeAvatar = {
-            name: "Dr. Aria",
-            role: "AI Companion",
-            emotion: "Calm",
-            knowledgeSize: "1.2 GB",
-            languages: 4,
-            status: "Active",
-          }
-        }
+        // Previously, a user with no avatars was shown a fabricated
+        // "Dr. Aria — Active" card. A new account must see an honest empty
+        // state, not someone else's avatar.
+
+        // conversationsToday was `Math.floor(Math.random() * 20) + 3` — a new
+        // account saw a different invented number on every page load. Use the
+        // real counter; fall back to 0, never to fiction.
+        let conversationsToday = 0
+        try {
+          const stats = await analyticsApi.stats()
+          conversationsToday = stats?.total_conversations ?? 0
+        } catch { conversationsToday = 0 }
 
         setData({
           avatarCount,
-          conversationsToday: Math.floor(Math.random() * 20) + 3,
+          conversationsToday,
           userName: userName?.split(" ")[0] || null,
           activeAvatar,
         })
       } catch (err) {
         console.error("Dashboard load error:", err)
+        // On failure, show nothing rather than a plausible-looking lie.
         setData({
-          avatarCount: 1,
-          conversationsToday: 12,
+          avatarCount: 0,
+          conversationsToday: 0,
           userName: null,
-          activeAvatar: { name: "Dr. Aria", role: "AI Companion", emotion: "Calm", knowledgeSize: "1.2 GB", languages: 4, status: "Active" },
+          activeAvatar: null,
         })
       } finally {
         setLoading(false)
@@ -280,7 +283,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-foreground/[0.04]">
                   {[
                     { label: "Emotion", value: data.activeAvatar.emotion, color: "var(--primary)" },
-                    { label: "Knowledge", value: data.activeAvatar.knowledgeSize, color: "var(--secondary)" },
+                    { label: "Knowledge", value: data.activeAvatar.knowledgeSize ?? "—", color: "var(--secondary)" },
                     { label: "Languages", value: `${data.activeAvatar.languages}`, color: "var(--secondary)" },
                     { label: "Response Style", value: data.activeAvatar.role, color: "var(--primary)" },
                   ].map((stat) => (
@@ -317,9 +320,9 @@ export default function HomePage() {
 
             <div className="space-y-2">
               {[
-                { label: "Conversations", value: `${data.conversationsToday} today`, change: "+12%", positive: true, icon: MessageSquare },
+                { label: "Conversations", value: `${data.conversationsToday} today`, change: "", positive: true, icon: MessageSquare },
                 { label: "Emotion", value: data.activeAvatar?.emotion || "Calm", change: "", positive: true, icon: Heart },
-                { label: "Knowledge Base", value: data.activeAvatar?.knowledgeSize || "1.2 GB", change: "+240MB", positive: true, icon: BookOpen },
+                { label: "Knowledge Base", value: data.activeAvatar?.knowledgeSize || "—", change: "", positive: true, icon: BookOpen },
               ].map((insight) => {
                 const Icon = insight.icon
                 return (

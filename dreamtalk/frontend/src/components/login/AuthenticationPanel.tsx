@@ -22,11 +22,16 @@ const ROLES = [
   { id: "business", label: "Business", desc: "Branded AI employees for enterprise", icon: Briefcase },
 ]
 
-const DEMO_CREDENTIALS: Record<string, { email: string; password: string }> = {
-  personal: { email: "demo@dreamtalk.ai", password: "demo1234" },
-  healthcare: { email: "health@dreamtalk.ai", password: "demo1234" },
-  business: { email: "business@dreamtalk.ai", password: "demo1234" },
-}
+/* DEMO_CREDENTIALS removed.
+ *
+ * Picking a role used to immediately call authApi.login() with a hardcoded
+ * demo@dreamtalk.ai / demo1234 pair that shipped in the client bundle. Anyone
+ * loading /login and clicking "Personal" was handed a real, signed JWT without
+ * entering a credential, and the email/password form was never reached — which
+ * is why sign-in appeared to "work" while never authenticating anybody.
+ *
+ * Role selection now does what it says: it selects a role and advances to the
+ * credential step. */
 
 const ROLE_COLORS: Record<string, string> = {
   personal: "var(--primary)",
@@ -48,23 +53,9 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
   // Clear all pending timeouts on unmount
   useEffect(() => () => timeoutRef.current.forEach(clearTimeout), [])
 
-  const handleRoleSelect = async (roleId: string) => {
+  const handleRoleSelect = (roleId: string) => {
     setError("")
-    const creds = DEMO_CREDENTIALS[roleId]
-    setEmail(creds.email)
-    setPassword(creds.password)
     onRoleSelect(roleId)
-    // Auto-login
-    setLoading(true)
-    try {
-      const res = await authApi.login({ email: creds.email, password: creds.password })
-      storeAuth(res.tokens)
-      localStorage.setItem("user", JSON.stringify(res.user))
-      triggerWelcome()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed")
-      setLoading(false)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,10 +97,10 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
     steps.forEach((fn, i) => { timeoutRef.current.push(setTimeout(fn, (i + 1) * 700)) })
   }
 
-  const handleDemoFill = (roleId: string) => {
-    const creds = DEMO_CREDENTIALS[roleId]
-    setEmail(creds.email)
-    setPassword(creds.password)
+  /** Switch which role you are signing in as. Does NOT touch the credentials —
+   *  it used to paste the shipped demo email/password into the form. */
+  const handleRoleSwitch = (roleId: string) => {
+    setError("")
     onRoleSelect(roleId)
   }
 
@@ -281,12 +272,12 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
 
             {/* Demo quick-fill */}
             <div className="mt-4 pt-3 border-t border-foreground/[0.06]">
-              <p className="text-[10px] text-foreground-muted text-center mb-2">Demo quick fill</p>
+              <p className="text-[10px] text-foreground-muted text-center mb-2">Signing in as</p>
               <div className="flex gap-2">
                 {ROLES.map((role) => {
                   const rc = ROLE_COLORS[role.id]
                   return (
-                    <button key={role.id} onClick={() => handleDemoFill(role.id)}
+                    <button key={role.id} onClick={() => handleRoleSwitch(role.id)}
                       className="flex-1 py-1.5 rounded-xl border text-[10px] font-medium transition-all"
                       style={{
                         borderColor: selectedRole === role.id ? `color-mix(in srgb, ${rc} 31%, transparent)` : "var(--border)",

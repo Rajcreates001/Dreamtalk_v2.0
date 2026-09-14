@@ -167,6 +167,19 @@ async function uploadFile<T>(path: string, formData: FormData, auth = false): Pr
   return response.json()
 }
 
+/** Real platform counters. The dashboard used to invent these. */
+export interface PlatformStats {
+  total_conversations: number
+  total_messages: number
+  total_emotion_detections: number
+  avg_response_time_ms: number
+  avg_confidence: number
+}
+
+export const analyticsApi = {
+  stats: () => request<PlatformStats>("/analytics/stats", { auth: true }),
+}
+
 // Digital Twins API
 export const digitalTwinApi = {
   list: () =>
