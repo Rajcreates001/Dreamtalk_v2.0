@@ -25,12 +25,25 @@ def face_seg(image, mode="raw", fp=None):
         # all the way to zero inside the image. The previous sizing reached
         # 0.98 of the height, so the mask was still bright where the crop ended
         # and the paste left a visible straight edge across the neck.
-        center = (width // 2, int(height * 0.63))
-        axes = (max(1, int(width * 0.34)), max(1, int(height * 0.23)))
+        # The mask must stay BELOW the eyes.
+        #
+        # MuseTalk's UNet reconstructs the entire face crop, not just the
+        # mouth, so its upper half is a re-synthesis of the eyes and forehead
+        # that differs slightly every frame. Blending that in makes the face
+        # appear to shake even though the background is perfectly still —
+        # measured on a render: forehead/eyes changed 2.26 per frame against
+        # 0.21 for the background, i.e. more than the mouth itself.
+        #
+        # These bounds are in face_large space, which is the face box expanded
+        # by `expand` (1.5x), so the face occupies roughly 0.17..0.83 and the
+        # eyes sit near 0.40..0.48. Starting the fade at 0.52 puts the whole
+        # mask below the nose.
+        center = (width // 2, int(height * 0.72))
+        axes = (max(1, int(width * 0.32)), max(1, int(height * 0.18)))
         cv2.ellipse(mask, center, axes, 0, 0, 360, 255, -1)
         # Fade the top out over a band rather than slicing it flat, which
         # otherwise draws a horizontal line across the mid-face.
-        fade_top, fade_bottom = int(height * 0.36), int(height * 0.50)
+        fade_top, fade_bottom = int(height * 0.52), int(height * 0.64)
         if fade_bottom > fade_top:
             ramp = np.linspace(0.0, 1.0, fade_bottom - fade_top, dtype=np.float32)
             mask[fade_top:fade_bottom, :] = (

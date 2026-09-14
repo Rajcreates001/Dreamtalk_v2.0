@@ -400,6 +400,11 @@ class ClonedSpeechService:
     ) -> SpeechResult:
         """Generate clearly-labelled non-cloned fallback speech."""
         language = normalize_language(language)
+        if language not in EDGE_VOICES:
+            raise RuntimeError(
+                f"No configured speech engine supports '{language}'. "
+                "Enable a voice-cloning service that supports this language."
+            )
         output_path = self.output_dir / f"generic_{language}_{uuid.uuid4().hex}.wav"
         mp3_path = output_path.with_suffix(".mp3")
         engine_used = "edge-tts"
@@ -411,7 +416,7 @@ class ClonedSpeechService:
             pitch_hz = int(round(semitones * 3.0))
             communicate = edge_tts.Communicate(
                 text=text,
-                voice=EDGE_VOICES.get(language, EDGE_VOICES["en"]),
+                voice=EDGE_VOICES[language],
                 rate=f"{rate_percent:+d}%",
                 pitch=f"{pitch_hz:+d}Hz",
             )
@@ -419,6 +424,13 @@ class ClonedSpeechService:
             await asyncio.to_thread(self._convert_to_wav, mp3_path, output_path)
         except Exception as edge_error:
             logger.warning("Edge TTS fallback failed: %s", edge_error)
+            # Among our Indian-language catalog, Kokoro supports Hindi and
+            # English. The legacy orchestrator maps other codes to English.
+            if language not in {"en", "hi"}:
+                raise RuntimeError(
+                    f"Speech synthesis for '{language}' is unavailable; "
+                    "the configured native-language voice failed."
+                ) from edge_error
             try:
                 from dreamtalk.backend.services.voice_orchestrator import VoiceOrchestrator
 

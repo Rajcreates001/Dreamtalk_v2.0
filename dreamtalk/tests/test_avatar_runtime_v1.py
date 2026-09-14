@@ -226,6 +226,13 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result["voice_clone_languages"], {})
             self.assertIsNone(result["voice_clone_engine"])
 
+    async def test_generic_speech_does_not_substitute_english_for_bodo(self):
+        from dreamtalk.backend.services.cloned_speech import ClonedSpeechService
+        with tempfile.TemporaryDirectory() as temp:
+            service = ClonedSpeechService(output_dir=temp)
+            with self.assertRaisesRegex(RuntimeError, "No configured speech engine"):
+                await service.synthesize_generic("खुलुमबाइ", "brx")
+
     async def test_vocal_emotion_returns_bounded_pad_values(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "voice.wav"

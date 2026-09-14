@@ -44,8 +44,17 @@ x-shared-env: &shared-env
   LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-512}
   LLM_TIMEOUT: ${LLM_TIMEOUT:-60.0}
   LLM_BACKEND: ${LLM_BACKEND:-openai}
-  LLM_FALLBACK_BASE_URL: ${LLM_FALLBACK_BASE_URL:-http://host.docker.internal:11434/v1}
-  LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-llama3.1:8b}
+  # Ollama removed as the fallback.
+  #
+  # It ran llama3.1:8b on the HOST GPU and held ~5.3 GB of the 8 GB card
+  # whenever a reply was generated — which is immediately before every 2D
+  # render. That is what starved MuseTalk and forced the VRAM eviction dance.
+  # gpt-oss-120b already runs remotely on GPU_SERVER_BASE_URL, so nothing
+  # needs a local LLM at all; the fallback now points at the same vLLM.
+  # Set LLM_FALLBACK_BASE_URL back to host.docker.internal:11434 only if you
+  # deliberately want a local Ollama again.
+  LLM_FALLBACK_BASE_URL: ${LLM_FALLBACK_BASE_URL:-http://144.79.62.242:8002/v1}
+  LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-gpt-oss-120b-coding}
   INDICF5_BASE_URL: ${INDICF5_BASE_URL:-http://indicf5:8002}
   INDICF5_MICROSERVICE_URL: ${INDICF5_MICROSERVICE_URL:-http://indicf5:8002}
   INDICF5_TIMEOUT: ${INDICF5_TIMEOUT:-900}

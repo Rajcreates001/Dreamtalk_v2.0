@@ -1998,12 +1998,23 @@ async def websocket_doctor_chat(websocket: WebSocket):
                 except Exception as e:
                     logger.error(f"Doctor LLM error: {e}")
 
-                # Fallback chain: local Ollama when the GPU gpt-oss server is unreachable/empty
+                # Fallback chain when the primary gpt-oss server is
+                # unreachable/empty. This defaulted to a local Ollama on
+                # :11434, which pulled a 7B model onto the same 8 GB card that
+                # MuseTalk needs moments later. It now follows
+                # LLM_FALLBACK_BASE_URL, which points at the remote vLLM, so no
+                # local VRAM is consumed to produce text.
                 if not llm_response:
                     try:
                         import httpx as _httpx_fb
-                        fb_url = os.environ.get("LOCAL_LLM_BASE_URL", "http://localhost:11434/v1")
-                        fb_model = os.environ.get("LOCAL_LLM_MODEL", "deepseek-r1:7b")
+                        fb_url = os.environ.get(
+                            "LOCAL_LLM_BASE_URL",
+                            os.environ.get("LLM_FALLBACK_BASE_URL", "http://144.79.62.242:8002/v1"),
+                        )
+                        fb_model = os.environ.get(
+                            "LOCAL_LLM_MODEL",
+                            os.environ.get("LLM_FALLBACK_MODEL", "gpt-oss-120b-coding"),
+                        )
                         async with _httpx_fb.AsyncClient(timeout=120.0) as client:
                             resp = await client.post(
                                 f"{fb_url}/chat/completions",
