@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./depth.css";
 
 @plugin "tailwindcss-animate";
 
@@ -153,14 +154,29 @@
   --color-glow-secondary: var(--glow-secondary);
   --color-glow-accent: var(--glow-accent);
   --font-display: var(--font-display);
+  /* Depth layer — see depth.css */
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
+  --shadow-elev-4: var(--elev-4);
 }
 
 * {
   border-color: var(--border);
 }
 
-body {
+/* The page colour lives on <html>, not <body>.
+   Painting order inside a stacking context puts block-level backgrounds AFTER
+   negative-z-index children, so an opaque body background hides anything at
+   `-z-10` — which is exactly where ambient background layers (AuroraField, the
+   aurora-bg helper) sit. The root element's background paints first, as the
+   canvas, so moving it up one level lets those layers show through. */
+html {
   background: var(--background);
+}
+
+body {
+  background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -187,10 +203,12 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Scroll container — containment without forced compositing */
-main {
-  contain: paint layout;
-}
+/* Containment is deliberately NOT applied to every <main>.
+   Both `layout` and `paint` containment make the element a containing block
+   for fixed-position descendants, and `paint` additionally clips them — so a
+   blanket rule here silently breaks every full-viewport overlay, ambient
+   background layer and fixed modal the app renders inside main.
+   Opt in per-element with `.contain-layout` where the perf win is real. */
 
 /* Optimize scrollbar - GPU composited */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -475,20 +493,27 @@ main {
   to { transform: rotate(360deg); }
 }
 
-/* ── Glassmorphism ── */
+/* ── Glassmorphism ──
+   Real glass is not "translucent + blur". It has four parts, and skipping any
+   one is why most glass UI reads as flat grey:
+     1. blur + SATURATION — refraction intensifies colour behind the pane
+     2. a bright top rim — the light source catching the leading edge
+     3. an inner shadow at the bottom — the pane's own thickness
+     4. an outer drop shadow — it floats above the page
+   Tokens live in the depth layer at the bottom of this file. */
 
 @utility glass {
-  background: var(--surface-glass);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner);
 }
 
 @utility glass-strong {
-  background: var(--surface-glass);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inner);
 }
 
 @utility aurora-card {

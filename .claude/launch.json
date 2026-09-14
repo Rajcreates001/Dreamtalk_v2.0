@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dreamtalk-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "dreamtalk/frontend", "run", "dev", "--", "--port", "4100"],
+      "port": 4100,
+      "autoPort": false
+    }
+  ]
+}

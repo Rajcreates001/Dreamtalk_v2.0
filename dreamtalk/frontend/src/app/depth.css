@@ -1,0 +1,229 @@
+/* ══════════════════════════════════════════════════════════════
+   DEPTH LAYER — glass · neumorphism · elevation · 3D
+   ──────────────────────────────────────────────────────────────
+   Three depth languages, deliberately kept to separate jobs so the UI does
+   not become noise:
+
+     GLASS       floating chrome over content — nav, modals, overlays,
+                 anything that sits ABOVE the page.
+     NEUMORPHIC  tactile controls carved FROM the page — toggles, sliders,
+                 segmented pickers, icon buttons. Never for text surfaces:
+                 soft-UI contrast is the classic accessibility failure, so
+                 every neo control here keeps a real border and focus ring.
+     ELEVATION   ordinary cards. Warm-tinted shadows (never neutral black)
+                 so they sit inside the cream/charcoal palette.
+
+   Light and dark are complete, independent palettes — dark is not "light
+   with the opacity flipped", which is what makes most dark glass go muddy.
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Glass ── */
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+  --glass-bg: rgba(255, 253, 248, 0.62);
+  --glass-bg-strong: rgba(255, 253, 248, 0.82);
+  --glass-bg-subtle: rgba(255, 253, 248, 0.34);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-rim: rgba(255, 255, 255, 0.95);
+  --glass-inner:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 0 rgba(43, 38, 34, 0.05);
+  --glass-shadow:
+    0 4px 16px -4px rgba(43, 38, 34, 0.10),
+    0 12px 32px -8px rgba(97, 45, 83, 0.08);
+  --glass-shadow-lg:
+    0 8px 24px -6px rgba(43, 38, 34, 0.14),
+    0 24px 56px -12px rgba(97, 45, 83, 0.12);
+
+  /* ── Neumorphic ──
+     The surface must equal the page behind it or the illusion breaks. */
+  --neo-surface: #FBF3E6;
+  --neo-light: rgba(255, 255, 255, 0.95);
+  --neo-dark: rgba(180, 160, 132, 0.42);
+  --neo-distance: 6px;
+  --neo-blur: 14px;
+  --neo-radius: 14px;
+
+  /* ── Elevation — warm-tinted, never neutral black ── */
+  --elev-1: 0 1px 2px rgba(43, 38, 34, 0.05), 0 1px 3px rgba(43, 38, 34, 0.06);
+  --elev-2: 0 2px 6px -1px rgba(43, 38, 34, 0.07), 0 4px 12px -2px rgba(97, 45, 83, 0.07);
+  --elev-3: 0 6px 14px -3px rgba(43, 38, 34, 0.09), 0 12px 28px -6px rgba(97, 45, 83, 0.10);
+  --elev-4: 0 12px 28px -6px rgba(43, 38, 34, 0.12), 0 28px 60px -12px rgba(97, 45, 83, 0.14);
+
+  /* ── 3D ── */
+  --perspective: 1000px;
+  --tilt-max: 9deg;
+  --depth-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark {
+  --glass-blur: 24px;
+  --glass-saturate: 150%;
+  /* Dark glass is lifted with a LIGHT film, not darkened — darkening an
+     already dark page just punches a hole in it. */
+  --glass-bg: rgba(58, 53, 53, 0.58);
+  --glass-bg-strong: rgba(58, 53, 53, 0.80);
+  --glass-bg-subtle: rgba(58, 53, 53, 0.32);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-rim: rgba(255, 255, 255, 0.28);
+  --glass-inner:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.30);
+  --glass-shadow:
+    0 4px 16px -4px rgba(0, 0, 0, 0.45),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35);
+  --glass-shadow-lg:
+    0 8px 24px -6px rgba(0, 0, 0, 0.55),
+    0 24px 56px -12px rgba(0, 0, 0, 0.45);
+
+  --neo-surface: #2E2A2A;
+  --neo-light: rgba(255, 255, 255, 0.07);
+  --neo-dark: rgba(0, 0, 0, 0.55);
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.24);
+  --elev-2: 0 2px 6px -1px rgba(0, 0, 0, 0.38), 0 4px 12px -2px rgba(0, 0, 0, 0.30);
+  --elev-3: 0 6px 14px -3px rgba(0, 0, 0, 0.45), 0 12px 28px -6px rgba(0, 0, 0, 0.35);
+  --elev-4: 0 12px 28px -6px rgba(0, 0, 0, 0.55), 0 28px 60px -12px rgba(0, 0, 0, 0.45);
+}
+
+@layer components {
+  /* ── Glass: the specular rim ──
+     A 1px gradient hairline along the leading edges. This is the single detail
+     that separates "frosted panel" from "a pane of glass catching a light". */
+  .glass-rim {
+    position: relative;
+  }
+  .glass-rim::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      160deg,
+      var(--glass-rim),
+      transparent 42%,
+      transparent 58%,
+      var(--glass-rim)
+    );
+    opacity: 0.6;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Thinner film for chrome that should barely register until scrolled under. */
+  .glass-subtle {
+    background: var(--glass-bg-subtle);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.55)) saturate(var(--glass-saturate));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Without backdrop-filter, translucency is just unreadable — go opaque. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-strong,
+    .glass-subtle {
+      background: var(--surface-elevated);
+    }
+  }
+
+  /* ── Neumorphic ── */
+  .neo {
+    background: var(--neo-surface);
+    border-radius: var(--neo-radius);
+    border: 1px solid var(--border-subtle);
+    box-shadow:
+      calc(var(--neo-distance) * -1) calc(var(--neo-distance) * -1) var(--neo-blur) var(--neo-light),
+      var(--neo-distance) var(--neo-distance) var(--neo-blur) var(--neo-dark);
+  }
+
+  .neo-inset {
+    background: var(--neo-surface);
+    border-radius: var(--neo-radius);
+    border: 1px solid var(--border-subtle);
+    box-shadow:
+      inset calc(var(--neo-distance) * -1) calc(var(--neo-distance) * -1) var(--neo-blur) var(--neo-light),
+      inset var(--neo-distance) var(--neo-distance) var(--neo-blur) var(--neo-dark);
+  }
+
+  /* Pressable control: raised at rest, carved in on press. 150ms is the
+     threshold where a press reads as physical rather than as a repaint. */
+  .neo-pressable {
+    background: var(--neo-surface);
+    border-radius: var(--neo-radius);
+    border: 1px solid var(--border-subtle);
+    box-shadow:
+      calc(var(--neo-distance) * -1) calc(var(--neo-distance) * -1) var(--neo-blur) var(--neo-light),
+      var(--neo-distance) var(--neo-distance) var(--neo-blur) var(--neo-dark);
+    transition: box-shadow 150ms var(--depth-ease), transform 150ms var(--depth-ease);
+  }
+  .neo-pressable:hover {
+    box-shadow:
+      calc(var(--neo-distance) * -1.3) calc(var(--neo-distance) * -1.3) calc(var(--neo-blur) * 1.2) var(--neo-light),
+      calc(var(--neo-distance) * 1.3) calc(var(--neo-distance) * 1.3) calc(var(--neo-blur) * 1.2) var(--neo-dark);
+  }
+  .neo-pressable:active,
+  .neo-pressable[data-pressed="true"] {
+    box-shadow:
+      inset calc(var(--neo-distance) * -0.8) calc(var(--neo-distance) * -0.8) calc(var(--neo-blur) * 0.8) var(--neo-light),
+      inset calc(var(--neo-distance) * 0.8) calc(var(--neo-distance) * 0.8) calc(var(--neo-blur) * 0.8) var(--neo-dark);
+    transform: translateY(1px);
+  }
+  /* Soft UI is notorious for swallowing the focus ring. Put it back. */
+  .neo-pressable:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* ── 3D ── */
+  .perspective-scene {
+    perspective: var(--perspective);
+    transform-style: preserve-3d;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  /* Lift a child off the card face; pairs with TiltCard's rotation. */
+  .layer-pop {
+    transform: translateZ(38px);
+    transform-style: preserve-3d;
+  }
+  .layer-pop-sm {
+    transform: translateZ(18px);
+    transform-style: preserve-3d;
+  }
+
+  /* ── Grain — kills the banding large soft gradients show on wide-gamut panels ── */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── Honour reduced motion across the whole depth layer ── */
+  @media (prefers-reduced-motion: reduce) {
+    .neo-pressable {
+      transition: none;
+    }
+    .neo-pressable:active,
+    .neo-pressable[data-pressed="true"] {
+      transform: none;
+    }
+  }
+}
