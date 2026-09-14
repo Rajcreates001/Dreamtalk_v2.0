@@ -54,8 +54,12 @@ function DigitalChamber({ colors }: { colors: { primary: string; secondary: stri
 const METRICS = [
   { value: "50K+", label: "Avatars Created", delay: 2.2 },
   { value: "10M+", label: "Conversations", delay: 2.4 },
-  { value: "50+", label: "Languages", delay: 2.6 },
-  { value: "<200ms", label: "Response Time", delay: 2.8 },
+  // 23, not 50+: all 22 scheduled Indian languages plus English.
+  { value: "23", label: "Indian Languages", delay: 2.6 },
+  // Replaces a "<200ms Response Time" claim the stack does not meet — a text
+  // reply measures 16-23s today. Self-hosting is true, verifiable, and the
+  // thing that actually differentiates us from HeyGen / D-ID / Synthesia.
+  { value: "100%", label: "Self-Hosted", delay: 2.8 },
 ]
 
 /* ─── MAIN HERO CONTAINER ─── */
@@ -172,7 +176,12 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: stat.delay }}
                     >
-                      <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      {/* `bg-clip-text` clips the gradient to the glyph run, so
+                          the final character loses its right-hand sidebearing
+                          and appears sheared (this is why "<200ms" rendered as
+                          "<200m"). A small right pad extends the painted box
+                          past the last glyph; inline-block keeps it tight. */}
+                      <div className="inline-block pr-[0.12em] text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         {stat.value}
                       </div>
                       <div className="text-xs text-foreground-muted mt-1 tracking-wide">{stat.label}</div>

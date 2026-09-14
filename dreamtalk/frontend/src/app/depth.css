@@ -302,3 +302,13 @@
 :root[data-perf="low"] .blur-3xl {
   filter: blur(28px);
 }
+
+/* ── Gradient text: stop the last glyph being sheared ──
+   `background-clip: text` paints the gradient only across the glyph run, which
+   drops the final character's right sidebearing — "<200ms" rendered as
+   "<200m". A hair of right padding extends the painted box past the last
+   glyph. Applied globally because the app has 18 gradient-text instances and
+   every one of them has the same defect. */
+.bg-clip-text {
+  padding-right: 0.06em;
+}

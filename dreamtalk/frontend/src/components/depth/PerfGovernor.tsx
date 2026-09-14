@@ -3,78 +3,92 @@
 import { useEffect } from "react"
 
 /* ──────────────────────────────────────────────────────────────
-   Adaptive performance tiers.
+   Adaptive performance governor.
 
-   The expensive thing in this design is not the blur radius — it is that
-   `backdrop-filter` cannot be cached while the backdrop is MOVING. With an
-   animated ambient field behind them, every glass surface on screen re-blurs
-   the backdrop every single frame. Ten glass panels on a weak integrated GPU
-   is ten full-viewport blur passes per frame, and the frame budget is gone.
+   Target: >100 FPS idle, >=80 FPS under load (fast scrolling, route changes,
+   avatar mounts). Those are high bars for a page carrying a WebGL head, so the
+   strategy is to spend the frame budget only while there is budget to spend.
 
-   So rather than guess from `hardwareConcurrency` (which says nothing about
-   the GPU, and on which a 4-core desktop with a real card would be punished
-   for no reason), this measures actual delivered frame time and steps DOWN
-   only when the machine demonstrably cannot keep up.
+   The dominant cost is `backdrop-filter` over a MOVING backdrop: a changing
+   backdrop cannot be cached, so every glass surface re-blurs every frame.
+   Tier `medium` therefore freezes the ambient field rather than shrinking any
+   radius — once the backdrop is static those results become cacheable, which
+   buys back more than any blur tweak.
 
-   Tiers, written to `data-perf` on <html>:
-     high    everything on
-     medium  ambient animation frozen — the backdrop becomes static, so every
-             backdrop-filter result becomes cacheable. This is the single
-             biggest win and is close to invisible, because the drift was
-             already slow enough to be subliminal.
-     low     blur radii cut and grain dropped; glass degrades to a flat
-             translucent fill. Still looks deliberate, just cheaper.
+   Why measured rather than guessed: `hardwareConcurrency` says nothing about
+   the GPU, and would punish a 4-core desktop with a real card while letting a
+   16-core laptop on integrated graphics run at full quality.
 
-   The tier only ever ratchets downward within a session. Oscillating between
-   tiers would be far more distracting than simply running at the lower one.
+   Sampling is CONTINUOUS, not one-shot. A single sample at load cannot see the
+   stress cases the user actually feels — flinging the scrollbar, navigating,
+   mounting a second avatar. Each window that misses the target ratchets the
+   tier down one step.
+
+   The tier only ever ratchets DOWN. Oscillating between tiers mid-scroll would
+   be far more distracting than simply running at the lower one, and each
+   transition itself costs a style recalc across the page.
    ────────────────────────────────────────────────────────────── */
 
-const SAMPLE_MS = 2200
-/** Below this we stop animating the backdrop; below LOW we also cut blur. */
-const MEDIUM_FPS = 52
-const LOW_FPS = 38
+/** Sustained FPS below this drops ambient animation (backdrop becomes cacheable). */
+const MEDIUM_FPS = 90
+/** Sustained FPS below this also drops blur, saturation and grain. */
+const LOW_FPS = 70
+/** Length of each measurement window. Long enough to ignore one-off hitches. */
+const WINDOW_MS = 1500
+/** Let first paint, font swap and the 3D scene settle before judging. */
+const WARMUP_MS = 1500
+
+type Tier = "high" | "medium" | "low"
+const ORDER: Tier[] = ["high", "medium", "low"]
 
 export function PerfGovernor() {
   useEffect(() => {
     const root = document.documentElement
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Reduced motion already freezes the ambient field, so the backdrop is
-      // static and the expensive case cannot arise. Leave quality high.
-      root.dataset.perf = "high"
-      return
-    }
     root.dataset.perf = "high"
 
-    let frames = 0
+    // Reduced motion already freezes the ambient field, so the expensive
+    // moving-backdrop case cannot arise. Leave quality high and don't measure.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+    let tier: Tier = "high"
     let raf = 0
-    let start = 0
+    let frames = 0
+    let windowStart = 0
     let stopped = false
+
+    const applyTier = (next: Tier) => {
+      if (ORDER.indexOf(next) <= ORDER.indexOf(tier)) return // never ratchet up
+      tier = next
+      root.dataset.perf = tier
+    }
 
     const tick = (now: number) => {
       if (stopped) return
-      if (!start) start = now
+      if (!windowStart) windowStart = now
       frames++
-      const elapsed = now - start
-      if (elapsed >= SAMPLE_MS) {
-        const fps = (frames / elapsed) * 1000
-        // A tab that was backgrounded mid-sample reports a nonsense low number;
-        // rAF is throttled there, so discard and re-sample instead of demoting.
-        if (document.hidden) {
-          frames = 0
-          start = 0
-        } else {
-          root.dataset.perf = fps < LOW_FPS ? "low" : fps < MEDIUM_FPS ? "medium" : "high"
+      const elapsed = now - windowStart
+
+      if (elapsed >= WINDOW_MS) {
+        // rAF is throttled in a hidden tab, which looks identical to a slow
+        // machine. Discard the window instead of demoting on it.
+        if (!document.hidden) {
+          const fps = (frames / elapsed) * 1000
           root.dataset.perfFps = String(Math.round(fps))
-          return // ratchet down once, then stop measuring
+          if (fps < LOW_FPS) applyTier("low")
+          else if (fps < MEDIUM_FPS) applyTier("medium")
         }
+        frames = 0
+        windowStart = 0
+        // Once at the lowest tier there is nothing further to give up, so stop
+        // burning a rAF callback on measurement for the rest of the session.
+        if (tier === "low") return
       }
       raf = requestAnimationFrame(tick)
     }
 
-    // Let first paint, font swap and the 3D scene settle before judging.
     const warmup = window.setTimeout(() => {
       raf = requestAnimationFrame(tick)
-    }, 1200)
+    }, WARMUP_MS)
 
     return () => {
       stopped = true

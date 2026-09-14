@@ -30,6 +30,33 @@ from dreamtalk.pipeline.brain_pipeline import BrainPipeline
 from dreamtalk.pipeline.lipsync_pipeline import get_lipsync_pipeline
 from dreamtalk.pipeline.emotion_animation import get_emotion_animation_mapper
 
+def _to_jsonable(obj):
+    """Recursively replace numpy scalars/arrays with native Python equivalents.
+
+    FastAPI serializes `Any`-typed fields with its own encoder, which does not
+    know numpy. A single np.bool_ or np.float32 anywhere in the tree raises
+    "Unable to serialize unknown type" and the whole response becomes a 500 —
+    after the expensive work has already succeeded. Pydantic models are walked
+    in place so the declared response_model still applies.
+    """
+    if isinstance(obj, np.generic):          # np.bool_, np.float32, np.int64 ...
+        return obj.item()
+    if isinstance(obj, np.ndarray):
+        return [_to_jsonable(v) for v in obj.tolist()]
+    if isinstance(obj, dict):
+        return {k: _to_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(_to_jsonable(v) for v in obj)
+    if hasattr(obj, "model_fields"):         # pydantic v2 model — fix in place
+        for name in obj.model_fields:
+            try:
+                setattr(obj, name, _to_jsonable(getattr(obj, name)))
+            except Exception:                # frozen/computed fields
+                pass
+        return obj
+    return obj
+
+
 logger = logging.getLogger("dreamtalk.pipeline.orchestrator")
 
 
@@ -417,7 +444,12 @@ class PipelineOrchestrator:
         logger.info(f"Pipeline {pipeline_id} complete: {result.status.value} "
                     f"({len(steps)} steps, {len(errors)} errors)")
 
-        return result
+        # The pipeline is full of numpy — landmark checks, quality gates, pitch
+        # stats — and any numpy scalar that reaches an Any-typed field turns a
+        # finished run into a 500 at serialization time
+        # ("Unable to serialize unknown type: <class 'numpy.bool_'>"), throwing
+        # away the entire result. Coerce once, here, at the boundary.
+        return _to_jsonable(result)
 
     async def run_face_only(self, request: PipelineRequest) -> FaceAnalysisResult:
         """Run only the face analysis pipeline."""

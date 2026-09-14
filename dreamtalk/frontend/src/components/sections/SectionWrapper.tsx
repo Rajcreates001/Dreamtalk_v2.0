@@ -104,7 +104,11 @@ function SectionInner({
         // this long page); the intrinsic size keeps the scrollbar stable.
         contentVisibility: "auto",
         containIntrinsicSize: "1px 800px",
-        ...(reveal !== "none" ? { willChange: "transform, opacity" } : {}),
+        // No permanent will-change. It was applied to every section, which
+        // promoted ~94 elements to their own compositor layers for the entire
+        // page lifetime; transform/opacity reveals are GPU-composited without
+        // it, and the hint is only a win when set immediately before a change
+        // and cleared after.
       }}
     >
       {label && (
@@ -122,18 +126,25 @@ function SectionInner({
       {/* Background engine with per-section colors */}
       <SectionBackground theme={bg} />
 
-      {/* Parallax background layer */}
+      {/* Parallax background layer.
+          These were `blur-[120px]` / `blur-[100px]` on solid colour at 2% and
+          1.5% opacity — 2 per section across 19 sections, i.e. ~38 full blur
+          passes for something imperceptible at that alpha. A radial-gradient
+          produces the same soft falloff with no filter pass at all.
+          `will-change` is also NOT set here: it was pinned permanently on every
+          section, promoting ~94 elements to their own GPU layers for the whole
+          page lifetime. Transform/opacity animations are composited anyway. */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        style={{ y: parallaxValues.y, opacity: parallaxValues.opacity, willChange: "transform, opacity" }}
+        style={{ y: parallaxValues.y, opacity: parallaxValues.opacity }}
       >
         <div
-          className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full blur-[120px]"
-          style={{ background: ac.primary, opacity: 0.02 }}
+          className="absolute top-1/4 left-1/4 w-[32rem] h-[32rem] rounded-full"
+          style={{ background: `radial-gradient(circle, ${ac.primary} 0%, transparent 70%)`, opacity: 0.05 }}
         />
         <div
-          className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-[100px]"
-          style={{ background: ac.secondary, opacity: 0.015 }}
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full"
+          style={{ background: `radial-gradient(circle, ${ac.secondary} 0%, transparent 70%)`, opacity: 0.04 }}
         />
       </motion.div>
 
@@ -203,7 +214,6 @@ export function SectionHeading({
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, ease: EASE }}
       className={`mb-14 ${align === "center" ? "text-center" : "text-left"}`}
-      style={{ willChange: "transform, opacity" }}
     >
       {label && (
         <motion.span

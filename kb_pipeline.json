@@ -1,0 +1,1 @@
+{"detail":"Internal server error","error":"Unable to serialize unknown type: <class 'numpy.bool_'>"}
