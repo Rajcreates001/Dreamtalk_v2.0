@@ -336,8 +336,21 @@ async def lifespan(app: FastAPI):
     task = asyncio.ensure_future(load_avatar_models())
     task.add_done_callback(lambda t: logger.info(f"Model loading {'succeeded' if not t.exception() else f'failed: {t.exception()}'}"))
 
-    # Same pattern for the 2D lip-sync model: start it now, never await it.
-    warm = asyncio.ensure_future(warm_musetalk())
+    # The 2D model warms AFTER the avatar models, never beside them.
+    #
+    # Running both as independent tasks raced on the import lock: both import
+    # `transformers`, and whichever lost saw a half-initialised module and
+    # died with "cannot import name 'WhisperConfig' from 'transformers'" —
+    # a module that imports perfectly well in isolation. Chaining them costs
+    # nothing (neither is awaited by startup) and removes the race.
+    async def _load_then_warm():
+        try:
+            await task
+        except Exception:
+            pass  # already reported by the callback above
+        await warm_musetalk()
+
+    warm = asyncio.ensure_future(_load_then_warm())
     warm.add_done_callback(
         lambda t: t.exception() and logger.warning(f"MuseTalk warm-up: {t.exception()}")
     )
