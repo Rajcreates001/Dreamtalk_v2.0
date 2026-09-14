@@ -150,7 +150,31 @@ class TwoDAvatarRenderer:
                 return
             logger.info("Only %.1f GB VRAM free (need %.1f) — reclaiming before MuseTalk load",
                         free / 1e9, need / 1e9)
+
+            # Drop our own cached-but-unused blocks first. This costs nothing
+            # and is the only lever that still exists once the LLM moved to a
+            # remote vLLM endpoint: with no Ollama on the host there is no
+            # model to evict, and the old code simply returned here and let
+            # MuseTalk load into a full GPU, where it dies with a CUDA OOM
+            # that reads like a MuseTalk bug rather than a scheduling one.
+            import gc
+            gc.collect()
+            torch.cuda.empty_cache()
+            free, _total = torch.cuda.mem_get_info()
+            if free >= need:
+                logger.info("Reclaimed to %.1f GB free by dropping cached blocks", free / 1e9)
+                return
+
             if not self._release_host_llm_vram():
+                # Say so explicitly. A silent return here is indistinguishable
+                # from a successful reclaim in the logs, which is how an OOM
+                # three minutes later becomes hard to attribute.
+                logger.warning(
+                    "No host LLM to evict and only %.1f GB free (need %.1f); "
+                    "attempting the MuseTalk load anyway — expect a CUDA OOM "
+                    "if another process is holding the card",
+                    free / 1e9, need / 1e9,
+                )
                 return
             # The host driver (and WSL2's GPU paravirtualisation) can take
             # several seconds to actually hand the memory back, so poll rather
