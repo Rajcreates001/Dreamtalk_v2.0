@@ -3,6 +3,7 @@ import Script from "next/script"
 import { Geist, Geist_Mono, Manrope, Plus_Jakarta_Sans } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/layout/theme-provider"
+import { PerfGovernor } from "@/components/depth/PerfGovernor"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -91,6 +92,7 @@ export default function RootLayout({
             };
           })()`}
         </Script>
+        <PerfGovernor />
         <ThemeProvider>
           {children}
           <Toaster position="top-center" richColors closeButton />

@@ -227,3 +227,51 @@
     }
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PERFORMANCE TIERS  (set on <html data-perf> by PerfGovernor)
+   ──────────────────────────────────────────────────────────────
+   The costly case is backdrop-filter over a MOVING backdrop: a changing
+   backdrop cannot be cached, so every glass surface re-blurs every frame.
+   Tier 'medium' therefore freezes the ambient field rather than touching
+   the blur — once the backdrop is static the results become cacheable,
+   which buys back more than shrinking any radius would.
+   ══════════════════════════════════════════════════════════════ */
+
+/* medium — stop the backdrop moving; keep the look identical while still. */
+:root[data-perf="medium"] .animate-drift-slow,
+:root[data-perf="medium"] .animate-float-slow,
+:root[data-perf="medium"] .animate-glow-soft,
+:root[data-perf="medium"] .animate-aurora-drift,
+:root[data-perf="medium"] .animate-aurora,
+:root[data-perf="medium"] .animate-aurora-slow,
+:root[data-perf="medium"] .animate-pulse-glow {
+  animation: none !important;
+}
+
+/* low — as medium, plus cheaper glass: smaller radii, no saturation pass,
+   no grain. Reads as a flat frosted panel rather than true glass, which is
+   a deliberate downgrade, not a broken one. */
+:root[data-perf="low"] .animate-drift-slow,
+:root[data-perf="low"] .animate-float-slow,
+:root[data-perf="low"] .animate-glow-soft,
+:root[data-perf="low"] .animate-aurora-drift,
+:root[data-perf="low"] .animate-aurora,
+:root[data-perf="low"] .animate-aurora-slow,
+:root[data-perf="low"] .animate-pulse-glow,
+:root[data-perf="low"] .animate-float,
+:root[data-perf="low"] .animate-orbit {
+  animation: none !important;
+}
+:root[data-perf="low"] {
+  --glass-blur: 8px;
+  --glass-saturate: 100%;
+}
+:root[data-perf="low"] .grain::after {
+  display: none;
+}
+/* Blur radius scales superlinearly on tile-based integrated GPUs; the
+   ambient blobs are the largest blurred surfaces on the page. */
+:root[data-perf="low"] .blur-3xl {
+  filter: blur(28px);
+}

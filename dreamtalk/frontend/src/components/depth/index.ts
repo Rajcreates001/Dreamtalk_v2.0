@@ -28,3 +28,4 @@ export {
 export { ScrollReveal, Parallax, type ScrollRevealProps, type ParallaxProps } from "./ScrollReveal"
 export { MagneticButton, type MagneticButtonProps } from "./MagneticButton"
 export { AuroraField, type AuroraFieldProps } from "./AuroraField"
+export { PerfGovernor } from "./PerfGovernor"
