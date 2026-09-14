@@ -819,6 +819,7 @@ class AvatarRuntimeService:
         strict_clone: bool = True,
         vocal_emotion: Optional[VocalEmotion] = None,
         render_video: bool = False,
+        emotion: Optional[str] = None,
     ) -> dict[str, Any]:
         started = time.perf_counter()
         message = (message or "").strip()
@@ -847,6 +848,22 @@ class AvatarRuntimeService:
             message, target_language, profile, effective_history, user_emotion)
         response_text, translated = await self._ensure_response_language(response_text, target_language)
         response_emotion = await self._detect_text_emotion(response_text)
+        if emotion is not None:
+            if emotion not in {
+                "neutral", "calm", "happy", "excited", "sad", "angry", "surprised",
+                "fearful", "disgusted", "loving", "frustrated", "confused",
+            }:
+                raise ValueError("Unsupported response emotion")
+            response_emotion = {
+                "primary_mood": emotion,
+                "secondary_mood": None,
+                "valence": 0.0,
+                "arousal": 0.5,
+                "dominance": 0.5,
+                "intensity_score": 0.6,
+                "source": "explicit",
+                "confidence": 1.0,
+            }
 
         speech_result = None
         lipsync = None

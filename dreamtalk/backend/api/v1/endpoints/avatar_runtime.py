@@ -7,7 +7,7 @@ import json
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, WebSocket
 from fastapi.responses import FileResponse
@@ -39,6 +39,10 @@ class AvatarChatRequest(BaseModel):
     synthesize: bool = True
     strict_clone: bool = True
     render_video: bool = False
+    emotion: Optional[Literal[
+        "neutral", "calm", "happy", "excited", "sad", "angry", "surprised",
+        "fearful", "disgusted", "loving", "frustrated", "confused",
+    ]] = None
 
     def resolved_message(self) -> str:
         return (self.message or self.text or "").strip()
@@ -113,11 +117,15 @@ async def runtime_status():
 
 @router.get("/languages")
 async def supported_languages():
+    speech = await get_avatar_runtime().speech.discover()
+    clone_languages = speech.get("supported_languages", {}) if speech.get("available") else {}
     return {
         "languages": SUPPORTED_LANGUAGES,
         "automatic_detection": True,
-        "voice_clone_engine": "indic-mio",
-        "voice_clone_languages": {
+        "voice_clone_engine": speech.get("engine") if speech.get("available") else None,
+        "voice_clone_languages": clone_languages,
+        "voice_clone_available": bool(speech.get("available")),
+        "planned_voice_clone_languages": {
             code: SUPPORTED_LANGUAGES[code] for code in sorted(INDICMIO_LANGUAGES)
         },
         "indicf5_fallback_languages": {
@@ -127,7 +135,7 @@ async def supported_languages():
             "asr": True,
             "conversation": True,
             "generic_tts": True,
-            "indic_mio_clone": True,
+            "indic_mio_clone": speech.get("engine") == "indic-mio" and "en" in clone_languages,
             "indicf5_clone": False,
         },
     }
@@ -282,6 +290,7 @@ async def _run_chat(request: AvatarChatRequest, forced_profile_id: Optional[str]
             synthesize=request.synthesize,
             strict_clone=request.strict_clone,
             render_video=request.render_video,
+            emotion=request.emotion,
         )
     except Exception as exc:
         _raise_api_error(exc)
@@ -474,4 +483,4 @@ async def realtime_avatar(websocket: WebSocket):
         from dreamtalk.backend.websocket.chat_handler import WebSocketChatHandler
         _runtime_ws_handler = WebSocketChatHandler()
     await websocket.accept()
-    await _runtime_ws_handler.handle_connection(websocket)
+    await _runtime_ws_handler.handle_connection(websocket, user_id=payload["sub"])

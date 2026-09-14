@@ -66,8 +66,21 @@ class WebSocketChatHandler:
             self._avatar_runtime = get_avatar_runtime()
         return self._avatar_runtime
 
-    async def handle_connection(self, websocket, session_id: Optional[str] = None) -> None:
-        session = ChatSession(session_id=session_id or "")
+    async def handle_connection(self, websocket, session_id: Optional[str] = None, user_id: Optional[str] = None) -> None:
+        if not user_id:
+            try:
+                import jwt
+                from dreamtalk.backend.api.v1.endpoints.auth import JWT_SECRET, JWT_ALGORITHM
+
+                token = websocket.query_params.get("access_token") or websocket.headers.get("authorization", "").removeprefix("Bearer ")
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                if payload.get("type") != "access" or not payload.get("sub"):
+                    raise ValueError("Invalid access token")
+                user_id = payload["sub"]
+            except Exception:
+                await websocket.close(code=4401, reason="Authentication required")
+                return
+        session = ChatSession(session_id=session_id or "", user_id=user_id)
         self._sessions[session.session_id] = session
         self._connections[session.session_id] = websocket
         await self._start_persistence(session)
@@ -143,7 +156,7 @@ class WebSocketChatHandler:
         })
 
         runtime = self._get_avatar_runtime()
-        profile = runtime.store.get(session.profile_id or None)
+        profile = self._owned_profile(session)
         if session.synthesize and not profile:
             await websocket.send_json({
                 "type": "notice",
@@ -178,7 +191,7 @@ class WebSocketChatHandler:
             raise ValueError(f"Audio payload exceeds {max_bytes // (1024 * 1024)} MB")
 
         runtime = self._get_avatar_runtime()
-        profile = runtime.store.get(session.profile_id or None)
+        profile = self._owned_profile(session)
         if session.synthesize and session.strict_clone and not profile:
             raise RuntimeError("Create or activate an avatar profile before requesting cloned speech")
 
@@ -247,8 +260,10 @@ class WebSocketChatHandler:
         runtime = self._get_avatar_runtime()
         if "profile_id" in data:
             requested = str(data.get("profile_id") or "")
-            if requested and not runtime.store.get(requested):
-                raise KeyError(f"Avatar profile '{requested}' was not found")
+            if requested:
+                profile = runtime.store.get(requested)
+                if not profile or str(profile.get("user_id")) != session.user_id:
+                    raise PermissionError("Avatar profile is not accessible")
             session.profile_id = requested
         if "language" in data:
             session.language = str(data.get("language") or "auto")
@@ -267,7 +282,7 @@ class WebSocketChatHandler:
         await websocket.send_json({
             "type": "config_updated",
             "data": {
-                "profile_id": session.profile_id or (runtime.store.get() or {}).get("id"),
+                "profile_id": session.profile_id or None,
                 "language": session.language,
                 "synthesize": session.synthesize,
                 "strict_clone": session.strict_clone,
@@ -275,6 +290,18 @@ class WebSocketChatHandler:
                 "max_history": session.max_history,
             },
         })
+
+    def _owned_profile(self, session: ChatSession) -> dict[str, Any]:
+        runtime = self._get_avatar_runtime()
+        if not session.profile_id:
+            profiles = [p for p in runtime.store.list() if str(p.get("user_id")) == session.user_id]
+            if not profiles:
+                raise ValueError("Create an avatar profile before starting a conversation")
+            session.profile_id = profiles[0]["id"]
+        profile = runtime.store.get(session.profile_id)
+        if not profile or str(profile.get("user_id")) != session.user_id:
+            raise PermissionError("Avatar profile is not accessible")
+        return profile
 
     @staticmethod
     async def _start_persistence(session: ChatSession) -> None:

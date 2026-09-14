@@ -1,5 +1,5 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001"
-export const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:5001/ws/chat"
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050"
+export const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? `${API_BASE_URL.replace(/^http/, "ws")}/api/v1/avatar/ws/chat`
 
 // Auth token management
 let _authToken: string | null = null

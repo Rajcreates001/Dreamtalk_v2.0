@@ -266,7 +266,9 @@ async def auto_seed_v2():
 async def load_avatar_models():
     try:
         from dreamtalk.backend.api.v1.endpoints.avatar import load_all_models
-        await load_all_models()
+        # The legacy async loader performs blocking imports and model loads.
+        # Scheduling it as a task still blocks the API event loop until done.
+        await asyncio.to_thread(lambda: asyncio.run(load_all_models()))
     except Exception as e:
         logger.warning(f"Could not load avatar models: {e}")
 

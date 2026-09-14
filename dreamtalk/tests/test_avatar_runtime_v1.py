@@ -54,6 +54,25 @@ class LanguageDetectionTests(unittest.TestCase):
 
 
 class ProfileStoreTests(unittest.TestCase):
+    def test_websocket_selects_only_the_authenticated_users_profile(self):
+        from unittest.mock import Mock
+        from dreamtalk.backend.websocket.chat_handler import ChatSession, WebSocketChatHandler
+
+        handler = WebSocketChatHandler()
+        handler._avatar_runtime = Mock()
+        foreign = {"id": "foreign", "user_id": "other"}
+        own = {"id": "own", "user_id": "me"}
+        handler._avatar_runtime.store.list.return_value = [foreign, own]
+        handler._avatar_runtime.store.get.side_effect = lambda key: {"foreign": foreign, "own": own}.get(key)
+        session = ChatSession(user_id="me")
+        self.assertEqual(handler._owned_profile(session), own)
+        self.assertEqual(session.profile_id, "own")
+        session.profile_id = "foreign"
+        with self.assertRaises(PermissionError):
+            handler._owned_profile(session)
+        with self.assertRaises(ValueError):
+            handler._owned_profile(ChatSession(user_id="no-profiles"))
+
     def test_profile_round_trip_and_activation(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -179,6 +198,33 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("arkit", result["animation"]["expression"])
             self.assertIn("vrm", result["animation"]["expression"])
             self.assertIsNone(result["audio"])
+
+            controlled = await runtime.process_text(
+                "வணக்கம் எப்படி இருக்கிறீர்கள்", synthesize=False, emotion="sad",
+            )
+            self.assertEqual(controlled["user_emotion"]["primary_mood"], "happy")
+            self.assertEqual(controlled["response_emotion"]["source"], "explicit")
+            self.assertEqual(controlled["animation"]["emotion"], "sad")
+            self.assertEqual(controlled["animation"]["expression"]["vrm"]["sad"], 1.0)
+
+    async def test_language_endpoint_reports_active_clone_coverage(self):
+        from unittest.mock import AsyncMock, Mock, patch
+        from dreamtalk.backend.api.v1.endpoints.avatar_runtime import supported_languages
+
+        runtime = Mock()
+        runtime.speech.discover = AsyncMock(return_value={
+            "available": True, "engine": "indicf5",
+            "supported_languages": {"hi": "Hindi"},
+        })
+        with patch("dreamtalk.backend.api.v1.endpoints.avatar_runtime.get_avatar_runtime", return_value=runtime):
+            result = await supported_languages()
+            self.assertEqual(result["voice_clone_engine"], "indicf5")
+            self.assertEqual(result["voice_clone_languages"], {"hi": "Hindi"})
+            self.assertFalse(result["english"]["indic_mio_clone"])
+            runtime.speech.discover.return_value = {"available": False}
+            result = await supported_languages()
+            self.assertEqual(result["voice_clone_languages"], {})
+            self.assertIsNone(result["voice_clone_engine"])
 
     async def test_vocal_emotion_returns_bounded_pad_values(self):
         with tempfile.TemporaryDirectory() as temp:

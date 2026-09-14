@@ -27,7 +27,14 @@ export function useChat() {
     function connect() {
       if (!mounted) return
       try {
-        const ws = new WebSocket(WS_URL)
+        const token = getAuthToken()
+        if (!token) {
+          reconnectTimer = setTimeout(connect, 3000)
+          return
+        }
+        const url = new URL(WS_URL)
+        url.searchParams.set("access_token", token)
+        const ws = new WebSocket(url)
         wsRef.current = ws
 
         ws.onopen = () => {
