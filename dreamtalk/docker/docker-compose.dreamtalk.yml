@@ -58,6 +58,15 @@ x-shared-env: &shared-env
   AVATAR_2D_MAX_SIDE: ${AVATAR_2D_MAX_SIDE:-768}
   MUSETALK_BATCH_SIZE: ${MUSETALK_BATCH_SIZE:-4}
   MUSETALK_ALLOW_CPU: ${MUSETALK_ALLOW_CPU:-false}
+  # Half precision. MuseTalk loaded in fp32 by default, which does not fit an
+  # 8 GB card: every render died with "CUDA driver error: out of memory" in the
+  # VAE encode and silently fell back to the audio-reactive renderer, so the 2D
+  # avatar never actually moved its mouth.
+  MUSETALK_FP16: ${MUSETALK_FP16:-1}
+  # With fp16 the stack needs roughly half what it did, so the pre-load
+  # headroom bar comes down accordingly. It was 6.5 GB, sized for fp32 — on a
+  # card also hosting the LLM that bar could never be met.
+  MUSETALK_MIN_FREE_VRAM_GB: ${MUSETALK_MIN_FREE_VRAM_GB:-4.0}
   AVATAR_REQUIRE_GPU: ${AVATAR_REQUIRE_GPU:-true}
   AVATAR_GPU_UNLOAD_AFTER_RENDER: ${AVATAR_GPU_UNLOAD_AFTER_RENDER:-true}
   CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}

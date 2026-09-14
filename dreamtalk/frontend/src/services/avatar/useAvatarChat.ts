@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { API_BASE_URL } from "@/lib/api"
 import { avatarRuntime } from "./client"
 import type { AvatarProfile, RespondResult } from "./types"
 
@@ -34,6 +35,24 @@ export function useAvatarChat(options: { renderVideo?: boolean } = {}) {
   }, [])
 
   const activeProfile = profiles.find((p) => p.id === activeId) ?? null
+
+  /* Warm the 3D head as soon as we know which profile is active.
+   *
+   * Without this the GLB (KB's is 2.3 MB) only starts downloading when the
+   * user first flips to 3D, so the toggle appears to hang on an empty canvas
+   * while the mesh, its 1024px texture and the Draco decoder all arrive. The
+   * fetch primes the HTTP cache, so the later useGLTF() load is served from it.
+   *
+   * `low` priority on purpose: this must never contend with the first reply. */
+  useEffect(() => {
+    const url = activeProfile?.appearance?.glb_url
+    if (!url) return
+    const absolute = url.startsWith("http") ? url : `${API_BASE_URL}${url}`
+    const controller = new AbortController()
+    fetch(absolute, { signal: controller.signal, priority: "low" } as RequestInit)
+      .catch(() => { /* a cold cache is not an error worth surfacing */ })
+    return () => controller.abort()
+  }, [activeProfile?.appearance?.glb_url])
 
   const send = useCallback(async (message: string, language = "auto") => {
     const text = message.trim()
