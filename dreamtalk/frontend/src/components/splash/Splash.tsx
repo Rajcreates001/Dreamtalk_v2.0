@@ -5,6 +5,11 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 const SESSION_KEY = "dreamtalk_splash_seen"
 
+/** sessionStorage throws in private mode / blocked-cookie contexts. */
+function mark() {
+  try { sessionStorage.setItem(SESSION_KEY, "1") } catch { /* ignore */ }
+}
+
 /**
  * Lightweight cinematic intro (~2.2s): concentric identity rings form and a
  * wordmark resolves, then it dissolves into the hero. No heavy 3D here — the
@@ -19,25 +24,43 @@ export function Splash() {
     let seen = false
     try { seen = sessionStorage.getItem(SESSION_KEY) === "1" } catch { /* private */ }
     if (seen) { finish(); return }
+
+    // Mark as seen when the intro STARTS, not when its exit animation
+    // completes. Exit completion depends on requestAnimationFrame, which a
+    // background tab throttles to a crawl — so onExitComplete never fired, the
+    // key was never written, and the intro replayed on every single load.
+    mark()
+
+    // A tab that is hidden at load has no one watching the intro, and its
+    // timers and rAF are throttled, so the splash could sit at full opacity
+    // over the whole app until the tab was focused. Skip it outright.
+    if (document.hidden) { finish(); return }
+
+    const onHide = () => { if (document.hidden) finish() }
+    document.addEventListener("visibilitychange", onHide)
     const t = setTimeout(finish, reduce ? 350 : 2200)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener("visibilitychange", onHide)
+    }
   }, [reduce])
 
   const close = () => {
-    try { sessionStorage.setItem(SESSION_KEY, "1") } catch { /* ignore */ }
+    mark()
     finish()
   }
 
   return (
-    <AnimatePresence onExitComplete={close}>
+    <AnimatePresence>
       {!done && (
         <motion.div
           key="splash"
+          // pointer-events are dropped as soon as it starts leaving, so a
+          // stalled exit animation can never swallow clicks on the app behind.
           className="fixed inset-0 z-[100] grid place-items-center bg-background overflow-hidden"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, filter: "blur(16px)", scale: 1.04 }}
+          exit={{ opacity: 0, filter: "blur(16px)", scale: 1.04, pointerEvents: "none" }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          onAnimationComplete={() => { try { sessionStorage.setItem(SESSION_KEY, "1") } catch { /* ignore */ } }}
         >
           <div className="pointer-events-none absolute inset-0 opacity-80"
             style={{ background: "radial-gradient(55% 55% at 50% 45%, var(--glow-primary), transparent 70%)" }} />
