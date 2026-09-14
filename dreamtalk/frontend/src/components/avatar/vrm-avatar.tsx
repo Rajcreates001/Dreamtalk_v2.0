@@ -61,11 +61,11 @@ function SphereHead({ emotion, isSpeaking, lipSyncValue }: {
     idlePhase: 0, blinkTimer: 0, blinkPhase: 0, nextBlink: 3,
   })
 
-  const targetColor = useRef(new THREE.Color("#A2AB73"))
+  const targetColor = useRef(new THREE.Color("var(--secondary)"))
 
   const EMOTION_COLORS: Record<string, string> = {
     happy: "#D6A44C", sad: "#4169E1", angry: "#FF4444", fear: "#9932CC",
-    surprise: "#FF8C00", neutral: "#A2AB73", disgust: "#556B2F", contempt: "#8B4513",
+    surprise: "#FF8C00", neutral: "var(--secondary)", disgust: "#556B2F", contempt: "#8B4513",
   }
 
   useEffect(() => {
@@ -171,7 +171,7 @@ function SphereHead({ emotion, isSpeaking, lipSyncValue }: {
       {/* Emotion ring */}
       <mesh ref={ringRef} position={[0, 0, -0.02]}>
         <ringGeometry args={[0.58, 0.62, 48]} />
-        <meshBasicMaterial color="#A2AB73" transparent opacity={0.15} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="var(--secondary)" transparent opacity={0.15} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )

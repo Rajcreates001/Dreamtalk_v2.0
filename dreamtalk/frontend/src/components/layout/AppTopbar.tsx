@@ -179,15 +179,15 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
                         className={cn(
                           "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-all text-left",
                           i === selectedIndex
-                            ? "bg-[#CC3A63]/10 text-foreground"
+                            ? "bg-primary/10 text-foreground"
                             : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04]"
                         )}
                       >
                         <div className={cn(
                           "w-7 h-7 rounded-lg flex items-center justify-center",
-                          i === selectedIndex ? "bg-[#CC3A63]/20" : "bg-foreground/[0.04]"
+                          i === selectedIndex ? "bg-primary/20" : "bg-foreground/[0.04]"
                         )}>
-                          <Icon className={cn("h-3.5 w-3.5", i === selectedIndex && "text-[#CC3A63]")} />
+                          <Icon className={cn("h-3.5 w-3.5", i === selectedIndex && "text-primary")} />
                         </div>
                         <span>{item.label}</span>
                       </button>
@@ -221,17 +221,17 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
         {/* Notification bell */}
         <button className="relative w-9 h-9 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all">
           <Bell className="h-4 w-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#CC3A63] shadow-[0_0_6px_rgba(204,58,99,0.6)]" />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary shadow-[0_0_6px_rgba(200,90,58,0.6)]" />
         </button>
 
         {/* Credits */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs text-[#CC3A63] font-medium">
+        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
           <Sparkles className="h-3 w-3" />
           2,450
         </div>
 
         {/* User avatar */}
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-xs cursor-pointer shadow-lg shadow-[#CC3A63]/20">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-xs cursor-pointer shadow-lg shadow-primary/20">
           {user?.full_name?.charAt(0)?.toUpperCase() || "?"}
         </div>
       </div>

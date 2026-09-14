@@ -6,62 +6,79 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ══════════════════════════════════════════════════════════════
-   DREAMTALK ASTRA — DESIGN TOKENS
-   Human identity + AI + digital presence.
-   Warm / organic (light) · deep / intelligent (dark).
-   Brand: pink #CC3A63 (identity) · green #A2AB73 (organic)
-          burgundy #853953 · plum #612D53 (dark atmosphere)
+   DREAMTALK — PETROL & CLAY
+   ──────────────────────────────────────────────────────────────
+   Why these colours, specifically:
+
+   The ground is a PETROL ink (#0D1618) rather than the blue-slate
+   (#0F172A) every dashboard ships. It is a green-black, so warm
+   foreground colours sit on it without the violet cast slate gives them.
+
+   The primary is CLAY — a warm earth red. This is a digital-HUMAN
+   product, and clay is skin-adjacent: it belongs next to a face in a way
+   that violet never does. It is also deliberately NOT #7C3AED, which the
+   palette data lists as the default primary for both "AI Photo & Avatar
+   Generator" and "AI/Chatbot Platform" — i.e. the colour of every
+   competitor in this exact category.
+
+   Secondary is VERDIGRIS (aged copper) and the accent is BRASS: the two
+   things that actually happen to warm metal over time. The set reads as
+   patina — something made, kept and lived with — which is the product.
+
+   Every value below is contrast-checked, not eyeballed. Light-mode
+   primary and accent were solved numerically to clear 4.5:1 on the page
+   ground so they are safe as text, not just as fills.
    ══════════════════════════════════════════════════════════════ */
 :root {
-  /* Surfaces — warm cream, premium light theme */
-  --background: #FFF7EB;
-  --background-secondary: #F9F0E0;
-  --foreground: #2B2622;
-  --foreground-muted: #7A7167;
-  --card: #FFFDF8;
-  --card-foreground: #2B2622;
-  --popover: #FFFDF8;
-  --popover-foreground: #2B2622;
-  --surface: #F9F0E0;
-  --surface-elevated: #FFFDF8;
-  --surface-glass: rgba(255, 249, 238, 0.72);
+  /* Surfaces — warm bone / parchment */
+  --background: #F3EFE7;
+  --background-secondary: #EAE5DA;
+  --foreground: #191F20;
+  --foreground-muted: #5C6769;      /* 5.09:1 on bg */
+  --card: #FBF8F2;
+  --card-foreground: #191F20;
+  --popover: #FBF8F2;
+  --popover-foreground: #191F20;
+  --surface: #EAE5DA;
+  --surface-elevated: #FBF8F2;
+  --surface-glass: rgba(251, 248, 242, 0.72);
 
   /* Brand */
-  --primary: #CC3A63;          /* human identity / primary action */
-  --primary-hover: #B7305A;
-  --primary-foreground: #FFF7EB;
-  --secondary: #A2AB73;        /* organic green */
-  --secondary-hover: #8E9863;
-  --secondary-foreground: #2B2622;
-  --accent: #A2AB73;
-  --accent-foreground: #2B2622;
-  --burgundy: #853953;
-  --plum: #612D53;
+  --primary: #B64A2C;               /* clay — 4.57:1 on bg, white on it 5.24:1 */
+  --primary-hover: #A03F25;
+  --primary-foreground: #FFFFFF;
+  --secondary: #26786F;             /* verdigris — 4.58:1 on bg */
+  --secondary-hover: #1F6259;
+  --secondary-foreground: #FFFFFF;
+  --accent: #846A1B;                /* brass — 4.51:1 on bg */
+  --accent-foreground: #FFFFFF;
+  --burgundy: #7C3A2A;
+  --plum: #143034;                  /* deep petrol, for atmosphere */
 
   /* Neutrals */
-  --muted: #F1E7D6;
-  --muted-foreground: #857B6E;
+  --muted: #E4DED1;
+  --muted-foreground: #5C6769;
 
   /* Semantic states */
-  --success: #7E8F52;
-  --success-foreground: #FFF7EB;
-  --warning: #C88A2E;
-  --warning-foreground: #2B2622;
-  --destructive: #C0364F;
-  --destructive-foreground: #FFF7EB;
-  --error: #C0364F;
+  --success: #2F7A54;
+  --success-foreground: #FFFFFF;
+  --warning: #9A6B12;
+  --warning-foreground: #FFFFFF;
+  --destructive: #B3382C;
+  --destructive-foreground: #FFFFFF;
+  --error: #B3382C;
 
   /* Lines */
-  --border: #E6D9C4;
-  --border-subtle: rgba(43, 38, 34, 0.08);
-  --input: #E6D9C4;
-  --ring: #CC3A63;
+  --border: #DDD6C8;
+  --border-subtle: rgba(25, 31, 32, 0.08);
+  --input: #DDD6C8;
+  --ring: #B64A2C;
   --radius: 1rem;
 
-  /* Ambient glows (retuned to brand) */
-  --glow-primary: rgba(204, 58, 99, 0.28);
-  --glow-secondary: rgba(162, 171, 115, 0.28);
-  --glow-accent: rgba(162, 171, 115, 0.24);
+  /* Ambient glows */
+  --glow-primary: rgba(182, 74, 44, 0.26);
+  --glow-secondary: rgba(38, 120, 111, 0.24);
+  --glow-accent: rgba(132, 106, 27, 0.20);
 
   /* Type */
   --font-sans: var(--font-manrope), var(--font-geist-sans), "Inter", system-ui, sans-serif;
@@ -70,50 +87,51 @@
 }
 
 .dark {
-  /* Surfaces — warm charcoal, deep & intelligent */
-  --background: #262322;
-  --background-secondary: #2E2A2A;
-  --foreground: #F3F4F4;
-  --foreground-muted: #B7ADA3;
-  --card: #322E2E;
-  --card-foreground: #F3F4F4;
-  --popover: #2C2929;
-  --popover-foreground: #F3F4F4;
-  --surface: #322E2E;
-  --surface-elevated: #3A3535;
-  --surface-glass: rgba(46, 42, 42, 0.72);
+  /* Surfaces — petrol ink. A green-black, not the blue-slate every
+     dashboard uses: warm foreground colours sit on it without a violet cast. */
+  --background: #0D1618;
+  --background-secondary: #121D20;
+  --foreground: #ECEAE4;            /* 15.24:1 on bg */
+  --foreground-muted: #9AA7A8;      /* 7.39:1 on bg */
+  --card: #182326;
+  --card-foreground: #ECEAE4;
+  --popover: #152023;
+  --popover-foreground: #ECEAE4;
+  --surface: #182326;
+  --surface-elevated: #1F2C2F;
+  --surface-glass: rgba(31, 44, 47, 0.72);
 
-  /* Brand — pink stays the identity accent; burgundy/plum give atmosphere */
-  --primary: #CC3A63;
-  --primary-hover: #DB4A72;
-  --primary-foreground: #FFF7EB;
-  --secondary: #A2AB73;
-  --secondary-hover: #B2BB83;
-  --secondary-foreground: #201D1D;
-  --accent: #A2AB73;
-  --accent-foreground: #201D1D;
-  --burgundy: #853953;
-  --plum: #612D53;
+  /* Brand — the same three pigments, lifted for a dark ground */
+  --primary: #E2724F;               /* clay — 5.90:1 on bg */
+  --primary-hover: #EE835F;
+  --primary-foreground: #0D1618;
+  --secondary: #4FB3A5;             /* verdigris — 7.27:1 on bg */
+  --secondary-hover: #63C4B6;
+  --secondary-foreground: #0D1618;
+  --accent: #D0A93F;                /* brass — 8.23:1 on bg */
+  --accent-foreground: #0D1618;
+  --burgundy: #9B4A33;
+  --plum: #0F2529;
 
-  --muted: #3A3535;
-  --muted-foreground: #A69C92;
+  --muted: #1F2C2F;
+  --muted-foreground: #9AA7A8;
 
-  --success: #94A363;
-  --success-foreground: #201D1D;
-  --warning: #D6A44C;
-  --warning-foreground: #201D1D;
-  --destructive: #D84C63;
-  --destructive-foreground: #FFF7EB;
-  --error: #D84C63;
+  --success: #57B37C;
+  --success-foreground: #0D1618;
+  --warning: #D0A93F;
+  --warning-foreground: #0D1618;
+  --destructive: #E2604F;
+  --destructive-foreground: #0D1618;
+  --error: #E2604F;
 
-  --border: rgba(243, 244, 244, 0.10);
-  --border-subtle: rgba(243, 244, 244, 0.06);
-  --input: rgba(243, 244, 244, 0.12);
-  --ring: #CC3A63;
+  --border: rgba(236, 234, 228, 0.12);
+  --border-subtle: rgba(236, 234, 228, 0.07);
+  --input: rgba(236, 234, 228, 0.14);
+  --ring: #E2724F;
 
-  --glow-primary: rgba(204, 58, 99, 0.38);
-  --glow-secondary: rgba(162, 171, 115, 0.26);
-  --glow-accent: rgba(133, 57, 83, 0.34);
+  --glow-primary: rgba(226, 114, 79, 0.34);
+  --glow-secondary: rgba(79, 179, 165, 0.26);
+  --glow-accent: rgba(208, 169, 63, 0.24);
 }
 
 @theme inline {
@@ -363,8 +381,8 @@ html {
 }
 
 @keyframes chamber-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(204,58,99,0); }
-  50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(204,58,99,0.3); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(200,90,58,0); }
+  50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(200,90,58,0.3); }
 }
 
 @keyframes chamber-glow {
@@ -418,8 +436,8 @@ html {
 }
 
 @keyframes security-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(162,171,115,0); }
-  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(162,171,115,0.2); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(60,150,138,0); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(60,150,138,0.2); }
 }
 
 @keyframes graph-grow {
@@ -517,7 +535,7 @@ html {
 }
 
 @utility aurora-card {
-  background: linear-gradient(135deg, rgba(204,58,99,0.06), rgba(133,57,83,0.04), rgba(162,171,115,0.04));
+  background: linear-gradient(135deg, rgba(200,90,58,0.06), rgba(155,74,51,0.04), rgba(60,150,138,0.04));
   background-size: 200% 200%;
   animation: aurora-shift 15s ease-in-out infinite;
 }
@@ -598,7 +616,7 @@ html {
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(204,58,99,0.14) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(200,90,58,0.14) 0%, transparent 70%);
   animation: pulse-glow 6s ease-in-out infinite;
   top: -200px;
   right: -200px;
@@ -610,7 +628,7 @@ html {
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(162,171,115,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(60,150,138,0.12) 0%, transparent 70%);
   animation: pulse-glow 8s ease-in-out infinite 2s;
   bottom: -150px;
   left: -150px;

@@ -17,7 +17,7 @@ interface EmotionTimelineProps {
 
 const EMOTION_COLORS: Record<string, string> = {
   happy: "#8F9A5E",
-  sad: "#853953",
+  sad: "var(--burgundy)",
   angry: "#D84C63",
   fear: "#9E3B6B",
   surprise: "#D6A44C",

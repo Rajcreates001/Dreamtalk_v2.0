@@ -11,9 +11,9 @@ import Link from "next/link"
 type Step = "role" | "account" | "security" | "welcome"
 
 const ROLES = [
-  { id: "personal", label: "Personal", desc: "Create your own Digital Human companion", icon: User, color: "#CC3A63", benefits: ["Preserve memories", "AI Companion", "Build relationships"] },
-  { id: "healthcare", label: "Healthcare", desc: "Digital Doctors for patient care", icon: Stethoscope, color: "#A2AB73", benefits: ["Medical Knowledge", "Patient Support", "HIPAA Ready"] },
-  { id: "business", label: "Business", desc: "Branded AI employees for enterprise", icon: Briefcase, color: "#A2AB73", benefits: ["Sales & Support", "HR Automation", "Enterprise Ready"] },
+  { id: "personal", label: "Personal", desc: "Create your own Digital Human companion", icon: User, color: "var(--primary)", benefits: ["Preserve memories", "AI Companion", "Build relationships"] },
+  { id: "healthcare", label: "Healthcare", desc: "Digital Doctors for patient care", icon: Stethoscope, color: "var(--secondary)", benefits: ["Medical Knowledge", "Patient Support", "HIPAA Ready"] },
+  { id: "business", label: "Business", desc: "Branded AI employees for enterprise", icon: Briefcase, color: "var(--secondary)", benefits: ["Sales & Support", "HR Automation", "Enterprise Ready"] },
 ]
 
 const STEP_LABELS = ["Identity", "Account", "Security", "Welcome"]
@@ -38,7 +38,7 @@ export function SignupWizard() {
   // Cleanup timeouts on unmount
   useEffect(() => () => timeoutRef.current.forEach(clearTimeout), [])
 
-  const accentColor = ROLES.find(r => r.id === selectedRole)?.color || "#CC3A63"
+  const accentColor = ROLES.find(r => r.id === selectedRole)?.color || "var(--primary)"
 
   // Password strength calculation
   const getStrength = (pwd: string): { score: number; label: string; color: string } => {
@@ -51,7 +51,7 @@ export function SignupWizard() {
     if (/[^A-Za-z0-9]/.test(pwd)) score++
     if (score <= 2) return { score: Math.min(score, 4), label: "Weak", color: "#D84C63" }
     if (score <= 4) return { score: Math.min(score, 4), label: "Good", color: "#D6A44C" }
-    if (score <= 5) return { score: Math.min(score, 4), label: "Strong", color: "#A2AB73" }
+    if (score <= 5) return { score: Math.min(score, 4), label: "Strong", color: "var(--secondary)" }
     return { score: 4, label: "Very Strong", color: "#8F9A5E" }
   }
 
@@ -122,7 +122,7 @@ export function SignupWizard() {
           <div key={label} className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
               <div className={`w-2 h-2 rounded-full transition-all duration-400`} style={{ background: i <= stepIndex ? accentColor : "var(--border)" }} />
-              <span className="text-[9px] font-mono tracking-wider hidden sm:inline" style={{ color: i <= stepIndex ? `${accentColor}CC` : "var(--foreground-muted)" }}>{label}</span>
+              <span className="text-[9px] font-mono tracking-wider hidden sm:inline" style={{ color: i <= stepIndex ? `color-mix(in srgb, ${accentColor} 80%, transparent)` : "var(--foreground-muted)" }}>{label}</span>
             </div>
             {i < STEP_LABELS.length - 1 && <div className="w-8 h-px" style={{ background: i < stepIndex ? accentColor : "var(--border)" }} />}
           </div>
@@ -133,8 +133,8 @@ export function SignupWizard() {
         {step === "welcome" ? (
           /* ── WELCOME SEQUENCE ── */
           <motion.div key="welcome" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center py-10">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}30, transparent)`, border: `2px solid ${accentColor}40` }}>
-              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-10 h-10 rounded-full" style={{ background: accentColor, boxShadow: `0 0 20px ${accentColor}50` }} />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${accentColor} 19%, transparent), transparent)`, border: `2px solid color-mix(in srgb, ${accentColor} 25%, transparent)` }}>
+              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-10 h-10 rounded-full" style={{ background: accentColor, boxShadow: `0 0 20px color-mix(in srgb, ${accentColor} 31%, transparent)` }} />
             </div>
             <h2 className="text-xl font-bold text-foreground mb-6">Creating Your Digital Twin</h2>
             {["Identity Created", "Digital Human Initializing", "Knowledge Engine Ready", "Memory Engine Ready", "Welcome to DreamTalk"].map((text, i) => (
@@ -179,14 +179,14 @@ export function SignupWizard() {
                       onClick={() => handleRoleSelect(role.id)}
                       className="relative w-full text-left p-4 rounded-2xl transition-all duration-300 group"
                       style={{
-                        background: isSelected ? `${rc}15` : "var(--card)",
+                        background: isSelected ? `color-mix(in srgb, ${rc} 8%, transparent)` : "var(--card)",
                         border: "1px solid",
-                        borderColor: isSelected ? `${rc}50` : "var(--border)",
+                        borderColor: isSelected ? `color-mix(in srgb, ${rc} 31%, transparent)` : "var(--border)",
                         backdropFilter: "blur(20px)",
                       }}
                     >
                       <div className="relative z-10 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${rc}18` }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${rc} 9%, transparent)` }}>
                           <Icon className="h-4 w-4" style={{ color: rc }} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -194,7 +194,7 @@ export function SignupWizard() {
                           <p className="text-[11px] text-foreground-muted mt-0.5">{role.desc}</p>
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {role.benefits.map((b) => (
-                              <span key={b} className="text-[9px] px-1.5 py-0.5 rounded-md" style={{ background: `${rc}12`, color: rc }}>{b}</span>
+                              <span key={b} className="text-[9px] px-1.5 py-0.5 rounded-md" style={{ background: `color-mix(in srgb, ${rc} 7%, transparent)`, color: rc }}>{b}</span>
                             ))}
                           </div>
                         </div>
@@ -256,7 +256,7 @@ export function SignupWizard() {
                 </div>
                 <button onClick={handleAccountNext} disabled={!name || !email || !password}
                   className="w-full h-11 rounded-[14px] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50"
-                  style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)` }}
+                  style={{ background: `linear-gradient(135deg, ${accentColor}, color-mix(in srgb, ${accentColor} 80%, transparent))` }}
                 >
                   Continue <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -282,20 +282,20 @@ export function SignupWizard() {
                     </button>
                   </div>
                   {confirmPassword && (
-                    <p className="text-[10px] flex items-center gap-1" style={{ color: password === confirmPassword ? "#A2AB73" : "#D84C63" }}>
+                    <p className="text-[10px] flex items-center gap-1" style={{ color: password === confirmPassword ? "var(--secondary)" : "#D84C63" }}>
                       <Check className="h-2.5 w-2.5" /> {password === confirmPassword ? "Passwords match" : "Passwords do not match"}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="rounded border-foreground/[0.06] bg-foreground/[0.04] accent-[#CC3A63]" />
+                  <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="rounded border-foreground/[0.06] bg-foreground/[0.04] accent-primary" />
                   <label htmlFor="terms" className="text-[11px] text-foreground-muted cursor-pointer">I accept the <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Terms</a> and <a href="#" className="hover:text-foreground transition-colors" style={{ color: accentColor }}>Privacy Policy</a></label>
                 </div>
                 <div className="flex gap-3 pt-1">
                   <button onClick={() => setStep("account")} className="flex-1 h-11 rounded-[14px] bg-foreground/[0.04] border border-foreground/[0.06] text-xs font-medium text-foreground-muted hover:text-foreground transition-all">Back</button>
                   <button onClick={handleSubmit} disabled={loading || !confirmPassword || !acceptedTerms}
                     className="flex-[2] h-11 rounded-[14px] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50"
-                    style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)` }}
+                    style={{ background: `linear-gradient(135deg, ${accentColor}, color-mix(in srgb, ${accentColor} 80%, transparent))` }}
                   >
                     {loading ? (
                       <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />

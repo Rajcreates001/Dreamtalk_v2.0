@@ -72,10 +72,10 @@ type DigitalTwin = {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  completed: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Live" },
+  completed: { bg: "bg-secondary/10", text: "text-secondary", dot: "bg-secondary", label: "Live" },
   processing: { bg: "bg-[#D6A44C]/10", text: "text-[#D6A44C]", dot: "bg-[#D6A44C]", label: "Processing" },
   draft: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Draft" },
-  published: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Published" },
+  published: { bg: "bg-secondary/10", text: "text-secondary", dot: "bg-secondary", label: "Published" },
   failed: { bg: "bg-[#D84C63]/10", text: "text-[#D84C63]", dot: "bg-[#D84C63]", label: "Failed" },
   default: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Unknown" },
 }
@@ -90,7 +90,7 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function TraitBar({ label, value, color = "#CC3A63" }: { label: string; value: number; color?: string }) {
+function TraitBar({ label, value, color = "var(--primary)" }: { label: string; value: number; color?: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
@@ -103,7 +103,7 @@ function TraitBar({ label, value, color = "#CC3A63" }: { label: string; value: n
           animate={{ width: `${value * 100}%` }}
           transition={{ duration: 1, delay: 0.2 }}
           className="h-full rounded-full"
-          style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }}
+          style={{ background: `linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 53%, transparent))` }}
         />
       </div>
     </div>
@@ -117,7 +117,7 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
         className={cn(
           "w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all",
           completed
-            ? "bg-[#A2AB73]/20 text-[#A2AB73]"
+            ? "bg-secondary/20 text-secondary"
             : "bg-foreground/[0.04] text-foreground-muted"
         )}
       >
@@ -223,7 +223,7 @@ export default function DigitalTwinDetailPage() {
         <p className="text-sm text-foreground-muted">{error || "This avatar does not exist or has been removed."}</p>
         <button
           onClick={() => router.push("/dashboard/my-avatars")}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium mt-2"
+          className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium mt-2"
         >
           Back to My Avatars
         </button>
@@ -316,10 +316,10 @@ export default function DigitalTwinDetailPage() {
                 <div className={cn(
                   "w-12 h-12 rounded-xl flex items-center justify-center",
                   isPublished
-                    ? "bg-gradient-to-br from-[#A2AB73]/20 to-[#A2AB73]/10"
-                    : "bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/10"
+                    ? "bg-gradient-to-br from-secondary/20 to-secondary/10"
+                    : "bg-gradient-to-br from-primary/20 to-secondary/10"
                 )}>
-                  <Bot className={cn("h-6 w-6", isPublished ? "text-[#A2AB73]" : "text-[#CC3A63]")} />
+                  <Bot className={cn("h-6 w-6", isPublished ? "text-secondary" : "text-primary")} />
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-foreground">{twin.name}</h1>
@@ -393,7 +393,7 @@ export default function DigitalTwinDetailPage() {
                   <ImageIcon className="h-3.5 w-3.5 text-foreground-muted" />
                   <span className="text-xs text-foreground-muted">Photo</span>
                 </div>
-                <span className={cn("text-xs", twin.avatar_image_url ? "text-[#A2AB73]" : "text-foreground-muted")}>
+                <span className={cn("text-xs", twin.avatar_image_url ? "text-secondary" : "text-foreground-muted")}>
                   {twin.avatar_image_url ? "Uploaded" : "Not uploaded"}
                 </span>
               </div>
@@ -403,7 +403,7 @@ export default function DigitalTwinDetailPage() {
                   <Mic className="h-3.5 w-3.5 text-foreground-muted" />
                   <span className="text-xs text-foreground-muted">Voice</span>
                 </div>
-                <span className={cn("text-xs", twin.cloned_voice_id ? "text-[#A2AB73]" : "text-foreground-muted")}>
+                <span className={cn("text-xs", twin.cloned_voice_id ? "text-secondary" : "text-foreground-muted")}>
                   {twin.cloned_voice_id ? "Cloned" : "Not cloned"}
                 </span>
               </div>
@@ -434,12 +434,12 @@ export default function DigitalTwinDetailPage() {
                     value={value as number}
                     color={
                       trait.includes("open") || trait.includes("friend")
-                        ? "#CC3A63"
+                        ? "var(--primary)"
                         : trait.includes("consci") || trait.includes("prof")
-                          ? "#A2AB73"
+                          ? "var(--secondary)"
                           : trait.includes("extra") || trait.includes("humor")
-                            ? "#A2AB73"
-                            : "#CC3A63"
+                            ? "var(--secondary)"
+                            : "var(--primary)"
                     }
                   />
                 ))}
@@ -478,7 +478,7 @@ export default function DigitalTwinDetailPage() {
           <div className="flex items-center gap-2 pt-2">
             <button
               onClick={handleChat}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#CC3A63]/20 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium hover:shadow-lg hover:shadow-primary/20 transition-all"
             >
               <MessageSquare className="h-4 w-4" />
               Chat
@@ -488,7 +488,7 @@ export default function DigitalTwinDetailPage() {
               <button
                 onClick={handlePublish}
                 disabled={publishing}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#A2AB73]/10 border border-[#A2AB73]/30 text-[#A2AB73] text-sm font-medium hover:bg-[#A2AB73]/20 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/10 border border-secondary/30 text-secondary text-sm font-medium hover:bg-secondary/20 transition-all"
               >
                 {publishing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

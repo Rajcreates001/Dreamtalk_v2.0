@@ -5,9 +5,9 @@ import { Brain, ArrowRight, CircuitBoard, Cpu, Network, Zap } from "lucide-react
 import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 
 const steps = [
-  { icon: CircuitBoard, label: "Input", desc: "User query or command", color: "#CC3A63" },
-  { icon: Brain, label: "Context", desc: "Session history & persona", color: "#A2AB73" },
-  { icon: Network, label: "Memory", desc: "Relevant past interactions", color: "#A2AB73" },
+  { icon: CircuitBoard, label: "Input", desc: "User query or command", color: "var(--primary)" },
+  { icon: Brain, label: "Context", desc: "Session history & persona", color: "var(--secondary)" },
+  { icon: Network, label: "Memory", desc: "Relevant past interactions", color: "var(--secondary)" },
   { icon: Cpu, label: "Knowledge", desc: "Structured knowledge graph", color: "#D6A44C" },
   { icon: Zap, label: "Reasoning", desc: "Multi-step analysis", color: "#D84C63" },
 ]
@@ -41,7 +41,7 @@ export function ReasoningEngine() {
             >
               <div
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-foreground/[0.06]"
-                style={{ background: `${step.color}08` }}
+                style={{ background: `color-mix(in srgb, ${step.color} 3%, transparent)` }}
               >
                 <step.icon className="h-4 w-4" style={{ color: step.color }} />
                 <span className="text-xs font-medium text-foreground">{step.label}</span>
@@ -73,7 +73,7 @@ export function ReasoningEngine() {
                 {["Context-aware", "Memory-backed", "Knowledge-grounded", "Emotion-aware"].map((tag) => (
                   <span
                     key={tag}
-                    className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-[#CC3A63] bg-[#CC3A63]/10 border border-[#CC3A63]/20"
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-primary bg-primary/10 border border-primary/20"
                   >
                     {tag}
                   </span>
@@ -90,14 +90,14 @@ export function ReasoningEngine() {
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
                   {[
-                    { label: "?", color: "#CC3A63" },
-                    { label: "...", color: "#A2AB73" },
-                    { label: "!", color: "#A2AB73" },
+                    { label: "?", color: "var(--primary)" },
+                    { label: "...", color: "var(--secondary)" },
+                    { label: "!", color: "var(--secondary)" },
                   ].map((item, i) => (
                     <motion.div
                       key={item.label}
                       className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ background: `${item.color}15`, border: `1px solid ${item.color}30` }}
+                      style={{ background: `color-mix(in srgb, ${item.color} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${item.color} 19%, transparent)` }}
                       animate={{ y: [0, -8, 0] }}
                       transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
                     >
@@ -111,7 +111,7 @@ export function ReasoningEngine() {
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="absolute w-1 h-1 rounded-full bg-[#CC3A63]"
+                  className="absolute w-1 h-1 rounded-full bg-primary"
                   animate={{
                     x: [0, 200, 0],
                     y: [30 + i * 40, 20 + i * 30, 30 + i * 40],

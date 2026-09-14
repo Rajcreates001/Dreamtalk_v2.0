@@ -9,12 +9,12 @@ import { SectionWrapper, SectionHeading, GlassCard } from "./SectionWrapper"
 import Link from "next/link"
 
 const features = [
-  { icon: Lock, label: "End-to-End Encryption", desc: "All data encrypted at rest and in transit with AES-256", color: "#CC3A63" },
-  { icon: Key, label: "Role-Based Access", desc: "Granular permissions for teams and organizations", color: "#A2AB73" },
-  { icon: Fingerprint, label: "Authentication", desc: "SSO, OAuth, SAML, and MFA support", color: "#A2AB73" },
+  { icon: Lock, label: "End-to-End Encryption", desc: "All data encrypted at rest and in transit with AES-256", color: "var(--primary)" },
+  { icon: Key, label: "Role-Based Access", desc: "Granular permissions for teams and organizations", color: "var(--secondary)" },
+  { icon: Fingerprint, label: "Authentication", desc: "SSO, OAuth, SAML, and MFA support", color: "var(--secondary)" },
   { icon: Server, label: "Private Deployment", desc: "On-premise or VPC deployment options", color: "#D6A44C" },
   { icon: Database, label: "Data Isolation", desc: "Each Digital Twin's knowledge is isolated", color: "#D84C63" },
-  { icon: Cloud, label: "SOC 2 Compliant", desc: "Enterprise-grade security controls and auditing", color: "#CC3A63" },
+  { icon: Cloud, label: "SOC 2 Compliant", desc: "Enterprise-grade security controls and auditing", color: "var(--primary)" },
 ]
 
 export function SecurityIntegrations() {
@@ -38,7 +38,7 @@ export function SecurityIntegrations() {
               transition={{ delay: i * 0.06 }}
               className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-foreground/[0.04] hover:bg-foreground/[0.03] transition-all"
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${feat.color}15` }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${feat.color} 8%, transparent)` }}>
                 <feat.icon className="h-4 w-4" style={{ color: feat.color }} />
               </div>
               <div>
@@ -63,7 +63,7 @@ export function SecurityIntegrations() {
                 key={i}
                 className="absolute inset-0 rounded-full border"
                 style={{
-                  borderColor: `${["#CC3A63", "#A2AB73", "#A2AB73"][i]}20`,
+                  borderColor: `${["var(--primary)", "var(--secondary)", "var(--secondary)"][i]}20`,
                   margin: i * 12,
                 }}
                 animate={{ rotate: [0, 360] }}
@@ -71,8 +71,8 @@ export function SecurityIntegrations() {
               />
             ))}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 border border-[#CC3A63]/30 flex items-center justify-center">
-                <Shield className="h-10 w-10 text-[#CC3A63]" />
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center">
+                <Shield className="h-10 w-10 text-primary" />
               </div>
             </div>
           </div>
@@ -82,7 +82,7 @@ export function SecurityIntegrations() {
             {["SOC 2", "HIPAA", "GDPR"].map((badge) => (
               <span
                 key={badge}
-                className="px-2 py-0.5 rounded text-[9px] font-mono bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-[#CC3A63]"
+                className="px-2 py-0.5 rounded text-[9px] font-mono bg-primary/10 border border-primary/20 text-primary"
               >
                 {badge}
               </span>
@@ -111,7 +111,7 @@ export function SecurityIntegrations() {
             key={item}
             className="flex items-center gap-1.5 text-xs text-foreground-muted"
           >
-            <CheckCircle className="h-3 w-3 text-[#A2AB73]" />
+            <CheckCircle className="h-3 w-3 text-secondary" />
             {item}
           </span>
         ))}

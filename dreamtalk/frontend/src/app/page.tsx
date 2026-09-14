@@ -81,11 +81,11 @@ const Nav = () => {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="relative w-8 h-8">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] animate-breathe" />
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-secondary animate-breathe" />
             <Sparkles className="relative h-4 w-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight text-foreground">
-            Dream<span className="bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">Talk</span>
+            Dream<span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Talk</span>
           </span>
         </Link>
 
@@ -107,7 +107,7 @@ const Nav = () => {
           <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-card/60 transition-all">
             Sign In
           </Link>
-          <Link href="/create-twin" className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
+          <Link href="/create-twin" className="px-5 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">
             Get Started
           </Link>
         </div>
@@ -135,7 +135,7 @@ const Nav = () => {
                 <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-foreground/[0.06] text-sm font-medium text-foreground">
                   Sign In
                 </Link>
-                <Link href="/signup" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">
+                <Link href="/signup" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium">
                   Get Started
                 </Link>
               </div>
@@ -208,7 +208,7 @@ export default function LandingPage() {
               speaking={demoLoading}
               autoSpeak={false}
               interactive
-              colors={{ primary: "#CC3A63", secondary: "#A2AB73", glow: "#CC3A63" }}
+              colors={{ primary: "var(--primary)", secondary: "var(--secondary)", glow: "var(--primary)" }}
             />
           </motion.div>
           <motion.div
@@ -224,7 +224,7 @@ export default function LandingPage() {
                 <span className="w-3 h-3 rounded-full bg-[#8F9A5E]" />
               </div>
               <div className="flex items-center gap-2 mx-auto">
-                <Bot className="h-4 w-4 text-[#CC3A63]" />
+                <Bot className="h-4 w-4 text-primary" />
                 <span className="text-xs text-foreground-muted font-medium">DreamTalk Avatar — Interactive Demo</span>
               </div>
             </div>
@@ -237,13 +237,13 @@ export default function LandingPage() {
                   className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${
-                    msg.role === "user" ? "bg-gradient-to-br from-[#A2AB73]/20 to-[#A2AB73]/20" : "bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20"
+                    msg.role === "user" ? "bg-gradient-to-br from-secondary/20 to-secondary/20" : "bg-gradient-to-br from-primary/20 to-secondary/20"
                   }`}>
-                    {msg.role === "user" ? <Users className="h-4 w-4 text-[#A2AB73]" /> : <Bot className="h-4 w-4 text-[#CC3A63]" />}
+                    {msg.role === "user" ? <Users className="h-4 w-4 text-secondary" /> : <Bot className="h-4 w-4 text-primary" />}
                   </div>
                   <div className={`max-w-[80%] px-4 py-2.5 rounded-xl text-sm ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-foreground rounded-tr-sm"
+                      ? "bg-gradient-to-r from-primary/20 to-secondary/10 text-foreground rounded-tr-sm"
                       : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground rounded-tl-sm"
                   }`}>
                     {msg.text}
@@ -252,13 +252,13 @@ export default function LandingPage() {
               ))}
               {demoLoading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-[#CC3A63]" />
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex gap-1 items-center px-4 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.15, repeat: Infinity }} />
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-[#CC3A63]" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.3, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.15, repeat: Infinity }} />
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-primary" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, delay: 0.3, repeat: Infinity }} />
                   </div>
                 </motion.div>
               )}
@@ -271,12 +271,12 @@ export default function LandingPage() {
                   onChange={(e) => setDemoInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleDemoSend()}
                   placeholder="Type a message... (try: hello, who, what, price)"
-                  className="flex-1 bg-foreground/[0.04] border border-foreground/[0.06] rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 focus:border-[#CC3A63]/50 transition-all"
+                  className="flex-1 bg-foreground/[0.04] border border-foreground/[0.06] rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                 />
                 <button
                   onClick={handleDemoSend}
                   disabled={demoLoading || !demoInput.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium disabled:opacity-50 hover:shadow-lg hover:shadow-[#CC3A63]/20 transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium disabled:opacity-50 hover:shadow-lg hover:shadow-primary/20 transition-all"
                 >
                   Send
                 </button>
@@ -382,12 +382,12 @@ function PricingSection() {
               onClick={opt.onClick}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 opt.active
-                  ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 text-foreground border border-foreground/[0.08]"
+                  ? "bg-gradient-to-r from-primary/20 to-secondary/10 text-foreground border border-foreground/[0.08]"
                   : "text-foreground-muted hover:text-foreground-muted"
               }`}
             >
               {opt.label}
-              {opt.badge && <span className="ml-1.5 text-[#A2AB73] text-[10px]">{opt.badge}</span>}
+              {opt.badge && <span className="ml-1.5 text-secondary text-[10px]">{opt.badge}</span>}
             </button>
           ))}
         </div>
@@ -397,7 +397,7 @@ function PricingSection() {
         {plans.map((plan) => {
           const price = yearly ? plan.yearly : plan.monthly
           return (
-            <GlassCard key={plan.name} className={plan.highlight ? "border-[#CC3A63]/30 shadow-xl shadow-[#CC3A63]/10" : ""}>
+            <GlassCard key={plan.name} className={plan.highlight ? "border-primary/30 shadow-xl shadow-primary/10" : ""}>
               <h3 className="text-lg font-bold text-foreground mb-1">{plan.name}</h3>
               <p className="text-sm text-foreground-muted mb-4">{plan.desc}</p>
               <div className="mb-6">
@@ -407,7 +407,7 @@ function PricingSection() {
               <ul className="space-y-2 mb-6">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-[#A2AB73] shrink-0" />
+                    <Check className="h-4 w-4 text-secondary shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -416,7 +416,7 @@ function PricingSection() {
                 href="/signup"
                 className={`block w-full text-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   plan.highlight
-                    ? "bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30"
+                    ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/20 hover:shadow-primary/30"
                     : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground hover:text-foreground hover:bg-foreground/[0.06]"
                 }`}
               >

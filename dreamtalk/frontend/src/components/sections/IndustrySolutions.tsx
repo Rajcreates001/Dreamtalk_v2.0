@@ -14,7 +14,7 @@ const industries = [
     id: "personal",
     icon: Users,
     label: "Personal",
-    color: "#CC3A63",
+    color: "var(--primary)",
     solutions: [
       { title: "AI Companion", desc: "A personal Digital Twin that learns your preferences, remembers your stories, and grows with you." },
       { title: "Language Tutor", desc: "Practice any language with a patient, adaptive AI tutor who corrects and encourages." },
@@ -26,7 +26,7 @@ const industries = [
     id: "healthcare",
     icon: Heart,
     label: "Healthcare",
-    color: "#A2AB73",
+    color: "var(--secondary)",
     solutions: [
       { title: "Patient Triage", desc: "24/7 intelligent triage that understands symptoms, assesses urgency, and guides patients." },
       { title: "Mental Health", desc: "Empathetic AI companions for mental wellness support, available anytime." },
@@ -38,7 +38,7 @@ const industries = [
     id: "enterprise",
     icon: Building2,
     label: "Enterprise",
-    color: "#A2AB73",
+    color: "var(--secondary)",
     solutions: [
       { title: "Sales Agent", desc: "Qualify leads, schedule meetings, and nurture prospects 24/7 across channels." },
       { title: "Support Agent", desc: "Resolve tickets instantly with knowledge-backed AI that escalates intelligently." },
@@ -72,7 +72,7 @@ const industries = [
     id: "research",
     icon: Microscope,
     label: "Research",
-    color: "#CC3A63",
+    color: "var(--primary)",
     solutions: [
       { title: "Research Assistant", desc: "Analyze papers, summarize findings, and answer research questions." },
       { title: "Lab Assistant", desc: "Track experiments, manage protocols, and document results." },
@@ -102,7 +102,7 @@ export function IndustrySolutions() {
             onClick={() => setActive(ind.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               active === ind.id
-                ? "bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 border border-[#CC3A63]/30 text-foreground shadow-lg shadow-[#CC3A63]/5"
+                ? "bg-gradient-to-r from-primary/20 to-secondary/10 border border-primary/30 text-foreground shadow-lg shadow-primary/5"
                 : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground"
             }`}
             whileHover={{ scale: 1.02 }}
@@ -131,7 +131,7 @@ export function IndustrySolutions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 hover:border-[#CC3A63]/20 transition-all group"
+                className="rounded-2xl bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 hover:border-primary/20 transition-all group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div
@@ -142,7 +142,7 @@ export function IndustrySolutions() {
                 </div>
                 <p className="text-sm text-foreground-muted leading-relaxed">{sol.desc}</p>
                 <motion.div
-                  className="mt-4 flex items-center gap-2 text-xs text-[#CC3A63]"
+                  className="mt-4 flex items-center gap-2 text-xs text-primary"
                   whileHover={{ x: 4 }}
                 >
                   <span>Learn more</span>
@@ -162,9 +162,9 @@ export function IndustrySolutions() {
                 transition={{ delay: 0.2 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{
-                  background: `${current.color}10`,
+                  background: `color-mix(in srgb, ${current.color} 6%, transparent)`,
                   color: current.color,
-                  border: `1px solid ${current.color}20`,
+                  border: `1px solid color-mix(in srgb, ${current.color} 13%, transparent)`,
                 }}
               >
                 <CheckCircle className="h-3 w-3" />

@@ -35,7 +35,7 @@ const AVATARS: AvatarPersonality[] = [
     role: "Cricket Legend & Mentor",
     description: "Get inspired by the Master Blaster. Discuss cricket strategy, mental toughness, and life lessons.",
     emoji: "🏏",
-    accent: "#853953",
+    accent: "var(--burgundy)",
     category: "sports",
     popularity: 100,
     tags: ["Sports", "Motivation", "Mentorship"],
@@ -95,7 +95,7 @@ const AVATARS: AvatarPersonality[] = [
     role: "Creative Director",
     description: "Award-winning designer for creative brainstorming, design feedback, and artistic collaboration.",
     emoji: "🎨",
-    accent: "#CC3A63",
+    accent: "var(--primary)",
     category: "creative",
     popularity: 84,
     tags: ["Design", "Creativity", "Art"],
@@ -115,7 +115,7 @@ const AVATARS: AvatarPersonality[] = [
     role: "AI Research Scientist",
     description: "Deep learning researcher for tech discussions, career advice, and exploring future technologies.",
     emoji: "🤖",
-    accent: "#853953",
+    accent: "var(--burgundy)",
     category: "tech",
     popularity: 89,
     tags: ["AI", "Tech", "Research"],
@@ -181,8 +181,8 @@ export function AvatarsShowcase() {
                   <div
                     className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl ring-1"
                     style={{
-                      background: `linear-gradient(135deg, ${avatar.accent}20, ${avatar.accent}08)`,
-                      borderColor: `${avatar.accent}30`,
+                      background: `linear-gradient(135deg, color-mix(in srgb, ${avatar.accent} 13%, transparent), color-mix(in srgb, ${avatar.accent} 3%, transparent))`,
+                      borderColor: `color-mix(in srgb, ${avatar.accent} 19%, transparent)`,
                     }}
                   >
                     {avatar.emoji}

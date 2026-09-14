@@ -70,7 +70,7 @@ const EMOTION_COLORS: Record<string, string> = {
   angry: "#FF4444",
   fear: "#9932CC",
   surprise: "#FF8C00",
-  neutral: "#A2AB73",
+  neutral: "var(--secondary)",
   disgust: "#556B2F",
   contempt: "#8B4513",
 }

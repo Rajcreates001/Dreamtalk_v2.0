@@ -30,7 +30,7 @@ export function PremiumFooter() {
   return (
     <footer className="relative z-10 border-t border-foreground/[0.04] bg-background">
       {/* Top divider glow */}
-      <div className="h-px bg-gradient-to-r from-transparent via-[#CC3A63]/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Main footer grid */}
@@ -39,10 +39,10 @@ export function PremiumFooter() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4 group">
               <div className="relative w-8 h-8">
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] animate-breathe" />
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-secondary animate-breathe" />
                 <Sparkles className="relative h-4 w-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] bg-clip-text text-transparent">
+              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 DreamTalk
               </span>
             </Link>
@@ -59,11 +59,11 @@ export function PremiumFooter() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Get product updates"
-                  className="w-full bg-card/60 border border-foreground/[0.06] rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-1 focus:ring-[#CC3A63]/30 transition-all"
+                  className="w-full bg-card/60 border border-foreground/[0.06] rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
                 />
               </div>
               <motion.button
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-xs font-medium"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary text-white text-xs font-medium"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

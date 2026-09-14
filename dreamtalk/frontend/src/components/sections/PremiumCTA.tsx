@@ -11,7 +11,7 @@ export function PremiumCTA() {
       <div className="max-w-4xl mx-auto text-center relative">
         {/* Background glow */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-b from-[#CC3A63]/10 via-[#A2AB73]/5 to-transparent rounded-3xl blur-3xl"
+          className="absolute inset-0 bg-gradient-to-b from-primary/10 via-secondary/5 to-transparent rounded-3xl blur-3xl"
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
         />
@@ -22,7 +22,7 @@ export function PremiumCTA() {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs font-medium text-[#CC3A63] mb-6"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-6"
           >
             <Sparkles className="h-3 w-3" />
             Your Digital Human is waiting
@@ -39,7 +39,7 @@ export function PremiumCTA() {
             Create your
             <br />
             <motion.span
-              className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent inline-block"
+              className="bg-gradient-to-r from-primary via-secondary to-secondary bg-clip-text text-transparent inline-block"
               animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
               transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
               style={{ backgroundSize: "200% 200%" }}
@@ -69,7 +69,7 @@ export function PremiumCTA() {
           >
             <Link
               href="/signup"
-              className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white font-semibold text-sm overflow-hidden transition-all hover:scale-[1.02]"
+              className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm overflow-hidden transition-all hover:scale-[1.02]"
             >
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"

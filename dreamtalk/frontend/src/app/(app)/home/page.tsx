@@ -25,10 +25,10 @@ import { cn } from "@/lib/utils"
 import { authApi, digitalTwinApi, digitalHumanApi, avatarApi } from "@/lib/api"
 
 const QUICK_ACTIONS = [
-  { href: "/create", label: "Create Digital Human", icon: Plus, color: "#CC3A63", desc: "Create an AI version of someone" },
-  { href: "/dh/demo-1", label: "Start Conversation", icon: MessageSquare, color: "#A2AB73", desc: "Chat with your digital human" },
-  { href: "/dh/demo-1?tab=knowledge", label: "Upload Knowledge", icon: BookOpen, color: "#A2AB73", desc: "Teach your digital human" },
-  { href: "/create", label: "Clone Voice", icon: Mic, color: "#CC3A63", desc: "Upload a voice sample" },
+  { href: "/create", label: "Create Digital Human", icon: Plus, color: "var(--primary)", desc: "Create an AI version of someone" },
+  { href: "/dh/demo-1", label: "Start Conversation", icon: MessageSquare, color: "var(--secondary)", desc: "Chat with your digital human" },
+  { href: "/dh/demo-1?tab=knowledge", label: "Upload Knowledge", icon: BookOpen, color: "var(--secondary)", desc: "Teach your digital human" },
+  { href: "/create", label: "Clone Voice", icon: Mic, color: "var(--primary)", desc: "Upload a voice sample" },
   { href: "/dh/demo-1?tab=scripts", label: "Generate Script", icon: Upload, color: "#D6A44C", desc: "Create audio in any language" },
   { href: "/dh/demo-1?tab=settings", label: "Settings", icon: BarChart3, color: "#B03A5E", desc: "Customize your digital human" },
 ]
@@ -161,8 +161,8 @@ export default function HomePage() {
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-[#1a1f35] to-card border border-foreground/[0.06] p-8"
       >
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#CC3A63]/10 blur-[100px]" />
-        <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-[#A2AB73]/8 blur-[80px]" />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/10 blur-[100px]" />
+        <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-secondary/8 blur-[80px]" />
 
         <div className="relative z-10">
           <div className="flex items-start justify-between">
@@ -178,23 +178,23 @@ export default function HomePage() {
 
               {!loading && (
                 <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#A2AB73]/10 border border-[#A2AB73]/20">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A2AB73]" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
                     </span>
-                    <span className="text-xs text-[#A2AB73] font-medium">{data.avatarCount} Digital Human{data.avatarCount !== 1 ? "s" : ""}</span>
+                    <span className="text-xs text-secondary font-medium">{data.avatarCount} Digital Human{data.avatarCount !== 1 ? "s" : ""}</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#A2AB73]/10 border border-[#A2AB73]/20">
-                    <MessageSquare className="h-3 w-3 text-[#A2AB73]" />
-                    <span className="text-xs text-[#A2AB73] font-medium">{data.conversationsToday} Conversations Today</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20">
+                    <MessageSquare className="h-3 w-3 text-secondary" />
+                    <span className="text-xs text-secondary font-medium">{data.conversationsToday} Conversations Today</span>
                   </div>
                 </div>
               )}
 
               <Link
                 href="/create"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all group"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group"
               >
                 Create Digital Human
                 <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
@@ -226,7 +226,7 @@ export default function HomePage() {
               >
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-all duration-200"
-                  style={{ background: `${action.color}15`, color: action.color }}
+                  style={{ background: `color-mix(in srgb, ${action.color} 8%, transparent)`, color: action.color }}
                 >
                   <Icon className="h-4 w-4" />
                 </div>
@@ -257,15 +257,15 @@ export default function HomePage() {
               <div className="rounded-xl bg-card/80 border border-foreground/[0.06] overflow-hidden">
                 <div className="flex items-center gap-4 p-5 border-b border-foreground/[0.06]">
                   <div className="relative w-16 h-16 shrink-0">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
                       {data.activeAvatar.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#A2AB73] border-2 border-border" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-secondary border-2 border-border" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-semibold text-foreground">{data.activeAvatar.name}</h3>
-                      <span className="px-2 py-0.5 rounded-md bg-[#A2AB73]/10 text-[10px] text-[#A2AB73] font-medium">{data.activeAvatar.status}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-secondary/10 text-[10px] text-secondary font-medium">{data.activeAvatar.status}</span>
                     </div>
                     <p className="text-xs text-foreground-muted mt-0.5">{data.activeAvatar.role}</p>
                   </div>
@@ -279,10 +279,10 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-foreground/[0.04]">
                   {[
-                    { label: "Emotion", value: data.activeAvatar.emotion, color: "#CC3A63" },
-                    { label: "Knowledge", value: data.activeAvatar.knowledgeSize, color: "#A2AB73" },
-                    { label: "Languages", value: `${data.activeAvatar.languages}`, color: "#A2AB73" },
-                    { label: "Response Style", value: data.activeAvatar.role, color: "#CC3A63" },
+                    { label: "Emotion", value: data.activeAvatar.emotion, color: "var(--primary)" },
+                    { label: "Knowledge", value: data.activeAvatar.knowledgeSize, color: "var(--secondary)" },
+                    { label: "Languages", value: `${data.activeAvatar.languages}`, color: "var(--secondary)" },
+                    { label: "Response Style", value: data.activeAvatar.role, color: "var(--primary)" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-card/60 p-4">
                       <p className="text-[10px] text-foreground-muted tracking-wide uppercase">{stat.label}</p>
@@ -296,7 +296,7 @@ export default function HomePage() {
             ) : (
               <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-8 text-center">
                 <p className="text-sm text-foreground-muted">No digital humans yet</p>
-                <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#CC3A63] hover:text-foreground transition-all">
+                <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:text-foreground transition-all">
                   <Plus className="h-3 w-3" />
                   Create your first digital human
                 </Link>
@@ -338,7 +338,7 @@ export default function HomePage() {
                       <span
                         className={cn(
                           "text-xs font-medium",
-                          insight.positive ? "text-[#A2AB73]" : "text-[#D84C63]"
+                          insight.positive ? "text-secondary" : "text-[#D84C63]"
                         )}
                       >
                         {insight.change}

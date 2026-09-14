@@ -30,22 +30,26 @@ export function AuroraField({ intensity = 2, className }: AuroraFieldProps) {
         className,
       )}
     >
+      {/* Clay, verdigris and brass — the three brand pigments, so glass panes
+          pick up the palette rather than a generic wash. Driven off the theme
+          glow tokens would re-render on theme change; these are static rgba
+          because both themes want the same hues at this alpha. */}
       <div
         className="absolute -left-1/4 -top-1/3 size-[70vw] rounded-full blur-3xl animate-drift-slow motion-reduce:animate-none"
         style={{
-          background: `radial-gradient(circle, rgba(204,58,99,${alpha}) 0%, transparent 68%)`,
+          background: `radial-gradient(circle, rgba(200,90,58,${alpha}) 0%, transparent 68%)`,
         }}
       />
       <div
         className="absolute -right-1/4 top-1/4 size-[60vw] rounded-full blur-3xl animate-float-slow motion-reduce:animate-none"
         style={{
-          background: `radial-gradient(circle, rgba(97,45,83,${alpha}) 0%, transparent 68%)`,
+          background: `radial-gradient(circle, rgba(38,120,111,${alpha}) 0%, transparent 68%)`,
         }}
       />
       <div
         className="absolute -bottom-1/3 left-1/4 size-[55vw] rounded-full blur-3xl animate-glow-soft motion-reduce:animate-none"
         style={{
-          background: `radial-gradient(circle, rgba(162,171,115,${alpha * 0.8}) 0%, transparent 68%)`,
+          background: `radial-gradient(circle, rgba(190,152,60,${alpha * 0.8}) 0%, transparent 68%)`,
         }}
       />
     </div>

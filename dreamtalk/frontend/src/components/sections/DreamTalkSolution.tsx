@@ -13,15 +13,15 @@ const features = [
     icon: Bot,
     title: "Avatar Intelligence",
     desc: "Create custom digital humans with full control over appearance, voice, and personality.",
-    color: "#CC3A63",
-    gradient: "from-[#CC3A63]/20 to-[#CC3A63]/5",
+    color: "var(--primary)",
+    gradient: "from-primary/20 to-primary/5",
   },
   {
     icon: Mic,
     title: "Voice Synthesis",
     desc: "Clone any voice with 99% accuracy. Support for 50+ languages and regional accents.",
-    color: "#A2AB73",
-    gradient: "from-[#A2AB73]/20 to-[#A2AB73]/5",
+    color: "var(--secondary)",
+    gradient: "from-secondary/20 to-secondary/5",
   },
   {
     icon: Heart,
@@ -41,22 +41,22 @@ const features = [
     icon: Cpu,
     title: "Memory System",
     desc: "Persistent memory that remembers every conversation, preference, and context across sessions.",
-    color: "#A2AB73",
-    gradient: "from-[#A2AB73]/20 to-[#A2AB73]/5",
+    color: "var(--secondary)",
+    gradient: "from-secondary/20 to-secondary/5",
   },
   {
     icon: Brain,
     title: "Reasoning Engine",
     desc: "Multi-step reasoning with context, knowledge, and memory for complex decision-making.",
-    color: "#CC3A63",
-    gradient: "from-[#CC3A63]/20 to-[#CC3A63]/5",
+    color: "var(--primary)",
+    gradient: "from-primary/20 to-primary/5",
   },
   {
     icon: Globe,
     title: "Multi-Platform",
     desc: "Deploy to web, mobile, WhatsApp, Slack, Discord, Teams, kiosks, and more.",
-    color: "#A2AB73",
-    gradient: "from-[#A2AB73]/20 to-[#A2AB73]/5",
+    color: "var(--secondary)",
+    gradient: "from-secondary/20 to-secondary/5",
   },
   {
     icon: Zap,
@@ -88,27 +88,27 @@ export function DreamTalkSolution() {
         <motion.div
           className="absolute w-72 h-72 rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(204,58,99,0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(200,90,58,0.08) 0%, transparent 70%)",
           }}
           animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute w-56 h-56 rounded-full border border-[#CC3A63]/10"
+          className="absolute w-56 h-56 rounded-full border border-primary/10"
           animate={{ rotate: 360 }}
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         />
 
         {/* Central hub */}
         <motion.div
-          className="relative z-10 w-36 h-36 rounded-full bg-gradient-to-br from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] p-[3px]"
-          animate={{ boxShadow: ["0 0 40px rgba(204,58,99,0.3)", "0 0 60px rgba(204,58,99,0.5)", "0 0 40px rgba(204,58,99,0.3)"] }}
+          className="relative z-10 w-36 h-36 rounded-full bg-gradient-to-br from-primary via-secondary to-secondary p-[3px]"
+          animate={{ boxShadow: ["0 0 40px rgba(200,90,58,0.3)", "0 0 60px rgba(200,90,58,0.5)", "0 0 40px rgba(200,90,58,0.3)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
           <div className="w-full h-full rounded-full bg-background flex items-center justify-center flex-col">
-            <Bot className="h-8 w-8 text-[#CC3A63] mb-1" />
+            <Bot className="h-8 w-8 text-primary mb-1" />
             <span className="text-[10px] font-bold text-foreground">DreamTalk</span>
-            <span className="text-[8px] text-[#A2AB73]">● Live</span>
+            <span className="text-[8px] text-secondary">● Live</span>
           </div>
         </motion.div>
       </motion.div>
@@ -119,14 +119,14 @@ export function DreamTalkSolution() {
           <GlassCard key={feature.title}>
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-foreground/[0.06] transition-all duration-500 group-hover:scale-110"
-              style={{ background: `linear-gradient(135deg, ${feature.color}20, transparent)` }}
+              style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${feature.color} 13%, transparent), transparent)` }}
             >
               <feature.icon className="h-5 w-5" style={{ color: feature.color }} />
             </div>
             <h3 className="text-base font-semibold text-foreground mb-2">{feature.title}</h3>
             <p className="text-sm text-foreground-muted leading-relaxed">{feature.desc}</p>
             <motion.div
-              className="mt-4 h-px w-0 bg-gradient-to-r from-transparent via-[#CC3A63]/30 to-transparent"
+              className="mt-4 h-px w-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent"
               whileInView={{ width: "100%" }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.3 }}
@@ -145,7 +145,7 @@ export function DreamTalkSolution() {
       >
         <Link
           href="/signup"
-          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-semibold shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all"
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
         >
           <Layers className="h-4 w-4" />
           Explore the Platform

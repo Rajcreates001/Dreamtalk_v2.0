@@ -6,13 +6,13 @@ import { SectionWrapper, SectionHeading, GlassCard } from "./SectionWrapper"
 
 const sources = [
   { icon: FileText, label: "PDF", color: "#D84C63" },
-  { icon: FileText, label: "Word", color: "#853953" },
-  { icon: Globe, label: "Websites", color: "#A2AB73" },
+  { icon: FileText, label: "Word", color: "var(--burgundy)" },
+  { icon: Globe, label: "Websites", color: "var(--secondary)" },
   { icon: Video, label: "YouTube", color: "#D84C63" },
   { icon: Mic, label: "Audio", color: "#D6A44C" },
-  { icon: Image, label: "Images", color: "#A2AB73" },
-  { icon: Code, label: "Code", color: "#CC3A63" },
-  { icon: Download, label: "Any Format", color: "#A2AB73" },
+  { icon: Image, label: "Images", color: "var(--secondary)" },
+  { icon: Code, label: "Code", color: "var(--primary)" },
+  { icon: Download, label: "Any Format", color: "var(--secondary)" },
 ]
 
 export function KnowledgeEngine() {
@@ -34,9 +34,9 @@ export function KnowledgeEngine() {
         {/* Pipeline stages */}
         <div className="grid grid-cols-4 gap-3 mb-8">
           {[
-            { label: "Upload", icon: Download, color: "#CC3A63", desc: "Documents, media, links" },
-            { label: "Process", icon: Code, color: "#A2AB73", desc: "Parse, embed, index" },
-            { label: "Graph", icon: Globe, color: "#A2AB73", desc: "Knowledge graph" },
+            { label: "Upload", icon: Download, color: "var(--primary)", desc: "Documents, media, links" },
+            { label: "Process", icon: Code, color: "var(--secondary)", desc: "Parse, embed, index" },
+            { label: "Graph", icon: Globe, color: "var(--secondary)", desc: "Knowledge graph" },
             { label: "Reason", icon: BookOpen, color: "#D6A44C", desc: "Query & learn" },
           ].map((stage, i) => (
             <motion.div
@@ -49,7 +49,7 @@ export function KnowledgeEngine() {
             >
               <div
                 className="w-full rounded-xl p-4 text-center border border-foreground/[0.06]"
-                style={{ background: `${stage.color}08` }}
+                style={{ background: `color-mix(in srgb, ${stage.color} 3%, transparent)` }}
               >
                 <stage.icon className="h-6 w-6 mx-auto mb-2" style={{ color: stage.color }} />
                 <h4 className="text-sm font-semibold text-foreground">{stage.label}</h4>
@@ -57,7 +57,7 @@ export function KnowledgeEngine() {
               </div>
               {i < 3 && (
                 <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2">
-                  <ArrowRight className="h-4 w-4 text-[#CC3A63]/30" />
+                  <ArrowRight className="h-4 w-4 text-primary/30" />
                 </div>
               )}
             </motion.div>
@@ -89,17 +89,17 @@ export function KnowledgeEngine() {
           {
             title: "Document Intelligence",
             desc: "Upload PDFs, Word docs, research papers. We extract text, tables, images, and structure into a queryable knowledge graph.",
-            color: "#CC3A63",
+            color: "var(--primary)",
           },
           {
             title: "Web & Media Learning",
             desc: "Crawl websites, transcribe YouTube videos, process audio recordings. Your avatar learns from any digital source.",
-            color: "#A2AB73",
+            color: "var(--secondary)",
           },
           {
             title: "Continuous Updates",
             desc: "Add new knowledge anytime. The graph grows, connections strengthen, and your Digital Human becomes more knowledgeable.",
-            color: "#A2AB73",
+            color: "var(--secondary)",
           },
         ].map((item, i) => (
           <motion.div

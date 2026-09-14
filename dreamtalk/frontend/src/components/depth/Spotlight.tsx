@@ -25,7 +25,7 @@ export interface SpotlightProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export function Spotlight({
   size = 320,
-  color = "rgba(204, 58, 99, 0.14)",
+  color = "rgba(200, 90, 58, 0.14)",
   border = true,
   className,
   children,

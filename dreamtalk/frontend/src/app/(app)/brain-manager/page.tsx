@@ -142,7 +142,7 @@ export default function BrainManagerPage() {
         </h3>
         <div className="space-y-3">
           {[
-            { key: "pfcWeight", label: "Prefrontal Cortex", color: "#853953" },
+            { key: "pfcWeight", label: "Prefrontal Cortex", color: "var(--burgundy)" },
             { key: "daccWeight", label: "dACC (Conflict)", color: "#D84C63" },
             { key: "insulaWeight", label: "Insula (Emotion)", color: "#9E3B6B" },
             { key: "iplWeight", label: "IPL (Context)", color: "#8F9A5E" },

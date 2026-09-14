@@ -16,7 +16,7 @@ export function AuroraBackdrop() {
       <div
         className="absolute w-[700px] h-[700px] rounded-full animate-aurora-drift"
         style={{
-          background: "radial-gradient(circle, rgba(204,58,99,0.08), transparent 70%)",
+          background: "radial-gradient(circle, rgba(200,90,58,0.08), transparent 70%)",
           left: "35%",
           top: "25%",
           transform: "translate(-50%, -50%)",
@@ -27,7 +27,7 @@ export function AuroraBackdrop() {
       <div
         className="absolute w-[500px] h-[500px] rounded-full animate-aurora-drift"
         style={{
-          background: "radial-gradient(circle, rgba(162,171,115,0.05), transparent 70%)",
+          background: "radial-gradient(circle, rgba(60,150,138,0.05), transparent 70%)",
           animationDelay: "5s",
           left: "60%",
           top: "60%",

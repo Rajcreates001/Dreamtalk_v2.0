@@ -69,7 +69,7 @@ export default function AvatarStudioPage() {
 
   const EMOTIONS = [
     { name: "Happy", emoji: "😊", color: "#8F9A5E" },
-    { name: "Sad", emoji: "😢", color: "#853953" },
+    { name: "Sad", emoji: "😢", color: "var(--burgundy)" },
     { name: "Surprised", emoji: "😮", color: "#D6A44C" },
     { name: "Angry", emoji: "😠", color: "#D84C63" },
     { name: "Neutral", emoji: "😐", color: "var(--foreground-muted)" },

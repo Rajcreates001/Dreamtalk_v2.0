@@ -54,8 +54,8 @@ export interface SectionTheme {
 export const sectionThemes: Record<string, SectionTheme> = {
   hero: {
     name: "Hero",
-    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.4)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(204,58,99,0.12)", blob2: "rgba(162,171,115,0.07)", blob3: "rgba(162,171,115,0.05)" },
+    color: { primary: "var(--primary)", secondary: "var(--secondary)", accent: "var(--secondary)", glow: "rgba(200,90,58,0.4)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(200,90,58,0.12)", blob2: "rgba(60,150,138,0.07)", blob3: "rgba(60,150,138,0.05)" },
     glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(255,255,255,0.06)", blur: "blur(28px)" },
   },
   problem: {
@@ -66,69 +66,69 @@ export const sectionThemes: Record<string, SectionTheme> = {
   },
   solution: {
     name: "Solution",
-    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.35)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(204,58,99,0.1)", blob2: "rgba(162,171,115,0.05)", blob3: "rgba(162,171,115,0.04)" },
-    glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(204,58,99,0.08)", blur: "blur(28px)" },
+    color: { primary: "var(--primary)", secondary: "var(--secondary)", accent: "var(--secondary)", glow: "rgba(200,90,58,0.35)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(200,90,58,0.1)", blob2: "rgba(60,150,138,0.05)", blob3: "rgba(60,150,138,0.04)" },
+    glass: { bg: "rgba(15,23,42,0.72)", border: "rgba(200,90,58,0.08)", blur: "blur(28px)" },
   },
   avatar: {
     name: "Avatar Studio",
-    color: { primary: "#CC3A63", secondary: "#CC3A63", accent: "#F472B6", glow: "rgba(204,58,99,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100B15] to-[#201D1D]", blob1: "rgba(204,58,99,0.08)", blob2: "rgba(204,58,99,0.05)", blob3: "rgba(244,114,182,0.03)" },
-    glass: { bg: "rgba(20,10,20,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--primary)", secondary: "var(--primary)", accent: "#F472B6", glow: "rgba(200,90,58,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100B15] to-[#201D1D]", blob1: "rgba(200,90,58,0.08)", blob2: "rgba(200,90,58,0.05)", blob3: "rgba(244,114,182,0.03)" },
+    glass: { bg: "rgba(20,10,20,0.72)", border: "rgba(200,90,58,0.06)", blur: "blur(28px)" },
   },
   knowledge: {
     name: "Knowledge",
-    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#34D399", glow: "rgba(162,171,115,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(52,211,153,0.03)" },
-    glass: { bg: "rgba(10,20,30,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--secondary)", secondary: "var(--primary)", accent: "#34D399", glow: "rgba(60,150,138,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0F1A] to-[#201D1D]", blob1: "rgba(60,150,138,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(52,211,153,0.03)" },
+    glass: { bg: "rgba(10,20,30,0.72)", border: "rgba(60,150,138,0.06)", blur: "blur(28px)" },
   },
   memory: {
     name: "Memory",
-    color: { primary: "#CC3A63", secondary: "#B03A5E", accent: "#A78BFA", glow: "rgba(204,58,99,0.35)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0B0918] to-[#201D1D]", blob1: "rgba(204,58,99,0.1)", blob2: "rgba(176,58,94,0.05)", blob3: "rgba(167,139,250,0.03)" },
-    glass: { bg: "rgba(15,10,25,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--primary)", secondary: "#B03A5E", accent: "#A78BFA", glow: "rgba(200,90,58,0.35)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0B0918] to-[#201D1D]", blob1: "rgba(200,90,58,0.1)", blob2: "rgba(176,58,94,0.05)", blob3: "rgba(167,139,250,0.03)" },
+    glass: { bg: "rgba(15,10,25,0.72)", border: "rgba(200,90,58,0.06)", blur: "blur(28px)" },
   },
   humanization: {
     name: "Humanization",
-    color: { primary: "#CC3A63", secondary: "#CC3A63", accent: "#FFB347", glow: "rgba(204,58,99,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100910] to-[#201D1D]", blob1: "rgba(204,58,99,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(255,179,71,0.03)" },
-    glass: { bg: "rgba(20,10,15,0.72)", border: "rgba(204,58,99,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--primary)", secondary: "var(--primary)", accent: "#FFB347", glow: "rgba(200,90,58,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#100910] to-[#201D1D]", blob1: "rgba(200,90,58,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(255,179,71,0.03)" },
+    glass: { bg: "rgba(20,10,15,0.72)", border: "rgba(200,90,58,0.06)", blur: "blur(28px)" },
   },
   reasoning: {
     name: "Reasoning",
-    color: { primary: "#D6A44C", secondary: "#CC3A63", accent: "#D6A44C", glow: "rgba(251,191,36,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0F0E08] to-[#201D1D]", blob1: "rgba(251,191,36,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(245,158,11,0.03)" },
+    color: { primary: "#D6A44C", secondary: "var(--primary)", accent: "#D6A44C", glow: "rgba(251,191,36,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0F0E08] to-[#201D1D]", blob1: "rgba(251,191,36,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(245,158,11,0.03)" },
     glass: { bg: "rgba(20,15,8,0.72)", border: "rgba(251,191,36,0.06)", blur: "blur(28px)" },
   },
   voice: {
     name: "Voice",
-    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#A2AB73", glow: "rgba(162,171,115,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0D18] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(162,171,115,0.03)" },
-    glass: { bg: "rgba(10,15,25,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--secondary)", secondary: "var(--primary)", accent: "var(--secondary)", glow: "rgba(60,150,138,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#0A0D18] to-[#201D1D]", blob1: "rgba(60,150,138,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(60,150,138,0.03)" },
+    glass: { bg: "rgba(10,15,25,0.72)", border: "rgba(60,150,138,0.06)", blur: "blur(28px)" },
   },
   deploy: {
     name: "Deployment",
-    color: { primary: "#0EA5E9", secondary: "#CC3A63", accent: "#A2AB73", glow: "rgba(14,165,233,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F18] to-[#201D1D]", blob1: "rgba(14,165,233,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(162,171,115,0.03)" },
+    color: { primary: "#0EA5E9", secondary: "var(--primary)", accent: "var(--secondary)", glow: "rgba(14,165,233,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F18] to-[#201D1D]", blob1: "rgba(14,165,233,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(60,150,138,0.03)" },
     glass: { bg: "rgba(10,15,22,0.72)", border: "rgba(14,165,233,0.06)", blur: "blur(28px)" },
   },
   industry: {
     name: "Industries",
-    color: { primary: "#8F9A5E", secondary: "#CC3A63", accent: "#34D399", glow: "rgba(16,185,129,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F12] to-[#201D1D]", blob1: "rgba(16,185,129,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(52,211,153,0.03)" },
+    color: { primary: "#8F9A5E", secondary: "var(--primary)", accent: "#34D399", glow: "rgba(16,185,129,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080F12] to-[#201D1D]", blob1: "rgba(16,185,129,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(52,211,153,0.03)" },
     glass: { bg: "rgba(10,18,15,0.72)", border: "rgba(16,185,129,0.06)", blur: "blur(28px)" },
   },
   security: {
     name: "Security",
-    color: { primary: "#A2AB73", secondary: "#CC3A63", accent: "#60A5FA", glow: "rgba(162,171,115,0.3)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080D16] to-[#201D1D]", blob1: "rgba(162,171,115,0.08)", blob2: "rgba(204,58,99,0.04)", blob3: "rgba(96,165,250,0.03)" },
-    glass: { bg: "rgba(10,14,22,0.72)", border: "rgba(162,171,115,0.06)", blur: "blur(28px)" },
+    color: { primary: "var(--secondary)", secondary: "var(--primary)", accent: "#60A5FA", glow: "rgba(60,150,138,0.3)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#080D16] to-[#201D1D]", blob1: "rgba(60,150,138,0.08)", blob2: "rgba(200,90,58,0.04)", blob3: "rgba(96,165,250,0.03)" },
+    glass: { bg: "rgba(10,14,22,0.72)", border: "rgba(60,150,138,0.06)", blur: "blur(28px)" },
   },
   cta: {
     name: "CTA",
-    color: { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73", glow: "rgba(204,58,99,0.5)" },
-    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(204,58,99,0.15)", blob2: "rgba(162,171,115,0.08)", blob3: "rgba(162,171,115,0.06)" },
-    glass: { bg: "rgba(15,23,42,0.85)", border: "rgba(204,58,99,0.12)", blur: "blur(28px)" },
+    color: { primary: "var(--primary)", secondary: "var(--secondary)", accent: "var(--secondary)", glow: "rgba(200,90,58,0.5)" },
+    background: { base: "#201D1D", gradient: "from-[#201D1D] via-[#232020] to-[#201D1D]", blob1: "rgba(200,90,58,0.15)", blob2: "rgba(60,150,138,0.08)", blob3: "rgba(60,150,138,0.06)" },
+    glass: { bg: "rgba(15,23,42,0.85)", border: "rgba(200,90,58,0.12)", blur: "blur(28px)" },
   },
   footer: {
     name: "Footer",
@@ -144,7 +144,7 @@ export const glass = {
   standard: "backdrop-blur-2xl bg-[#2C2929]/80 border border-white/[0.06]",
   strong: "backdrop-blur-3xl bg-[#2C2929]/92 border border-white/[0.08]",
   premium: "backdrop-blur-2xl bg-gradient-to-b from-white/[0.05] to-white/[0.01] border border-white/[0.08]",
-  glow: "backdrop-blur-2xl bg-gradient-to-b from-[#CC3A63]/[0.08] to-transparent border border-[#CC3A63]/15",
+  glow: "backdrop-blur-2xl bg-gradient-to-b from-primary/[0.08] to-transparent border border-primary/15",
 } as const
 
 /* ─── ANIMATION TOKENS ─── */
@@ -179,10 +179,10 @@ export const typography = {
 
 /* ─── GRADIENT UTILITIES ─── */
 export const gradients = {
-  brand: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]",
-  brandVertical: "bg-gradient-to-b from-[#CC3A63] via-[#A2AB73] to-[#A2AB73]",
-  text: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent",
-  textAnimated: "bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora",
+  brand: "bg-gradient-to-r from-primary via-secondary to-secondary",
+  brandVertical: "bg-gradient-to-b from-primary via-secondary to-secondary",
+  text: "bg-gradient-to-r from-primary via-secondary to-secondary bg-clip-text text-transparent",
+  textAnimated: "bg-gradient-to-r from-primary via-secondary to-secondary bg-clip-text text-transparent bg-[length:200%_200%] animate-aurora",
 } as const
 
 /* ─── BLUR LEVELS ─── */

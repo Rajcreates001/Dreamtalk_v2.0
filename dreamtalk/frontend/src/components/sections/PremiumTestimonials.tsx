@@ -48,7 +48,7 @@ export function PremiumTestimonials() {
       <StaggerGrid className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {testimonials.map((t) => (
           <GlassCard key={t.name}>
-            <Quote className="h-5 w-5 text-[#CC3A63]/40 mb-3" />
+            <Quote className="h-5 w-5 text-primary/40 mb-3" />
             <p className="text-sm text-foreground leading-relaxed mb-4 italic">&ldquo;{t.text}&rdquo;</p>
             <div className="flex items-center gap-2 mb-3">
               {[...Array(5)].map((_, i) => (

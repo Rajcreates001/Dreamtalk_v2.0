@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils"
 import { Bot, Mic, BookOpen, Globe, Download, Star, Store } from "lucide-react"
 
 const ITEMS = [
-  { name: "Customer Support Agent", type: "Template", downloads: "2.4K", rating: 4.8, color: "#CC3A63", desc: "Full-featured customer support AI avatar" },
-  { name: "Premium Voice Pack", type: "Voice", downloads: "1.8K", rating: 4.9, color: "#A2AB73", desc: "12 high-quality natural voices" },
-  { name: "Medical Knowledge Base", type: "Knowledge", downloads: "3.2K", rating: 4.7, color: "#A2AB73", desc: "HIPAA-compliant medical training data" },
-  { name: "Japanese Language Pack", type: "Language", downloads: "892", rating: 4.6, color: "#CC3A63", desc: "Fluency pack for Japanese" },
+  { name: "Customer Support Agent", type: "Template", downloads: "2.4K", rating: 4.8, color: "var(--primary)", desc: "Full-featured customer support AI avatar" },
+  { name: "Premium Voice Pack", type: "Voice", downloads: "1.8K", rating: 4.9, color: "var(--secondary)", desc: "12 high-quality natural voices" },
+  { name: "Medical Knowledge Base", type: "Knowledge", downloads: "3.2K", rating: 4.7, color: "var(--secondary)", desc: "HIPAA-compliant medical training data" },
+  { name: "Japanese Language Pack", type: "Language", downloads: "892", rating: 4.6, color: "var(--primary)", desc: "Fluency pack for Japanese" },
   { name: "Enterprise Analytics", type: "Integration", downloads: "1.1K", rating: 4.5, color: "#D6A44C", desc: "Connect with your BI tools" },
   { name: "Emotion Engine Pro", type: "Module", downloads: "567", rating: 4.9, color: "#B03A5E", desc: "Advanced emotional intelligence module" },
 ]
@@ -44,7 +44,7 @@ export default function MarketplacePage() {
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               activeCat === cat
-                ? "bg-[#CC3A63]/20 text-[#CC3A63] border border-[#CC3A63]/30"
+                ? "bg-primary/20 text-primary border border-primary/30"
                 : "bg-foreground/[0.04] text-foreground-muted hover:text-foreground border border-transparent"
             )}
           >
@@ -66,7 +66,7 @@ export default function MarketplacePage() {
               className="p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card hover:border-foreground/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15`, color: item.color }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `color-mix(in srgb, ${item.color} 8%, transparent)`, color: item.color }}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex items-center gap-1">

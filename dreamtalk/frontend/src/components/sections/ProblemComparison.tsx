@@ -42,12 +42,12 @@ const SOLVED_LIMITS = [
 ]
 
 const RING_CONFIGS = [
-  { label: "Knowledge", color: "#CC3A63", radius: 150 },
-  { label: "Memory", color: "#A2AB73", radius: 128 },
-  { label: "Voice", color: "#A2AB73", radius: 106 },
+  { label: "Knowledge", color: "var(--primary)", radius: 150 },
+  { label: "Memory", color: "var(--secondary)", radius: 128 },
+  { label: "Voice", color: "var(--secondary)", radius: 106 },
   { label: "Reasoning", color: "#D6A44C", radius: 84 },
   { label: "Personality", color: "#D84C63", radius: 62 },
-  { label: "Relationship", color: "#CC3A63", radius: 40 },
+  { label: "Relationship", color: "var(--primary)", radius: 40 },
   { label: "Deployment", color: "#0EA5E9", radius: 20 },
 ]
 
@@ -90,7 +90,7 @@ function FragmentedCard({
         }}
       />
       <div className="relative z-10 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${tool.color}18` }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${tool.color} 9%, transparent)` }}>
           <tool.icon className="h-4 w-4" style={{ color: tool.color }} />
         </div>
         <div className="min-w-0 flex-1">
@@ -140,7 +140,7 @@ function PipelineStage({ stage, index }: { stage: string; index: number }) {
       <div className="relative flex items-center justify-center shrink-0">
         <div
           className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500
-            ${isLast ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] text-white shadow-[0_0_12px_rgba(204,58,99,0.3)]" : "bg-foreground/[0.06] text-foreground-muted"}`}
+            ${isLast ? "bg-gradient-to-br from-primary to-secondary text-white shadow-[0_0_12px_rgba(200,90,58,0.3)]" : "bg-foreground/[0.06] text-foreground-muted"}`}
           style={{
             animation: isLast ? `chamber-pulse 2s ease-in-out infinite` : `pipeline-pulse 3s ease-in-out infinite`,
             animationDelay: `${index * 0.4}s`,
@@ -168,9 +168,9 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
   return (
     <div className="relative w-full aspect-square max-w-[480px] mx-auto group">
       {/* Outer glow layers */}
-      <div className="absolute inset-[5%] rounded-full blur-[100px] animate-chamber-glow" style={{ background: "radial-gradient(circle, rgba(204,58,99,0.12), transparent 70%)" }} />
-      <div className="absolute inset-[20%] rounded-full blur-[70px]" style={{ background: "radial-gradient(circle, rgba(162,171,115,0.06), transparent 70%)", animation: "chamber-glow 5s ease-in-out infinite 1.5s" }} />
-      <div className="absolute inset-[35%] rounded-full blur-[50px]" style={{ background: "radial-gradient(circle, rgba(162,171,115,0.04), transparent 70%)", animation: "chamber-glow 7s ease-in-out infinite 3s" }} />
+      <div className="absolute inset-[5%] rounded-full blur-[100px] animate-chamber-glow" style={{ background: "radial-gradient(circle, rgba(200,90,58,0.12), transparent 70%)" }} />
+      <div className="absolute inset-[20%] rounded-full blur-[70px]" style={{ background: "radial-gradient(circle, rgba(60,150,138,0.06), transparent 70%)", animation: "chamber-glow 5s ease-in-out infinite 1.5s" }} />
+      <div className="absolute inset-[35%] rounded-full blur-[50px]" style={{ background: "radial-gradient(circle, rgba(60,150,138,0.04), transparent 70%)", animation: "chamber-glow 7s ease-in-out infinite 3s" }} />
 
       {/* 7 Orbiting Rings */}
       {RING_CONFIGS.map((ring) => (
@@ -183,7 +183,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
             zIndex: 10 - ring.radius,
           }}
         >
-          <div className="absolute rounded-full border" style={{ width: ring.radius * 2, height: ring.radius * 2, borderColor: `${ring.color}10`, borderWidth: "1px" }} />
+          <div className="absolute rounded-full border" style={{ width: ring.radius * 2, height: ring.radius * 2, borderColor: `color-mix(in srgb, ${ring.color} 6%, transparent)`, borderWidth: "1px" }} />
           <div
             className="absolute w-2 h-2 rounded-full"
             style={{
@@ -191,7 +191,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
               left: `calc(50% + ${ring.radius - 1}px)`,
               top: "50%",
               marginTop: -4,
-              boxShadow: `0 0 8px ${ring.color}50`,
+              boxShadow: `0 0 8px color-mix(in srgb, ${ring.color} 31%, transparent)`,
               animation: `node-glow 2.5s ease-in-out infinite`,
               animationDelay: `${ring.radius * 0.012}s`,
             }}
@@ -230,20 +230,20 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       {/* Digital Human */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-28 h-28">
-          <div className="absolute inset-[10%] rounded-full blur-[25px] animate-body-glow" style={{ background: "radial-gradient(circle, rgba(204,58,99,0.25), transparent 70%)" }} />
+          <div className="absolute inset-[10%] rounded-full blur-[25px] animate-body-glow" style={{ background: "radial-gradient(circle, rgba(200,90,58,0.25), transparent 70%)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16">
-            <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-gradient-to-b from-[#CC3A63] to-[#A2AB73] p-[1.5px]" style={{ animation: "breathe 4s ease-in-out infinite" }}>
+            <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-gradient-to-b from-primary to-secondary p-[1.5px]" style={{ animation: "breathe 4s ease-in-out infinite" }}>
               <div className="w-full h-full rounded-[40%_40%_45%_45%] bg-background flex items-center justify-center flex-col gap-1">
                 <div className="flex gap-3.5">
-                  <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite" }} />
-                  <div className="w-[3px] h-[3px] rounded-full bg-[#A2AB73] shadow-[0_0_4px_#A2AB73]" style={{ animation: "blink 4s ease-in-out infinite 0.1s" }} />
+                  <div className="w-[3px] h-[3px] rounded-full bg-secondary shadow-[0_0_4px_var(--secondary)]" style={{ animation: "blink 4s ease-in-out infinite" }} />
+                  <div className="w-[3px] h-[3px] rounded-full bg-secondary shadow-[0_0_4px_var(--secondary)]" style={{ animation: "blink 4s ease-in-out infinite 0.1s" }} />
                 </div>
-                <div className="w-3 h-[1.5px] rounded-full bg-[#CC3A63]/40" style={{ animation: "breathe 4s ease-in-out infinite 0.5s" }} />
+                <div className="w-3 h-[1.5px] rounded-full bg-primary/40" style={{ animation: "breathe 4s ease-in-out infinite 0.5s" }} />
               </div>
             </div>
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-0.5">
               {[0, 1, 2].map((d) => (
-                <div key={d} className="w-0.5 h-0.5 rounded-full" style={{ background: "#CC3A63", animation: `thinking-pulse 1.5s ease-in-out infinite`, animationDelay: `${d * 0.3}s`, opacity: 0.6 }} />
+                <div key={d} className="w-0.5 h-0.5 rounded-full" style={{ background: "var(--primary)", animation: `thinking-pulse 1.5s ease-in-out infinite`, animationDelay: `${d * 0.3}s`, opacity: 0.6 }} />
               ))}
             </div>
           </div>
@@ -258,9 +258,9 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
         className="absolute bottom-[2%] left-1/2 -translate-x-1/2 z-30"
       >
         {solutionText && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/90 border border-[#A2AB73]/20 backdrop-blur-xl whitespace-nowrap">
-            <Sparkles className="h-3 w-3 text-[#A2AB73]" />
-            <span className="text-[10px] font-mono text-[#A2AB73] tracking-wider">{solutionText}</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/90 border border-secondary/20 backdrop-blur-xl whitespace-nowrap">
+            <Sparkles className="h-3 w-3 text-secondary" />
+            <span className="text-[10px] font-mono text-secondary tracking-wider">{solutionText}</span>
           </div>
         )}
       </motion.div>
@@ -268,13 +268,13 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       {/* Status badges */}
       <div className="absolute top-[1%] left-[3%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
-          <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#A2AB73]" /></span>
+          <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-secondary" /></span>
           <span className="text-[7px] font-mono text-foreground/40 tracking-wider">ACTIVE</span>
         </div>
       </div>
       <div className="absolute top-[12%] right-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
-          <Brain className="h-2 w-2 text-[#A2AB73]" />
+          <Brain className="h-2 w-2 text-secondary" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">LEARNING</span>
         </div>
       </div>
@@ -286,7 +286,7 @@ function DigitalTwinChamber({ hoveredTool }: { hoveredTool: number | null }) {
       </div>
       <div className="absolute top-[30%] left-[0%] z-20">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-foreground/[0.03] border border-foreground/[0.06]">
-          <Users className="h-2 w-2 text-[#CC3A63]" />
+          <Users className="h-2 w-2 text-primary" />
           <span className="text-[7px] font-mono text-foreground/30 tracking-wider">RELATIONSHIP</span>
         </div>
       </div>
@@ -385,7 +385,7 @@ export function ProblemComparison() {
           </div>
 
           <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px overflow-hidden opacity-[0.1]">
-            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, #D84C63, #CC3A63, #A2AB73, #A2AB73)", animation: "energy-flow 3s ease-in-out infinite" }} />
+            <div className="w-full h-full" style={{ background: "linear-gradient(to bottom, #D84C63, var(--primary), var(--secondary), var(--secondary))", animation: "energy-flow 3s ease-in-out infinite" }} />
           </div>
 
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -394,7 +394,7 @@ export function ProblemComparison() {
                 key={i}
                 className="absolute w-1 h-1 rounded-full"
                 style={{
-                  background: i < 2 ? "#D84C63" : i < 4 ? "#CC3A63" : "#A2AB73",
+                  background: i < 2 ? "#D84C63" : i < 4 ? "var(--primary)" : "var(--secondary)",
                   left: `${45 + (i % 3) * 5}%`,
                   top: "-5%",
                   opacity: 0.6,
@@ -409,9 +409,9 @@ export function ProblemComparison() {
         {/* Mobile pipeline separator — visible only on small screens */}
         <div className="md:col-span-3 lg:hidden flex items-center justify-center py-4">
           <div className="flex items-center gap-2">
-            <div className="h-px w-12 bg-gradient-to-r from-[#D84C63] to-[#CC3A63]" />
+            <div className="h-px w-12 bg-gradient-to-r from-[#D84C63] to-primary" />
             <span className="text-[8px] uppercase tracking-[0.3em] text-foreground/20 font-mono">UNIFIED</span>
-            <div className="h-px w-12 bg-gradient-to-l from-[#CC3A63] to-[#A2AB73]" />
+            <div className="h-px w-12 bg-gradient-to-l from-primary to-secondary" />
           </div>
         </div>
 
@@ -424,9 +424,9 @@ export function ProblemComparison() {
           className="md:col-span-3 lg:col-span-6 relative"
         >
           <div className="mb-4 text-right">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#A2AB73]/50 font-mono">DREAMTALK</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] text-secondary/50 font-mono">DREAMTALK</span>
             <h3 className="text-lg font-bold text-foreground mt-1">
-              One <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent">Digital Twin OS</span>
+              One <span className="bg-gradient-to-r from-primary via-secondary to-secondary bg-clip-text text-transparent">Digital Twin OS</span>
             </h3>
             <p className="text-xs text-foreground-muted mt-1 max-w-md ml-auto">
               Unified intelligence with persistent memory, emotional awareness, and continuous learning.
@@ -440,9 +440,9 @@ export function ProblemComparison() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 1.5 }}
-            className="mt-3 p-2.5 rounded-xl bg-[#CC3A63]/[0.05] border border-[#CC3A63]/[0.12]"
+            className="mt-3 p-2.5 rounded-xl bg-primary/[0.05] border border-primary/[0.12]"
           >
-            <div className="flex items-center gap-2 text-xs text-[#CC3A63]/70">
+            <div className="flex items-center gap-2 text-xs text-primary/70">
               <Sparkles className="h-3 w-3 shrink-0" />
               <span className="font-mono text-[10px] tracking-wider">ONE unified OS • Shared memory • Emotional AI • Live reasoning</span>
             </div>

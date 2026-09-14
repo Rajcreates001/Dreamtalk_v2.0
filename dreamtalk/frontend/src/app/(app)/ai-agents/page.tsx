@@ -7,10 +7,10 @@ import {
 } from "lucide-react"
 
 const AGENTS = [
-  { name: "Planner Agent", icon: Brain, color: "#CC3A63", status: "active", desc: "Orchestrates tasks and workflows" },
-  { name: "Research Agent", icon: Network, color: "#A2AB73", status: "active", desc: "Deep research and analysis" },
-  { name: "Voice Agent", icon: Mic, color: "#A2AB73", status: "active", desc: "Speech synthesis and recognition" },
-  { name: "Memory Agent", icon: Cpu, color: "#CC3A63", status: "idle", desc: "Long-term memory management" },
+  { name: "Planner Agent", icon: Brain, color: "var(--primary)", status: "active", desc: "Orchestrates tasks and workflows" },
+  { name: "Research Agent", icon: Network, color: "var(--secondary)", status: "active", desc: "Deep research and analysis" },
+  { name: "Voice Agent", icon: Mic, color: "var(--secondary)", status: "active", desc: "Speech synthesis and recognition" },
+  { name: "Memory Agent", icon: Cpu, color: "var(--primary)", status: "idle", desc: "Long-term memory management" },
   { name: "Knowledge Agent", icon: Brain, color: "#D6A44C", status: "active", desc: "Knowledge retrieval and indexing" },
   { name: "Vision Agent", icon: Eye, color: "#B03A5E", status: "idle", desc: "Image and video analysis" },
 ]
@@ -38,7 +38,7 @@ export default function AIAgentsPage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${agent.color}15` }}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `color-mix(in srgb, ${agent.color} 8%, transparent)` }}>
                     <Icon className="h-5 w-5" style={{ color: agent.color }} />
                   </div>
                   <div>
@@ -46,14 +46,14 @@ export default function AIAgentsPage() {
                     <p className="text-[10px] text-foreground-muted">{agent.desc}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: agent.status === "active" ? "#A2AB7310" : "var(--foreground-muted)10" }}>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: agent.status === "active" ? "var(--secondary)10" : "var(--foreground-muted)10" }}>
                   <span className="relative flex h-2 w-2">
                     {agent.status === "active" && (
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
                     )}
-                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: agent.status === "active" ? "#A2AB73" : "var(--foreground-muted)" }} />
+                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: agent.status === "active" ? "var(--secondary)" : "var(--foreground-muted)" }} />
                   </span>
-                  <span className="text-[10px]" style={{ color: agent.status === "active" ? "#A2AB73" : "var(--foreground-muted)" }}>
+                  <span className="text-[10px]" style={{ color: agent.status === "active" ? "var(--secondary)" : "var(--foreground-muted)" }}>
                     {agent.status === "active" ? "Active" : "Idle"}
                   </span>
                 </div>
@@ -82,7 +82,7 @@ export default function AIAgentsPage() {
         className="p-5 rounded-xl bg-card/80 border border-foreground/[0.06]"
       >
         <div className="flex items-center gap-3 mb-4">
-          <Network className="h-5 w-5 text-[#CC3A63]" />
+          <Network className="h-5 w-5 text-primary" />
           <div>
             <h3 className="text-sm font-semibold text-foreground">Agent Collaboration</h3>
             <p className="text-[10px] text-foreground-muted">Real-time multi-agent coordination</p>
@@ -92,13 +92,13 @@ export default function AIAgentsPage() {
         <div className="flex items-center gap-3 p-3 rounded-lg bg-foreground/[0.02] border border-foreground/[0.06]">
           <div className="flex -space-x-2">
             {AGENTS.slice(0, 4).map((agent, i) => (
-              <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold border-2 border-border" style={{ background: `${agent.color}20`, color: agent.color }}>
+              <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold border-2 border-border" style={{ background: `color-mix(in srgb, ${agent.color} 13%, transparent)`, color: agent.color }}>
                 {agent.name.charAt(0)}
               </div>
             ))}
           </div>
           <span className="text-xs text-foreground-muted">4 agents collaborating on: <span className="text-foreground">Knowledge Sync</span></span>
-          <span className="ml-auto text-[10px] text-[#A2AB73]">● Active</span>
+          <span className="ml-auto text-[10px] text-secondary">● Active</span>
         </div>
       </motion.div>
     </div>

@@ -9,7 +9,7 @@ import { BrainActivity } from "@/components/analytics/brain-activity"
 import { Spinner } from "@/components/loading-states"
 
 const BRAIN_AREAS = [
-  { key: "pfc", name: "Prefrontal Cortex", icon: Brain, color: "#853953", desc: "Executive function, response planning" },
+  { key: "pfc", name: "Prefrontal Cortex", icon: Brain, color: "var(--burgundy)", desc: "Executive function, response planning" },
   { key: "dacc", name: "dACC", icon: AlertTriangle, color: "#D84C63", desc: "Conflict monitoring, intent validation" },
   { key: "insula", name: "Insula", icon: Heart, color: "#9E3B6B", desc: "Emotion processing, interoception" },
   { key: "ipl", name: "IPL", icon: Eye, color: "#8F9A5E", desc: "Context integration, multimodal binding" },
@@ -100,7 +100,7 @@ export default function DigitalBrainPage() {
               className="p-4 rounded-xl border bg-card text-center"
             >
               <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center"
-                style={{ background: `${area.color}15` }}>
+                style={{ background: `color-mix(in srgb, ${area.color} 8%, transparent)` }}>
                 <Icon className="h-6 w-6" style={{ color: area.color }} />
               </div>
               <h3 className="text-sm font-semibold">{area.name}</h3>

@@ -12,7 +12,7 @@ const stages = [
     icon: MessageSquare,
     label: "Conversation",
     desc: "Every interaction begins",
-    color: "#CC3A63",
+    color: "var(--primary)",
   },
   {
     icon: Heart,
@@ -24,7 +24,7 @@ const stages = [
     icon: Brain,
     label: "Memory",
     desc: "Remembers everything",
-    color: "#A2AB73",
+    color: "var(--secondary)",
   },
   {
     icon: BookOpen,
@@ -36,13 +36,13 @@ const stages = [
     icon: Zap,
     label: "Wisdom",
     desc: "Understands deeply",
-    color: "#A2AB73",
+    color: "var(--secondary)",
   },
   {
     icon: User,
     label: "Humanized",
     desc: "A trusted Digital Twin",
-    color: "#CC3A63",
+    color: "var(--primary)",
   },
 ]
 
@@ -77,8 +77,8 @@ export function HumanizationEngine() {
               {/* Stage icon */}
               <div className="relative mb-3">
                 <motion.div
-                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-foreground/[0.06] transition-all duration-500 group-hover:border-[#CC3A63]/30"
-                  style={{ background: `${stage.color}10` }}
+                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center border border-foreground/[0.06] transition-all duration-500 group-hover:border-primary/30"
+                  style={{ background: `color-mix(in srgb, ${stage.color} 6%, transparent)` }}
                   whileHover={{ scale: 1.1, y: -4 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -104,7 +104,7 @@ export function HumanizationEngine() {
               {/* Arrow (except last) */}
               {i < stages.length - 1 && (
                 <div className="hidden lg:block absolute -right-2.5 top-8">
-                  <ArrowRight className="h-4 w-4 text-[#CC3A63]/30" />
+                  <ArrowRight className="h-4 w-4 text-primary/30" />
                 </div>
               )}
             </motion.div>
@@ -131,14 +131,14 @@ export function HumanizationEngine() {
               </p>
               <div className="flex flex-wrap gap-2 mt-4">
                 {[
-                  { label: "+127% Retention", color: "#A2AB73" },
-                  { label: "94% Satisfaction", color: "#CC3A63" },
-                  { label: "6.2x Engagement", color: "#A2AB73" },
+                  { label: "+127% Retention", color: "var(--secondary)" },
+                  { label: "94% Satisfaction", color: "var(--primary)" },
+                  { label: "6.2x Engagement", color: "var(--secondary)" },
                 ].map((stat) => (
                   <span
                     key={stat.label}
                     className="px-3 py-1 rounded-lg text-xs font-mono"
-                    style={{ background: `${stat.color}10`, color: stat.color, border: `1px solid ${stat.color}20` }}
+                    style={{ background: `color-mix(in srgb, ${stat.color} 6%, transparent)`, color: stat.color, border: `1px solid color-mix(in srgb, ${stat.color} 13%, transparent)` }}
                   >
                     {stat.label}
                   </span>
@@ -161,9 +161,9 @@ export function HumanizationEngine() {
                 />
                 <defs>
                   <linearGradient id="evolutionGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#CC3A63" />
-                    <stop offset="50%" stopColor="#A2AB73" />
-                    <stop offset="100%" stopColor="#A2AB73" />
+                    <stop offset="0%" stopColor="var(--primary)" />
+                    <stop offset="50%" stopColor="var(--secondary)" />
+                    <stop offset="100%" stopColor="var(--secondary)" />
                   </linearGradient>
                 </defs>
               </svg>

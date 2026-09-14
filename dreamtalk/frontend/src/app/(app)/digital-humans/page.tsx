@@ -39,16 +39,16 @@ type AvatarData = {
   description?: string | null
 }
 
-const DEFAULT_COLORS = ["#CC3A63", "#A2AB73", "#A2AB73", "#CC3A63", "#D6A44C", "#D84C63"]
+const DEFAULT_COLORS = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "#D6A44C", "#D84C63"]
 const FALLBACK_AVATARS: AvatarData[] = [
-  { id: "demo-1", name: "Dr. Aria", role: "AI Companion", status: "active", emotion: "Calm", memory: 92, relationship: 87, languages: 4, voice: "Natural", model: "GPT-4o", knowledgeSize: "1.2 GB", conversations: 1247, color: "#CC3A63" },
-  { id: "demo-2", name: "Prof. Orion", role: "Knowledge Expert", status: "active", emotion: "Focused", memory: 78, relationship: 62, languages: 3, voice: "Professional", model: "Claude 3.5", knowledgeSize: "4.8 GB", conversations: 892, color: "#A2AB73" },
-  { id: "demo-3", name: "Luna", role: "Creative Assistant", status: "idle", emotion: "Creative", memory: 65, relationship: 71, languages: 2, voice: "Expressive", model: "GPT-4o", knowledgeSize: "0.8 GB", conversations: 456, color: "#A2AB73" },
-  { id: "demo-4", name: "Sage", role: "Business Analyst", status: "active", emotion: "Analytical", memory: 84, relationship: 55, languages: 5, voice: "Professional", model: "Claude 3.5", knowledgeSize: "3.2 GB", conversations: 2103, color: "#CC3A63" },
+  { id: "demo-1", name: "Dr. Aria", role: "AI Companion", status: "active", emotion: "Calm", memory: 92, relationship: 87, languages: 4, voice: "Natural", model: "GPT-4o", knowledgeSize: "1.2 GB", conversations: 1247, color: "var(--primary)" },
+  { id: "demo-2", name: "Prof. Orion", role: "Knowledge Expert", status: "active", emotion: "Focused", memory: 78, relationship: 62, languages: 3, voice: "Professional", model: "Claude 3.5", knowledgeSize: "4.8 GB", conversations: 892, color: "var(--secondary)" },
+  { id: "demo-3", name: "Luna", role: "Creative Assistant", status: "idle", emotion: "Creative", memory: 65, relationship: 71, languages: 2, voice: "Expressive", model: "GPT-4o", knowledgeSize: "0.8 GB", conversations: 456, color: "var(--secondary)" },
+  { id: "demo-4", name: "Sage", role: "Business Analyst", status: "active", emotion: "Analytical", memory: 84, relationship: 55, languages: 5, voice: "Professional", model: "Claude 3.5", knowledgeSize: "3.2 GB", conversations: 2103, color: "var(--primary)" },
 ]
 
 const STATUS_CONFIG = {
-  active: { label: "Active", color: "#A2AB73" },
+  active: { label: "Active", color: "var(--secondary)" },
   idle: { label: "Idle", color: "#D6A44C" },
   offline: { label: "Offline", color: "var(--foreground-muted)" },
 }
@@ -140,7 +140,7 @@ export default function DigitalHumansPage() {
         </div>
         <Link
           href="/studio"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
         >
           <Plus className="h-4 w-4" />
           Create New
@@ -151,7 +151,7 @@ export default function DigitalHumansPage() {
       {loading && (
         <div className="flex items-center justify-center py-24">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-[#CC3A63]" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-foreground-muted">Loading your digital workforce...</p>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function DigitalHumansPage() {
                 onClick={() => setSelectedId(isSelected ? null : avatar.id)}
                 className={cn(
                   "rounded-xl bg-card/80 border transition-all duration-200 overflow-hidden cursor-pointer",
-                  isSelected ? "border-[#CC3A63]/40 shadow-lg shadow-[#CC3A63]/10" : "border-foreground/[0.06] hover:border-foreground/[0.12] hover:bg-card"
+                  isSelected ? "border-primary/40 shadow-lg shadow-primary/10" : "border-foreground/[0.06] hover:border-foreground/[0.12] hover:bg-card"
                 )}
               >
                 {/* Card header */}
@@ -189,7 +189,7 @@ export default function DigitalHumansPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm overflow-hidden"
-                        style={{ background: `linear-gradient(135deg, ${avatar.color}, ${avatar.color}80)` }}
+                        style={{ background: `linear-gradient(135deg, ${avatar.color}, color-mix(in srgb, ${avatar.color} 50%, transparent))` }}
                       >
                         {avatar.thumbnail_url ? (
                           <img src={avatar.thumbnail_url} alt={avatar.name} className="w-full h-full object-cover" />
@@ -203,7 +203,7 @@ export default function DigitalHumansPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: `${statusCfg.color}10` }}>
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: `color-mix(in srgb, ${statusCfg.color} 6%, transparent)` }}>
                         <span className="relative flex h-2 w-2">
                           {avatar.status === "active" && (
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: statusCfg.color }} />
@@ -220,7 +220,7 @@ export default function DigitalHumansPage() {
 
                   {/* Emotion */}
                   <div className="flex items-center gap-2 mt-3">
-                    <Heart className="h-3 w-3 text-[#CC3A63]" />
+                    <Heart className="h-3 w-3 text-primary" />
                     <span className="text-xs text-foreground">{avatar.emotion}</span>
                   </div>
                 </div>
@@ -228,9 +228,9 @@ export default function DigitalHumansPage() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-px bg-foreground/[0.04]">
                   {[
-                    { label: "Memory", value: `${avatar.memory}%`, icon: Brain, color: "#CC3A63" },
-                    { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "#CC3A63" },
-                    { label: "Languages", value: `${avatar.languages}`, icon: Globe, color: "#A2AB73" },
+                    { label: "Memory", value: `${avatar.memory}%`, icon: Brain, color: "var(--primary)" },
+                    { label: "Relationship", value: `${avatar.relationship}%`, icon: Heart, color: "var(--primary)" },
+                    { label: "Languages", value: `${avatar.languages}`, icon: Globe, color: "var(--secondary)" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-card/60 p-3 text-center">
                       <div className="flex items-center justify-center gap-1 mb-1">
@@ -288,10 +288,10 @@ export default function DigitalHumansPage() {
           >
             <Link
               href="/studio"
-              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-foreground/[0.08] p-8 hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all group"
+              className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-foreground/[0.08] p-8 hover:border-primary/30 hover:bg-primary/5 transition-all group"
             >
-              <div className="w-14 h-14 rounded-xl bg-foreground/[0.04] flex items-center justify-center group-hover:bg-[#CC3A63]/10 transition-all mb-4">
-                <Plus className="h-6 w-6 text-foreground-muted group-hover:text-[#CC3A63]" />
+              <div className="w-14 h-14 rounded-xl bg-foreground/[0.04] flex items-center justify-center group-hover:bg-primary/10 transition-all mb-4">
+                <Plus className="h-6 w-6 text-foreground-muted group-hover:text-primary" />
               </div>
               <p className="text-sm font-semibold text-foreground-muted group-hover:text-foreground transition-colors">Create New Avatar</p>
               <p className="text-xs text-foreground-muted mt-1">Design and train your next AI human</p>

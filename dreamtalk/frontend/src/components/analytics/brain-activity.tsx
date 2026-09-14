@@ -14,7 +14,7 @@ interface BrainActivityProps {
 }
 
 const BRAIN_AREAS: Record<string, { label: string; color: string; description: string }> = {
-  pfc: { label: "Prefrontal Cortex", color: "#853953", description: "Executive function" },
+  pfc: { label: "Prefrontal Cortex", color: "var(--burgundy)", description: "Executive function" },
   dacc: { label: "dACC", color: "#D84C63", description: "Conflict monitoring" },
   insula: { label: "Insula", color: "#9E3B6B", description: "Emotion processing" },
   ipl: { label: "IPL", color: "#8F9A5E", description: "Context integration" },

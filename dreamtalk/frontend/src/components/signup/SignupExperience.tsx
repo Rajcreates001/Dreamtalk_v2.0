@@ -10,9 +10,9 @@ import { AvatarStage } from "@/components/avatar3d/AvatarStage"
 import { SignupWizard } from "./SignupWizard"
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#CC3A63",
-  healthcare: "#A2AB73",
-  business: "#A2AB73",
+  personal: "var(--primary)",
+  healthcare: "var(--secondary)",
+  business: "var(--secondary)",
 }
 
 export function SignupExperience() {
@@ -68,11 +68,11 @@ export function SignupExperience() {
               </p>
               <div className="flex items-center justify-center gap-4 pt-2">
                 {[
-                  { label: "Learn", color: "#CC3A63" },
-                  { label: "Evolve", color: "#A2AB73" },
-                  { label: "Remember", color: "#A2AB73" },
+                  { label: "Learn", color: "var(--primary)" },
+                  { label: "Evolve", color: "var(--secondary)" },
+                  { label: "Remember", color: "var(--secondary)" },
                 ].map((f) => (
-                  <span key={f.label} className="text-[10px] font-mono tracking-wider" style={{ color: `${f.color}99` }}>{f.label}</span>
+                  <span key={f.label} className="text-[10px] font-mono tracking-wider" style={{ color: `color-mix(in srgb, ${f.color} 60%, transparent)` }}>{f.label}</span>
                 ))}
               </div>
             </motion.div>
@@ -89,7 +89,7 @@ export function SignupExperience() {
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-center mb-6">
               <span className="text-xs uppercase tracking-[0.3em] text-white/20 font-mono">DreamTalk</span>
               <h1 className="text-2xl font-bold mt-2" style={{
-                backgroundImage: "linear-gradient(135deg, var(--foreground), #CC3A63, #A2AB73)",
+                backgroundImage: "linear-gradient(135deg, var(--foreground), var(--primary), var(--secondary))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -115,7 +115,7 @@ export function SignupExperience() {
 
             {/* Footer */}
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-[10px] text-foreground-muted mt-6">
-              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-[#CC3A63] hover:text-secondary transition-colors">Terms</a> and <a href="#" className="text-[#CC3A63] hover:text-secondary transition-colors">Privacy Policy</a>
+              By signing up, you agree to DreamTalk&apos;s <a href="#" className="text-primary hover:text-secondary transition-colors">Terms</a> and <a href="#" className="text-primary hover:text-secondary transition-colors">Privacy Policy</a>
             </motion.p>
           </div>
         </motion.div>

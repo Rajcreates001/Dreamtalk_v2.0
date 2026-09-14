@@ -45,25 +45,25 @@ export default function AnalyticsPage() {
       label: "Total Events",
       value: stats?.total_events ?? emotionData?.total_events ?? "—",
       icon: MessageSquare,
-      color: "#CC3A63",
+      color: "var(--primary)",
     },
     {
       label: "Sessions Tracked",
       value: stats?.total_sessions ?? "—",
       icon: Users,
-      color: "#A2AB73",
+      color: "var(--secondary)",
     },
     {
       label: "Dominant Emotion",
       value: emotionData?.dominant_emotion ?? "—",
       icon: Heart,
-      color: "#CC3A63",
+      color: "var(--primary)",
     },
     {
       label: "Avg Valence",
       value: emotionData?.avg_valence?.toFixed(2) ?? "—",
       icon: TrendingUp,
-      color: "#A2AB73",
+      color: "var(--secondary)",
     },
   ]
 
@@ -107,7 +107,7 @@ export default function AnalyticsPage() {
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center"
-                  style={{ background: `${metric.color}12` }}
+                  style={{ background: `color-mix(in srgb, ${metric.color} 7%, transparent)` }}
                 >
                   <Icon className="h-4 w-4" style={{ color: metric.color }} />
                 </div>

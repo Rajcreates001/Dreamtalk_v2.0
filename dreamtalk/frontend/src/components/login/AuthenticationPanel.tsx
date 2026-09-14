@@ -29,9 +29,9 @@ const DEMO_CREDENTIALS: Record<string, { email: string; password: string }> = {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#CC3A63",
-  healthcare: "#A2AB73",
-  business: "#A2AB73",
+  personal: "var(--primary)",
+  healthcare: "var(--secondary)",
+  business: "var(--secondary)",
 }
 
 export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentColor, oauthError: externalError }: AuthenticationPanelProps) {
@@ -129,12 +129,12 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
             exit={{ opacity: 0 }}
             className="text-center py-16"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full" style={{ background: `linear-gradient(135deg, ${accentColor}30, transparent)`, border: `2px solid ${accentColor}40` }}>
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full" style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${accentColor} 19%, transparent), transparent)`, border: `2px solid color-mix(in srgb, ${accentColor} 25%, transparent)` }}>
               <div className="w-full h-full rounded-full flex items-center justify-center">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-10 h-10 rounded-full" style={{ background: accentColor, boxShadow: `0 0 20px ${accentColor}50` }}
+                  className="w-10 h-10 rounded-full" style={{ background: accentColor, boxShadow: `0 0 20px color-mix(in srgb, ${accentColor} 31%, transparent)` }}
                 />
               </div>
             </div>
@@ -192,14 +192,14 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                     isSelected ? "scale-[1.02]" : "hover:scale-[1.01]"
                   }`}
                   style={{
-                    background: isSelected ? `${rc}12` : "var(--card)",
+                    background: isSelected ? `color-mix(in srgb, ${rc} 7%, transparent)` : "var(--card)",
                     border: "1px solid",
-                    borderColor: isSelected ? `${rc}50` : "var(--border)",
+                    borderColor: isSelected ? `color-mix(in srgb, ${rc} 31%, transparent)` : "var(--border)",
                     backdropFilter: "blur(20px)",
                   }}
                 >
                   <div className="relative z-10 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${rc}18` }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${rc} 9%, transparent)` }}>
                       <Icon className="h-4 w-4" style={{ color: rc }} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -269,7 +269,7 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
 
               <button type="submit" disabled={loading || !email || !password}
                 className="w-full h-11 rounded-[14px] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50"
-                style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)` }}
+                style={{ background: `linear-gradient(135deg, ${accentColor}, color-mix(in srgb, ${accentColor} 80%, transparent))` }}
               >
                 {loading ? (
                   <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -289,8 +289,8 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
                     <button key={role.id} onClick={() => handleDemoFill(role.id)}
                       className="flex-1 py-1.5 rounded-xl border text-[10px] font-medium transition-all"
                       style={{
-                        borderColor: selectedRole === role.id ? `${rc}50` : "var(--border)",
-                        background: selectedRole === role.id ? `${rc}10` : "var(--surface)",
+                        borderColor: selectedRole === role.id ? `color-mix(in srgb, ${rc} 31%, transparent)` : "var(--border)",
+                        background: selectedRole === role.id ? `color-mix(in srgb, ${rc} 6%, transparent)` : "var(--surface)",
                         color: selectedRole === role.id ? rc : "var(--foreground-muted)",
                       }}
                     >

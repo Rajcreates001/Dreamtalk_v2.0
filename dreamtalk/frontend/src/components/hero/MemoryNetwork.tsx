@@ -12,7 +12,7 @@ export function MemoryNetwork() {
     const count = 40
     const pos = new Float32Array(count * 3)
     const col = new Float32Array(count * 3)
-    const baseColors = [new THREE.Color("#A2AB73"), new THREE.Color("#CC3A63"), new THREE.Color("#A2AB73")]
+    const baseColors = [new THREE.Color("var(--secondary)"), new THREE.Color("var(--primary)"), new THREE.Color("var(--secondary)")]
     const points: THREE.Vector3[] = []
 
     for (let i = 0; i < count; i++) {
@@ -66,7 +66,7 @@ export function MemoryNetwork() {
               itemSize={3}
             />
           </bufferGeometry>
-          <lineBasicMaterial color="#A2AB73" transparent opacity={0.04} />
+          <lineBasicMaterial color="var(--secondary)" transparent opacity={0.04} />
         </lineSegments>
       )}
       <points ref={ref}>

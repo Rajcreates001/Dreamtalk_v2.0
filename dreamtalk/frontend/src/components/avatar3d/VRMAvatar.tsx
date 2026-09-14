@@ -162,7 +162,7 @@ function Rig({ center, dist, interactive }: {
  * loop pauses when off-screen or the tab is hidden.
  */
 export function VRMAvatar({
-  url = DEFAULT_URL, speech, className = "", glow = "#CC3A63", interactive = true, onEnded,
+  url = DEFAULT_URL, speech, className = "", glow = "var(--primary)", interactive = true, onEnded,
 }: VRMAvatarProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -206,7 +206,7 @@ export function VRMAvatar({
   return (
     <div ref={wrap} className={className} style={{ position: "relative" }}>
       <div className="pointer-events-none absolute inset-0"
-        style={{ background: `radial-gradient(50% 50% at 50% 42%, ${glow}20, transparent 72%)` }} />
+        style={{ background: `radial-gradient(50% 50% at 50% 42%, color-mix(in srgb, ${glow} 13%, transparent), transparent 72%)` }} />
       <Canvas
         frameloop={active ? "always" : "never"}
         dpr={[1, 1.5]}

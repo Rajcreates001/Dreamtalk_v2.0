@@ -59,34 +59,34 @@ function SectionInner({
     default: "bg-transparent",
     alt: "bg-foreground/[0.01] border-y border-foreground/[0.04]",
     dark: "bg-[#050816]",
-    aurora: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] to-transparent",
+    aurora: "bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent",
     problem: "bg-gradient-to-b from-transparent via-[#D84C63]/[0.015] to-transparent",
-    solution: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.025] via-[#A2AB73]/[0.01] to-transparent",
-    memory: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] to-transparent",
-    knowledge: "bg-gradient-to-b from-transparent via-[#A2AB73]/[0.015] to-transparent",
-    voice: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.02] via-[#A2AB73]/[0.01] to-transparent",
-    deploy: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.015] to-transparent",
-    cta: "bg-gradient-to-b from-transparent via-[#CC3A63]/[0.03] via-[#A2AB73]/[0.015] to-transparent",
+    solution: "bg-gradient-to-b from-transparent via-primary/[0.025] via-secondary/[0.01] to-transparent",
+    memory: "bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent",
+    knowledge: "bg-gradient-to-b from-transparent via-secondary/[0.015] to-transparent",
+    voice: "bg-gradient-to-b from-transparent via-primary/[0.02] via-secondary/[0.01] to-transparent",
+    deploy: "bg-gradient-to-b from-transparent via-primary/[0.015] to-transparent",
+    cta: "bg-gradient-to-b from-transparent via-primary/[0.03] via-secondary/[0.015] to-transparent",
   }
 
   // Per-section accent colors for the blurred radial blobs
   const accentColors: Record<string, { primary: string; secondary: string }> = {
-    default: { primary: "#CC3A63", secondary: "#A2AB73" },
-    alt: { primary: "#CC3A63", secondary: "#A2AB73" },
-    dark: { primary: "#CC3A63", secondary: "#A2AB73" },
-    aurora: { primary: "#CC3A63", secondary: "#A2AB73" },
-    problem: { primary: "#D84C63", secondary: "#CC3A63" },
-    solution: { primary: "#CC3A63", secondary: "#A2AB73" },
-    memory: { primary: "#CC3A63", secondary: "#B03A5E" },
-    knowledge: { primary: "#A2AB73", secondary: "#CC3A63" },
-    voice: { primary: "#CC3A63", secondary: "#A2AB73" },
-    deploy: { primary: "#CC3A63", secondary: "#A2AB73" },
-    cta: { primary: "#CC3A63", secondary: "#A2AB73" },
-    avatar: { primary: "#CC3A63", secondary: "#CC3A63" },
-    humanization: { primary: "#CC3A63", secondary: "#CC3A63" },
-    reasoning: { primary: "#D6A44C", secondary: "#CC3A63" },
-    industry: { primary: "#8F9A5E", secondary: "#CC3A63" },
-    security: { primary: "#A2AB73", secondary: "#CC3A63" },
+    default: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    alt: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    dark: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    aurora: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    problem: { primary: "#D84C63", secondary: "var(--primary)" },
+    solution: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    memory: { primary: "var(--primary)", secondary: "#B03A5E" },
+    knowledge: { primary: "var(--secondary)", secondary: "var(--primary)" },
+    voice: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    deploy: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    cta: { primary: "var(--primary)", secondary: "var(--secondary)" },
+    avatar: { primary: "var(--primary)", secondary: "var(--primary)" },
+    humanization: { primary: "var(--primary)", secondary: "var(--primary)" },
+    reasoning: { primary: "#D6A44C", secondary: "var(--primary)" },
+    industry: { primary: "#8F9A5E", secondary: "var(--primary)" },
+    security: { primary: "var(--secondary)", secondary: "var(--primary)" },
   }
 
   const ac = accentColors[bg] || accentColors.default
@@ -172,7 +172,7 @@ function RenderTitle({ title }: { title: string }) {
           <span key={i}>
             {i > 0 && <>{' '}</>}
             {isGradientWord ? (
-              <span className="bg-gradient-to-r from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-secondary to-secondary bg-clip-text text-transparent">
                 {word}
               </span>
             ) : (
@@ -211,11 +211,11 @@ export function SectionHeading({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.35, delay: 0.08 }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs font-medium text-[#CC3A63] mb-4"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-4"
         >
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC3A63] opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC3A63]" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
           </span>
           {label}
         </motion.span>
@@ -286,7 +286,7 @@ export function GlassCard({
       variants={staggerItem}
       className={`rounded-[20px] bg-card/80 backdrop-blur-2xl border border-foreground/[0.06] p-6 ${
         hover
-          ? "hover:-translate-y-1 hover:bg-foreground/[0.04] hover:border-[#CC3A63]/20 transition-all duration-300 ease-out group cursor-default"
+          ? "hover:-translate-y-1 hover:bg-foreground/[0.04] hover:border-primary/20 transition-all duration-300 ease-out group cursor-default"
           : ""
       } ${className}`}
     >

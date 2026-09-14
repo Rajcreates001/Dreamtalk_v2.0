@@ -21,7 +21,7 @@ export interface TalkingHeadVideoProps {
  * profile photo and plays the cloned-voice audio with a live speaking meter.
  * All timing is driven off the media clock — never setTimeout.
  */
-export function TalkingHeadVideo({ profile, speech, className = "", glow = "#CC3A63", onEnded }: TalkingHeadVideoProps) {
+export function TalkingHeadVideo({ profile, speech, className = "", glow = "var(--primary)", onEnded }: TalkingHeadVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [openLevel, setOpenLevel] = useState(0)
@@ -46,7 +46,7 @@ export function TalkingHeadVideo({ profile, speech, className = "", glow = "#CC3
   return (
     <div className={className} style={{ position: "relative" }}>
       <div className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: `radial-gradient(52% 52% at 50% 46%, ${glow}22, transparent 72%)` }} />
+        style={{ background: `radial-gradient(52% 52% at 50% 46%, color-mix(in srgb, ${glow} 13%, transparent), transparent 72%)` }} />
 
       <div className="relative h-full w-full overflow-hidden rounded-3xl">
         {/* Idle / poster */}

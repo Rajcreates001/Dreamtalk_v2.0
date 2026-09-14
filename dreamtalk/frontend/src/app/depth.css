@@ -21,35 +21,35 @@
   /* ── Glass ── */
   --glass-blur: 20px;
   --glass-saturate: 180%;
-  --glass-bg: rgba(255, 253, 248, 0.62);
-  --glass-bg-strong: rgba(255, 253, 248, 0.82);
-  --glass-bg-subtle: rgba(255, 253, 248, 0.34);
+  --glass-bg: rgba(251, 248, 242, 0.62);
+  --glass-bg-strong: rgba(251, 248, 242, 0.82);
+  --glass-bg-subtle: rgba(251, 248, 242, 0.34);
   --glass-border: rgba(255, 255, 255, 0.75);
   --glass-rim: rgba(255, 255, 255, 0.95);
   --glass-inner:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.85),
-    inset 0 -1px 0 0 rgba(43, 38, 34, 0.05);
+    inset 0 -1px 0 0 rgba(25, 31, 32, 0.05);
   --glass-shadow:
-    0 4px 16px -4px rgba(43, 38, 34, 0.10),
-    0 12px 32px -8px rgba(97, 45, 83, 0.08);
+    0 4px 16px -4px rgba(25, 31, 32, 0.10),
+    0 12px 32px -8px rgba(20, 48, 52, 0.08);
   --glass-shadow-lg:
-    0 8px 24px -6px rgba(43, 38, 34, 0.14),
-    0 24px 56px -12px rgba(97, 45, 83, 0.12);
+    0 8px 24px -6px rgba(25, 31, 32, 0.14),
+    0 24px 56px -12px rgba(20, 48, 52, 0.12);
 
   /* ── Neumorphic ──
      The surface must equal the page behind it or the illusion breaks. */
-  --neo-surface: #FBF3E6;
+  --neo-surface: #EFEAE0;
   --neo-light: rgba(255, 255, 255, 0.95);
-  --neo-dark: rgba(180, 160, 132, 0.42);
+  --neo-dark: rgba(150, 142, 124, 0.40);
   --neo-distance: 6px;
   --neo-blur: 14px;
   --neo-radius: 14px;
 
   /* ── Elevation — warm-tinted, never neutral black ── */
-  --elev-1: 0 1px 2px rgba(43, 38, 34, 0.05), 0 1px 3px rgba(43, 38, 34, 0.06);
-  --elev-2: 0 2px 6px -1px rgba(43, 38, 34, 0.07), 0 4px 12px -2px rgba(97, 45, 83, 0.07);
-  --elev-3: 0 6px 14px -3px rgba(43, 38, 34, 0.09), 0 12px 28px -6px rgba(97, 45, 83, 0.10);
-  --elev-4: 0 12px 28px -6px rgba(43, 38, 34, 0.12), 0 28px 60px -12px rgba(97, 45, 83, 0.14);
+  --elev-1: 0 1px 2px rgba(25, 31, 32, 0.05), 0 1px 3px rgba(25, 31, 32, 0.06);
+  --elev-2: 0 2px 6px -1px rgba(25, 31, 32, 0.07), 0 4px 12px -2px rgba(20, 48, 52, 0.07);
+  --elev-3: 0 6px 14px -3px rgba(25, 31, 32, 0.09), 0 12px 28px -6px rgba(20, 48, 52, 0.10);
+  --elev-4: 0 12px 28px -6px rgba(25, 31, 32, 0.12), 0 28px 60px -12px rgba(20, 48, 52, 0.14);
 
   /* ── 3D ── */
   --perspective: 1000px;
@@ -62,9 +62,9 @@
   --glass-saturate: 150%;
   /* Dark glass is lifted with a LIGHT film, not darkened — darkening an
      already dark page just punches a hole in it. */
-  --glass-bg: rgba(58, 53, 53, 0.58);
-  --glass-bg-strong: rgba(58, 53, 53, 0.80);
-  --glass-bg-subtle: rgba(58, 53, 53, 0.32);
+  --glass-bg: rgba(31, 44, 47, 0.58);
+  --glass-bg-strong: rgba(31, 44, 47, 0.80);
+  --glass-bg-subtle: rgba(31, 44, 47, 0.32);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-rim: rgba(255, 255, 255, 0.28);
   --glass-inner:
@@ -77,7 +77,7 @@
     0 8px 24px -6px rgba(0, 0, 0, 0.55),
     0 24px 56px -12px rgba(0, 0, 0, 0.45);
 
-  --neo-surface: #2E2A2A;
+  --neo-surface: #121D20;
   --neo-light: rgba(255, 255, 255, 0.07);
   --neo-dark: rgba(0, 0, 0, 0.55);
 

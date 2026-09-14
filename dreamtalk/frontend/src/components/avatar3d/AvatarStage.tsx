@@ -28,7 +28,7 @@ export interface AvatarStageProps {
 
 /** App-wide avatar wrapper. Maps the theme `colors` to the GLB avatar's glow. */
 export function AvatarStage({ colors, ...rest }: AvatarStageProps) {
-  const glow = colors?.glow || colors?.primary || "#CC3A63"
+  const glow = colors?.glow || colors?.primary || "var(--primary)"
   return <GLBAvatar glow={glow} {...rest} />
 }
 

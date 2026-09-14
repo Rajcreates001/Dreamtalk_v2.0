@@ -39,8 +39,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="relative">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#CC3A63] via-[#A2AB73] to-[#A2AB73] animate-breathe" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#CC3A63] animate-pulse-glow" />
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary via-secondary to-secondary animate-breathe" />
+          <div className="absolute inset-0 w-12 h-12 rounded-full bg-primary animate-pulse-glow" />
         </div>
       </div>
     )

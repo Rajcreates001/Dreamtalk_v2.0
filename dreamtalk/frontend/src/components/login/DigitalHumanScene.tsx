@@ -13,8 +13,8 @@ const RING_CONFIGS = [
   { radius: 30 },
 ]
 
-export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHumanSceneProps) {
-  const accentColor = roleId === "healthcare" ? "#A2AB73" : roleId === "business" ? "#A2AB73" : "#CC3A63"
+export function DigitalHumanScene({ roleColor = "var(--primary)", roleId }: DigitalHumanSceneProps) {
+  const accentColor = roleId === "healthcare" ? "var(--secondary)" : roleId === "business" ? "var(--secondary)" : "var(--primary)"
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
@@ -23,7 +23,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
         <div
           className="absolute inset-[10%] rounded-full blur-[80px]"
           style={{
-            background: `radial-gradient(circle, ${accentColor}12, transparent 70%)`,
+            background: `radial-gradient(circle, color-mix(in srgb, ${accentColor} 7%, transparent), transparent 70%)`,
             animation: "chamber-glow 4s ease-in-out infinite",
           }}
         />
@@ -43,7 +43,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
               style={{
                 width: ring.radius * 2,
                 height: ring.radius * 2,
-                borderColor: `${accentColor}10`,
+                borderColor: `color-mix(in srgb, ${accentColor} 6%, transparent)`,
                 borderWidth: "1px",
               }}
             />
@@ -54,7 +54,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
                 left: `calc(50% + ${ring.radius - 1}px)`,
                 top: "50%",
                 marginTop: -3,
-                boxShadow: `0 0 6px ${accentColor}40`,
+                boxShadow: `0 0 6px color-mix(in srgb, ${accentColor} 25%, transparent)`,
               }}
             />
           </div>
@@ -66,7 +66,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
             <div
               className="absolute inset-[15%] rounded-full blur-[25px]"
               style={{
-                background: `radial-gradient(circle, ${accentColor}20, transparent 70%)`,
+                background: `radial-gradient(circle, color-mix(in srgb, ${accentColor} 13%, transparent), transparent 70%)`,
                 animation: "body-glow 4s ease-in-out infinite",
               }}
             />
@@ -103,7 +103,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
                   <div
                     className="w-3 h-[2px] rounded-full"
                     style={{
-                      background: `${accentColor}40`,
+                      background: `color-mix(in srgb, ${accentColor} 25%, transparent)`,
                       opacity: 0.5,
                     }}
                   />
@@ -124,7 +124,7 @@ export function DigitalHumanScene({ roleColor = "#CC3A63", roleId }: DigitalHuma
             }}
           >
             <Sparkles className="h-2.5 w-2.5" style={{ color: accentColor }} />
-            <span className="text-[9px] font-mono tracking-wider" style={{ color: `${accentColor}CC` }}>
+            <span className="text-[9px] font-mono tracking-wider" style={{ color: `color-mix(in srgb, ${accentColor} 80%, transparent)` }}>
               {roleId === "healthcare" ? "DIGITAL DOCTOR" : roleId === "business" ? "DIGITAL EMPLOYEE" : "DIGITAL COMPANION"}
             </span>
           </div>

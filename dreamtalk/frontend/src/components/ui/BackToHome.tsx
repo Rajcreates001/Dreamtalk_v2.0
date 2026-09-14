@@ -24,7 +24,7 @@ export function BackToHome() {
       >
         <ArrowLeft className="h-3.5 w-3.5 text-foreground-muted transition-colors group-hover:text-foreground" />
         <span className="hidden sm:flex items-center gap-1.5">
-          <span className="grid h-4 w-4 place-items-center rounded-[4px] bg-gradient-to-br from-[#CC3A63] to-[#A2AB73]">
+          <span className="grid h-4 w-4 place-items-center rounded-[4px] bg-gradient-to-br from-primary to-secondary">
             <Sparkles className="h-2 w-2 text-white" />
           </span>
           <span className="text-[11px] font-medium text-foreground-muted transition-colors group-hover:text-foreground">DreamTalk</span>

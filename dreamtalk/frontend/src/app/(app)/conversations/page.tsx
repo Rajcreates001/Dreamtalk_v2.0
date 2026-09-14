@@ -176,7 +176,7 @@ export default function ConversationsPage() {
           </div>
           <button
             type="button"
-            className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-[#CC3A63]/20 to-[#A2AB73]/10 border border-[#CC3A63]/20 text-xs text-[#CC3A63] font-medium hover:from-[#CC3A63]/30 transition-all"
+            className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-primary/20 to-secondary/10 border border-primary/20 text-xs text-primary font-medium hover:from-primary/30 transition-all"
           >
             <Plus className="h-3 w-3" />
             New Conversation
@@ -201,7 +201,7 @@ export default function ConversationsPage() {
               className={cn(
                 "w-full text-left p-2.5 rounded-xl transition-all",
                 activeConv === conv.id
-                  ? "bg-[#CC3A63]/10 border border-[#CC3A63]/20"
+                  ? "bg-primary/10 border border-primary/20"
                   : "hover:bg-foreground/[0.04] border border-transparent"
               )}
             >
@@ -362,7 +362,7 @@ export default function ConversationsPage() {
           >
             <div className="w-[260px] p-4 space-y-4">
               <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
-                <Brain className="h-3.5 w-3.5 text-[#CC3A63]" />
+                <Brain className="h-3.5 w-3.5 text-primary" />
                 Avatar Thoughts
               </h3>
 
@@ -370,17 +370,17 @@ export default function ConversationsPage() {
               <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
-                    <Heart className="h-3 w-3 text-[#CC3A63]" />
+                    <Heart className="h-3 w-3 text-primary" />
                     Emotion
                   </span>
-                  <span className="text-[10px] text-[#CC3A63] font-medium">{THINKING_DATA.emotionScore}%</span>
+                  <span className="text-[10px] text-primary font-medium">{THINKING_DATA.emotionScore}%</span>
                 </div>
                 <p className="text-xs text-foreground">{emotion || THINKING_DATA.emotion}</p>
                 <div className="h-1.5 bg-foreground/[0.04] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${THINKING_DATA.emotionScore}%` }}
-                    className="h-full rounded-full bg-gradient-to-r from-[#CC3A63] to-[#CC3A63]"
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-primary"
                   />
                 </div>
               </div>
@@ -388,7 +388,7 @@ export default function ConversationsPage() {
               {/* Knowledge Retrieved */}
               <div className="space-y-1.5">
                 <span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
-                  <BookOpen className="h-3 w-3 text-[#A2AB73]" />
+                  <BookOpen className="h-3 w-3 text-secondary" />
                   Knowledge Retrieved
                 </span>
                 <p className="text-[11px] text-foreground">{THINKING_DATA.knowledgeRetrieved}</p>
@@ -397,7 +397,7 @@ export default function ConversationsPage() {
               {/* Memory */}
               <div className="space-y-1.5">
                 <span className="text-[10px] text-foreground-muted flex items-center gap-1.5">
-                  <Brain className="h-3 w-3 text-[#CC3A63]" />
+                  <Brain className="h-3 w-3 text-primary" />
                   Memory Used
                 </span>
                 <p className="text-[11px] text-foreground">{THINKING_DATA.memoryUsed}</p>
@@ -417,7 +417,7 @@ export default function ConversationsPage() {
                 <span className="text-[10px] text-foreground-muted">Sources</span>
                 {THINKING_DATA.sources.map((src, i) => (
                   <div key={i} className="flex items-center gap-2 text-[10px] text-foreground-muted">
-                    <div className="w-1 h-1 rounded-full bg-[#CC3A63]" />
+                    <div className="w-1 h-1 rounded-full bg-primary" />
                     {src}
                   </div>
                 ))}
@@ -427,7 +427,7 @@ export default function ConversationsPage() {
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-foreground/[0.06]">
                 <div>
                   <p className="text-[9px] text-foreground-muted">Confidence</p>
-                  <p className="text-xs font-semibold text-[#A2AB73]">{THINKING_DATA.confidence}%</p>
+                  <p className="text-xs font-semibold text-secondary">{THINKING_DATA.confidence}%</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-foreground-muted">Latency</p>

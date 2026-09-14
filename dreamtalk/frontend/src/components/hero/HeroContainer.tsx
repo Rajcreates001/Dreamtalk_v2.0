@@ -18,7 +18,7 @@ function DigitalChamber({ colors }: { colors: { primary: string; secondary: stri
       {/* Ambient bloom behind the avatar */}
       <div
         className="pointer-events-none absolute inset-[8%] rounded-full blur-[90px] animate-pulse-glow"
-        style={{ background: `radial-gradient(circle, ${colors.primary}22, transparent 70%)` }}
+        style={{ background: `radial-gradient(circle, color-mix(in srgb, ${colors.primary} 13%, transparent), transparent 70%)` }}
       />
 
       {/* 3D avatar */}
@@ -86,9 +86,9 @@ export function HeroContainer({ showStats = true }: { showStats?: boolean }) {
   }, [])
 
   const emotionColors = [
-    { primary: "#CC3A63", secondary: "#A2AB73", accent: "#A2AB73" },
-    { primary: "#A2AB73", secondary: "#CC3A63", accent: "#CC3A63" },
-    { primary: "#CC3A63", secondary: "#853953", accent: "#A2AB73" },
+    { primary: "var(--primary)", secondary: "var(--secondary)", accent: "var(--secondary)" },
+    { primary: "var(--secondary)", secondary: "var(--primary)", accent: "var(--primary)" },
+    { primary: "var(--primary)", secondary: "var(--burgundy)", accent: "var(--secondary)" },
   ]
   const currentColors = emotionColors[cyclePhase % emotionColors.length]
 

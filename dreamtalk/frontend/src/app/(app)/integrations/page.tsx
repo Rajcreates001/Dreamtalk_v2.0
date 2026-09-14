@@ -16,9 +16,9 @@ const INTEGRATIONS = [
 ]
 
 const statusStyles = {
-  connected: { label: "Connected", color: "#A2AB73", icon: CheckCircle },
+  connected: { label: "Connected", color: "var(--secondary)", icon: CheckCircle },
   available: { label: "Available", color: "var(--foreground-muted)", icon: Plus },
-  premium: { label: "Premium", color: "#CC3A63", icon: Sparkles },
+  premium: { label: "Premium", color: "var(--primary)", icon: Sparkles },
 }
 
 export default function IntegrationsPage() {
@@ -42,13 +42,13 @@ export default function IntegrationsPage() {
               className="p-4 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card hover:border-foreground/[0.12] transition-all group"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15` }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `color-mix(in srgb, ${item.color} 8%, transparent)` }}>
                   <Icon className="h-5 w-5" style={{ color: item.color }} />
                 </div>
                 <button className={cn(
                   "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
                   item.status === "connected"
-                    ? "bg-[#A2AB73]/10 text-[#A2AB73]"
+                    ? "bg-secondary/10 text-secondary"
                     : "bg-foreground/[0.04] text-foreground-muted hover:text-foreground"
                 )}>
                   {item.status === "connected" ? <CheckCircle className="h-3 w-3" /> : <Plus className="h-3 w-3" />}

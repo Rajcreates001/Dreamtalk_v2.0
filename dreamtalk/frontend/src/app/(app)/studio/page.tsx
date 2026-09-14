@@ -131,7 +131,7 @@ export default function StudioPage() {
             </div>
           )}
           {saveStatus === "saved" && (
-            <span className="flex items-center gap-1 text-xs text-[#A2AB73]">
+            <span className="flex items-center gap-1 text-xs text-secondary">
               <Check className="h-3 w-3" />
               Saved
             </span>
@@ -154,7 +154,7 @@ export default function StudioPage() {
           <button
             onClick={handleDeploy}
             disabled={publishing || loading}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-xs font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-xs font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all disabled:opacity-50"
           >
             {publishing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -180,17 +180,17 @@ export default function StudioPage() {
                 className={cn(
                   "w-full text-left px-3 py-2.5 rounded-lg transition-all group",
                   isActive
-                    ? "bg-[#CC3A63]/15 border border-[#CC3A63]/20"
+                    ? "bg-primary/15 border border-primary/20"
                     : "hover:bg-foreground/[0.04] border border-transparent"
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-[#CC3A63]" : "text-foreground-muted group-hover:text-foreground-muted")} />
+                  <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-foreground-muted group-hover:text-foreground-muted")} />
                   <div className="min-w-0">
                     <p className={cn("text-xs font-medium truncate", isActive ? "text-foreground" : "text-foreground-muted group-hover:text-foreground")}>
                       {tab.label}
                     </p>
-                    <p className={cn("text-[9px] truncate", isActive ? "text-[#CC3A63]/60" : "text-foreground-muted")}>
+                    <p className={cn("text-[9px] truncate", isActive ? "text-primary/60" : "text-foreground-muted")}>
                       {tab.desc}
                     </p>
                   </div>
@@ -231,11 +231,11 @@ export default function StudioPage() {
 
         {/* Right: 3D Preview */}
         <div className="flex-1 rounded-xl bg-gradient-to-br from-card to-[#0a0e1a] border border-foreground/[0.06] flex items-center justify-center relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-[#CC3A63]/8 blur-[100px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-primary/8 blur-[100px]" />
 
           <div className="relative text-center">
-            <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#CC3A63]/20 to-[#A2AB73]/20 border border-foreground/[0.06] flex items-center justify-center">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] opacity-60 animate-breathe" />
+            <div className="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 border border-foreground/[0.06] flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-secondary opacity-60 animate-breathe" />
             </div>
             <p className="text-sm text-foreground-muted">3D Preview</p>
             <p className="text-xs text-foreground-muted mt-1">Avatar will appear here</p>
@@ -247,7 +247,7 @@ export default function StudioPage() {
             <div className="w-px h-4 bg-foreground/[0.06]" />
             <button className="px-3 py-1.5 rounded-lg bg-foreground/[0.04] text-xs text-foreground-muted hover:text-foreground transition-all">Auto-rotate</button>
             <div className="w-px h-4 bg-foreground/[0.06]" />
-            <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-xs text-white font-medium shadow-lg shadow-[#CC3A63]/20">
+            <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-xs text-white font-medium shadow-lg shadow-primary/20">
               <Play className="h-3 w-3" />
               Preview
             </button>
@@ -268,7 +268,7 @@ function AppearanceTab() {
     <TabShell title="Appearance" desc="Name, style, and visual identity">
       <div className="space-y-3">
         <Field label="Avatar Name">
-          <input type="text" placeholder="Enter name..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+          <input type="text" placeholder="Enter name..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/30" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Gender">
@@ -279,19 +279,19 @@ function AppearanceTab() {
             </select>
           </Field>
           <Field label="Age">
-            <input type="number" min={18} max={80} defaultValue={30} className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+            <input type="number" min={18} max={80} defaultValue={30} className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </Field>
         </div>
         <Field label="Style">
           <div className="grid grid-cols-3 gap-2">
             {["Realistic", "Stylized", "Cartoon"].map((s) => (
-              <button key={s} className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{s}</button>
+              <button key={s} className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-primary/10 transition-all">{s}</button>
             ))}
           </div>
         </Field>
         <Field label="Color Scheme">
           <div className="flex flex-wrap gap-2">
-            {["#CC3A63", "#A2AB73", "#A2AB73", "#CC3A63", "#D6A44C", "#D84C63"].map((c) => (
+            {["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "#D6A44C", "#D84C63"].map((c) => (
               <button key={c} className="w-7 h-7 rounded-lg border border-foreground/[0.1] hover:scale-110 transition-transform" style={{ background: c }} />
             ))}
           </div>
@@ -341,14 +341,14 @@ function VoiceTab() {
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all",
                   selectedVoice === v.id
-                    ? "bg-[#CC3A63]/15 border border-[#CC3A63]/20 text-foreground"
+                    ? "bg-primary/15 border border-primary/20 text-foreground"
                     : "bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground"
                 )}
               >
                 <span>{v.label}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/[0.04]">{v.lang}</span>
-                  {selectedVoice === v.id && <Check className="h-3 w-3 text-[#CC3A63]" />}
+                  {selectedVoice === v.id && <Check className="h-3 w-3 text-primary" />}
                 </div>
               </button>
             ))}
@@ -387,7 +387,7 @@ function PersonalityTab() {
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs transition-all border",
                     isSelected
-                      ? "bg-[#CC3A63]/15 border-[#CC3A63]/20 text-foreground"
+                      ? "bg-primary/15 border-primary/20 text-foreground"
                       : "bg-foreground/[0.04] border-foreground/[0.06] text-foreground-muted hover:text-foreground"
                   )}
                 >
@@ -398,7 +398,7 @@ function PersonalityTab() {
           </div>
         </Field>
         <Field label="Description">
-          <textarea rows={3} placeholder="Describe how your avatar should behave..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
+          <textarea rows={3} placeholder="Describe how your avatar should behave..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
         </Field>
         <Field label="Interaction Style">
           <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
@@ -424,7 +424,7 @@ function KnowledgeTab() {
   return (
     <TabShell title="Knowledge" desc="Documents, data sources, and training material">
       <div className="space-y-3">
-        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 hover:bg-[#CC3A63]/5 transition-all">
+        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-primary/30 hover:bg-primary/5 transition-all">
           <Upload className="h-4 w-4" />
           Upload Documents
         </button>
@@ -437,7 +437,7 @@ function KnowledgeTab() {
               </div>
               <div className={cn(
                 "px-1.5 py-0.5 rounded text-[9px] font-medium",
-                src.status === "synced" ? "bg-[#A2AB73]/10 text-[#A2AB73]" : "bg-[#D6A44C]/10 text-[#D6A44C]"
+                src.status === "synced" ? "bg-secondary/10 text-secondary" : "bg-[#D6A44C]/10 text-[#D6A44C]"
               )}>
                 {src.status}
               </div>
@@ -471,7 +471,7 @@ function MemoryTab() {
             ].map((m) => (
               <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-foreground/[0.03]">
                 <span className="text-xs text-foreground-muted">{m.label}</span>
-                <div className={cn("w-8 h-4 rounded-full transition-colors relative cursor-pointer", m.on ? "bg-[#CC3A63]" : "bg-foreground/[0.08]")}>
+                <div className={cn("w-8 h-4 rounded-full transition-colors relative cursor-pointer", m.on ? "bg-primary" : "bg-foreground/[0.08]")}>
                   <div className={cn("absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform", m.on ? "left-4" : "left-0.5")} />
                 </div>
               </div>
@@ -549,9 +549,9 @@ function RelationshipsTab() {
     <TabShell title="Relationships" desc="Bonding, rapport, and interaction dynamics">
       <div className="space-y-3">
         <div className="rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] p-4 text-center">
-          <div className="text-3xl font-bold text-[#CC3A63] mb-1">{bondLevel}%</div>
+          <div className="text-3xl font-bold text-primary mb-1">{bondLevel}%</div>
           <p className="text-xs text-foreground-muted">Current Bond Level</p>
-          <input type="range" min={0} max={100} value={bondLevel} onChange={(e) => setBondLevel(Number(e.target.value))} className="w-full mt-2 accent-[#CC3A63]" />
+          <input type="range" min={0} max={100} value={bondLevel} onChange={(e) => setBondLevel(Number(e.target.value))} className="w-full mt-2 accent-primary" />
         </div>
         <Field label="Bonding Speed">
           <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
@@ -619,12 +619,12 @@ function CameraTab() {
         <Field label="Camera Angle">
           <div className="grid grid-cols-3 gap-2">
             {["Front", "Three-Quarter", "Side", "Low Angle", "Eye Level", "High Angle"].map((a) => (
-              <button key={a} className="px-2.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-[10px] text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all">{a}</button>
+              <button key={a} className="px-2.5 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-[10px] text-foreground-muted hover:text-foreground hover:bg-primary/10 transition-all">{a}</button>
             ))}
           </div>
         </Field>
         <label className="flex items-center gap-2 text-xs text-foreground-muted">
-          <input type="checkbox" defaultChecked className="accent-[#CC3A63]" />
+          <input type="checkbox" defaultChecked className="accent-primary" />
           Enable Auto-rotate
         </label>
       </div>
@@ -642,7 +642,7 @@ function ActionsTab() {
   return (
     <TabShell title="Actions" desc="Custom triggers, responses, and automated behaviors">
       <div className="space-y-3">
-        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-[#CC3A63]/30 transition-all">
+        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-foreground/[0.08] text-xs text-foreground-muted hover:text-foreground-muted hover:border-primary/30 transition-all">
           <Plus className="h-3.5 w-3.5" />
           Add Action
         </button>
@@ -654,7 +654,7 @@ function ActionsTab() {
                 <p className="text-[11px] text-foreground truncate">{action.trigger}</p>
                 <p className="text-[9px] text-foreground-muted truncate">→ {action.response}</p>
               </div>
-              <div className={cn("w-7 h-3.5 rounded-full transition-colors relative cursor-pointer shrink-0", action.active ? "bg-[#CC3A63]" : "bg-foreground/[0.08]")}>
+              <div className={cn("w-7 h-3.5 rounded-full transition-colors relative cursor-pointer shrink-0", action.active ? "bg-primary" : "bg-foreground/[0.08]")}>
                 <div className={cn("absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-transform", action.active ? "left-4" : "left-0.5")} />
               </div>
             </div>
@@ -684,7 +684,7 @@ function FineTuningTab() {
         <Field label="Training Data">
           <div className="px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
             <p className="text-xs text-foreground-muted">No custom training data uploaded</p>
-            <button className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#CC3A63]/10 border border-[#CC3A63]/20 text-xs text-[#CC3A63] hover:bg-[#CC3A63]/20 transition-all">
+            <button className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary hover:bg-primary/20 transition-all">
               <Upload className="h-3 w-3" />
               Upload Dataset
             </button>
@@ -714,10 +714,10 @@ function TestingTab() {
               value={testInput}
               onChange={(e) => setTestInput(e.target.value)}
               placeholder="Type a test message..."
-              className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30"
+              className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <div className="flex gap-2">
-              <button disabled={!testInput.trim()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-xs text-white font-medium disabled:opacity-50 transition-all">
+              <button disabled={!testInput.trim()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-xs text-white font-medium disabled:opacity-50 transition-all">
                 <Play className="h-3 w-3" />
                 Send
               </button>
@@ -735,7 +735,7 @@ function TestingTab() {
                 <span className="text-xs text-foreground-muted">{r.label}</span>
                 <span className={cn(
                   "text-[10px] font-medium",
-                  r.status === "passed" ? "text-[#A2AB73]" : r.status === "failed" ? "text-[#D84C63]" : "text-[#D6A44C]"
+                  r.status === "passed" ? "text-secondary" : r.status === "failed" ? "text-[#D84C63]" : "text-[#D6A44C]"
                 )}>
                   {r.status === "passed" ? "✓ Passed" : r.status === "failed" ? "✗ Failed" : "○ Pending"}
                 </span>
@@ -743,7 +743,7 @@ function TestingTab() {
             ))}
           </div>
         </Field>
-        <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-[#A2AB73]/20 to-[#A2AB73]/10 border border-[#A2AB73]/20 text-xs text-[#A2AB73] font-medium hover:from-[#A2AB73]/30 transition-all">
+        <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-secondary/20 to-secondary/10 border border-secondary/20 text-xs text-secondary font-medium hover:from-secondary/30 transition-all">
           <FlaskConical className="h-3.5 w-3.5" />
           Run All Tests
         </button>
@@ -762,7 +762,7 @@ function PreviewTab() {
             {["Standing", "Sitting", "Casual"].map((pose) => (
               <button
                 key={pose}
-                className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-[#CC3A63]/10 transition-all"
+                className="px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-primary/10 transition-all"
               >
                 {pose}
               </button>
@@ -771,7 +771,7 @@ function PreviewTab() {
         </Field>
         <Field label="Background">
           <div className="grid grid-cols-4 gap-2">
-            {["var(--card)", "#1a1f35", "#8F9A5E", "#CC3A63"].map((bg) => (
+            {["var(--card)", "#1a1f35", "#8F9A5E", "var(--primary)"].map((bg) => (
               <button
                 key={bg}
                 className="aspect-video rounded-lg border border-foreground/[0.1] hover:scale-105 transition-transform"
@@ -781,11 +781,11 @@ function PreviewTab() {
           </div>
         </Field>
         <label className="flex items-center gap-2 text-xs text-foreground-muted">
-          <input type="checkbox" defaultChecked className="accent-[#CC3A63]" />
+          <input type="checkbox" defaultChecked className="accent-primary" />
           Show emotion overlay
         </label>
         <label className="flex items-center gap-2 text-xs text-foreground-muted">
-          <input type="checkbox" defaultChecked className="accent-[#CC3A63]" />
+          <input type="checkbox" defaultChecked className="accent-primary" />
           Show speaking indicator
         </label>
         <SliderField label="Preview Quality" value={80} unit="%" />
@@ -803,10 +803,10 @@ function DeployTab() {
           <div className="grid grid-cols-3 gap-2">
             {[
               { id: "dev", label: "Development", color: "#D6A44C" },
-              { id: "staging", label: "Staging", color: "#A2AB73" },
-              { id: "prod", label: "Production", color: "#A2AB73" },
+              { id: "staging", label: "Staging", color: "var(--secondary)" },
+              { id: "prod", label: "Production", color: "var(--secondary)" },
             ].map((env) => (
-              <button key={env.id} className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] hover:bg-[#CC3A63]/10 transition-all">
+              <button key={env.id} className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] hover:bg-primary/10 transition-all">
                 <div className="w-2 h-2 rounded-full" style={{ background: env.color }} />
                 <span className="text-[10px] text-foreground-muted">{env.label}</span>
               </button>
@@ -816,7 +816,7 @@ function DeployTab() {
         <Field label="Version">
           <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06]">
             <span className="text-xs text-foreground font-mono">v1.0.0</span>
-            <button className="text-[10px] text-[#CC3A63] hover:text-foreground transition-all">Change</button>
+            <button className="text-[10px] text-primary hover:text-foreground transition-all">Change</button>
           </div>
         </Field>
         <Field label="Publishing Checklist">
@@ -829,7 +829,7 @@ function DeployTab() {
               { item: "Tests passed", done: false },
             ].map((c) => (
               <div key={c.item} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-foreground/[0.03]">
-                <div className={cn("w-3.5 h-3.5 rounded border flex items-center justify-center", c.done ? "bg-[#A2AB73] border-[#A2AB73]" : "border-foreground/[0.12]")}>
+                <div className={cn("w-3.5 h-3.5 rounded border flex items-center justify-center", c.done ? "bg-secondary border-secondary" : "border-foreground/[0.12]")}>
                   {c.done && <Check className="h-2.5 w-2.5 text-card" />}
                 </div>
                 <span className={cn("text-[11px]", c.done ? "text-foreground" : "text-foreground-muted")}>{c.item}</span>
@@ -837,7 +837,7 @@ function DeployTab() {
             ))}
           </div>
         </Field>
-        <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium shadow-lg shadow-[#CC3A63]/20 hover:shadow-[#CC3A63]/30 transition-all">
+        <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">
           <Rocket className="h-4 w-4" />
           Publish to Production
         </button>
@@ -891,7 +891,7 @@ function SliderField({ label, value, min = 0, max = 100, step, unit }: {
         max={max}
         step={step ?? 1}
         defaultValue={value}
-        className="w-full accent-[#CC3A63]"
+        className="w-full accent-primary"
       />
     </div>
   )

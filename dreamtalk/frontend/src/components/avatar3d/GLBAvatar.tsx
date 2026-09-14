@@ -50,7 +50,10 @@ function Model({ url, skinColor, reduced, onFit }: {
         mats.forEach((m: any) => {
           if (!m) return
           if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
-          if (skinColor && !m.map) m.color = new THREE.Color(skinColor)
+          // Skin tint must never reach the eyes or lashes — tinting an
+          // untextured eye part with skin colour is what erases the iris.
+          const isEyePart = /^(Eye|Meniscus)/.test(o.name)
+          if (skinColor && !m.map && !isEyePart) m.color = new THREE.Color(skinColor)
           if ("metalness" in m) m.metalness = 0
           // Hair ships with a grey emissive + a harsh alpha cutoff → plastic
           // wash and a bald crown. Kill the emissive and soften the cutoff.
@@ -66,6 +69,18 @@ function Model({ url, skinColor, reduced, onFit }: {
             m.transparent = false
             m.depthWrite = true
             if ("roughness" in m) m.roughness = 0.55
+          } else if (o.name === "Eye_Eye_0" || m.name === "material") {
+            // The cornea is WET. The generic matte default below was being
+            // applied here, which flattens the eye into a painted-on disc:
+            // with roughness 0.7 there is no specular lobe tight enough to
+            // form a catchlight, and an eye without a catchlight reads as
+            // blind. Low roughness restores it; the asset's own
+            // metallicRoughnessTexture still modulates sclera vs iris.
+            m.roughness = 0.12
+            m.envMapIntensity = 1.4
+            // Backfaces of the eyeball are never visible and cost a second
+            // fragment pass over the most shaded material on the model.
+            m.side = THREE.FrontSide
           } else if ("roughness" in m && (m.roughness === undefined || m.roughness > 0.9)) {
             m.roughness = 0.7
           }
@@ -159,7 +174,7 @@ function Rig({ center, radius, interactive }: {
  * and the render loop pauses when off-screen or the tab is hidden.
  */
 export function GLBAvatar({
-  url = DEFAULT_URL, interactive = true, className = "", glow = "#CC3A63", skinColor,
+  url = DEFAULT_URL, interactive = true, className = "", glow = "var(--primary)", skinColor,
 }: GLBAvatarProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const [onScreen, setOnScreen] = useState(true)
@@ -190,7 +205,7 @@ export function GLBAvatar({
 
   return (
     <div ref={wrap} className={className} style={{ position: "relative", touchAction: "none" }}>
-      <div className="pointer-events-none absolute inset-0 z-0" style={{ background: `radial-gradient(50% 50% at 50% 44%, ${glow}18, transparent 70%)` }} />
+      <div className="pointer-events-none absolute inset-0 z-0" style={{ background: `radial-gradient(50% 50% at 50% 44%, color-mix(in srgb, ${glow} 9%, transparent), transparent 70%)` }} />
       <Canvas
         frameloop={active ? "always" : "never"}
         dpr={[1, 1.25]}
@@ -213,6 +228,12 @@ export function GLBAvatar({
         <directionalLight position={[2, 3, 4]} intensity={1.15} color="#fff3e6" />
         <directionalLight position={[-3, 1, 2]} intensity={0.35} color="#e9f0ff" />
         <hemisphereLight args={["#ffffff", "#4a3d38", 0.55]} />
+        {/* Catchlight. A glossy cornea still reads as dead without a small,
+            bright source to reflect. Placed high and to the camera side so the
+            highlight lands in the upper-left of each iris, which is where a
+            portrait photographer would put it. Tight distance/decay keeps it
+            off the skin, so it costs one light and changes nothing else. */}
+        <pointLight position={[0.35, 0.55, 1.6]} intensity={2.2} distance={4} decay={2} color="#ffffff" />
         <Model url={url} skinColor={skinColor} reduced={!!reduced}
           onFit={(center, radius) => setFit({ center, radius })} />
         <Rig center={fit?.center ?? null} radius={fit?.radius ?? 0} interactive={interactive} />

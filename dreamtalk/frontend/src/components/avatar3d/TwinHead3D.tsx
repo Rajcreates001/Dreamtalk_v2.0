@@ -179,7 +179,7 @@ function Rig({ center, radius, interactive }: {
  * This is the real twin, not a stand-in model.
  */
 export function TwinHead3D({
-  profile, speech, className = "", glow = "#CC3A63", interactive = true, onEnded,
+  profile, speech, className = "", glow = "var(--primary)", interactive = true, onEnded,
 }: TwinHead3DProps) {
   const wrap = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -233,7 +233,7 @@ export function TwinHead3D({
   return (
     <div ref={wrap} className={className} style={{ position: "relative", touchAction: "none" }}>
       <div className="pointer-events-none absolute inset-0 z-0"
-        style={{ background: `radial-gradient(50% 50% at 50% 44%, ${glow}18, transparent 70%)` }} />
+        style={{ background: `radial-gradient(50% 50% at 50% 44%, color-mix(in srgb, ${glow} 9%, transparent), transparent 70%)` }} />
       <Canvas
         frameloop={active ? "always" : "never"}
         dpr={[1, 1.5]}

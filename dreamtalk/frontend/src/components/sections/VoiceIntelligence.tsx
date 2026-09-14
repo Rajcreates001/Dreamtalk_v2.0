@@ -12,7 +12,7 @@ function WaveBar({ height, index }: { height: number; index: number }) {
       className="w-1.5 rounded-full"
       style={{
         height: `${height}px`,
-        background: "linear-gradient(to top, #CC3A63, #A2AB73)",
+        background: "linear-gradient(to top, var(--primary), var(--secondary))",
         animation: `waveform-pulse 1.5s ease-in-out infinite`,
         animationDelay: `${index * 0.03}s`,
         willChange: "transform, opacity",
@@ -56,7 +56,7 @@ export function VoiceIntelligence() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="absolute rounded-full border border-[#CC3A63]/20"
+              className="absolute rounded-full border border-primary/20"
               style={{
                 width: 80 + i * 60,
                 height: 80 + i * 60,
@@ -71,8 +71,8 @@ export function VoiceIntelligence() {
           {/* Status */}
           <div className="absolute bottom-4 left-4 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A2AB73]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
             </span>
             <span className="text-[10px] text-foreground-muted font-mono">Voice Active</span>
           </div>
@@ -81,9 +81,9 @@ export function VoiceIntelligence() {
         {/* Features */}
         <div className="space-y-3">
           {[
-            { icon: Mic, label: "Voice Cloning", desc: "99% accuracy from 30 seconds of audio", color: "#CC3A63" },
-            { icon: Languages, label: "50+ Languages", desc: "Regional accents and dialects supported", color: "#A2AB73" },
-            { icon: Music, label: "Emotion Control", desc: "Happy, calm, urgent, empathetic tones", color: "#A2AB73" },
+            { icon: Mic, label: "Voice Cloning", desc: "99% accuracy from 30 seconds of audio", color: "var(--primary)" },
+            { icon: Languages, label: "50+ Languages", desc: "Regional accents and dialects supported", color: "var(--secondary)" },
+            { icon: Music, label: "Emotion Control", desc: "Happy, calm, urgent, empathetic tones", color: "var(--secondary)" },
             { icon: Volume2, label: "Real-time Streaming", desc: "Sub-200ms latency for natural conversations", color: "#D6A44C" },
           ].map((feat, i) => (
             <motion.div
@@ -96,7 +96,7 @@ export function VoiceIntelligence() {
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: `${feat.color}15` }}
+                style={{ background: `color-mix(in srgb, ${feat.color} 8%, transparent)` }}
               >
                 <feat.icon className="h-4 w-4" style={{ color: feat.color }} />
               </div>

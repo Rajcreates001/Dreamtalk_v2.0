@@ -15,9 +15,9 @@ import { navigateAfterAuth } from "@/lib/navigate"
 type RoleId = "personal" | "healthcare" | "business" | null | ""
 
 const ROLE_COLORS: Record<string, string> = {
-  personal: "#CC3A63",
-  healthcare: "#A2AB73",
-  business: "#A2AB73",
+  personal: "var(--primary)",
+  healthcare: "var(--secondary)",
+  business: "var(--secondary)",
 }
 
 const PROGRESS_STEPS = ["Choose Role", "Authenticate", "Enter DreamTalk"]
@@ -65,7 +65,7 @@ export function LoginExperience() {
     setStep("login")
   }
 
-  const accentColor = selectedRole && ROLE_COLORS[selectedRole] ? ROLE_COLORS[selectedRole] : "#CC3A63"
+  const accentColor = selectedRole && ROLE_COLORS[selectedRole] ? ROLE_COLORS[selectedRole] : "var(--primary)"
   const progressIndex = step === "role" ? 0 : 1
 
   if (!mounted) {
@@ -122,7 +122,7 @@ export function LoginExperience() {
                     className="w-2 h-2 rounded-full transition-all duration-500"
                     style={{
                       background: progressIndex >= i ? accentColor : "var(--border)",
-                      boxShadow: progressIndex >= i ? `0 0 8px ${accentColor}50` : "none",
+                      boxShadow: progressIndex >= i ? `0 0 8px color-mix(in srgb, ${accentColor} 31%, transparent)` : "none",
                     }}
                   />
                   {i < PROGRESS_STEPS.length - 1 && (
@@ -131,7 +131,7 @@ export function LoginExperience() {
                 </div>
                 <span
                   className="text-[10px] font-mono tracking-wider transition-all duration-500"
-                  style={{ color: progressIndex >= i ? `${accentColor}CC` : "var(--foreground-muted)" }}
+                  style={{ color: progressIndex >= i ? `color-mix(in srgb, ${accentColor} 80%, transparent)` : "var(--foreground-muted)" }}
                 >
                   {label}
                 </span>
@@ -186,7 +186,7 @@ export function LoginExperience() {
               style={{
                 // Only the role accent is inline — everything else comes from
                 // the glass tokens, so light and dark stay in step.
-                borderColor: selectedRole ? `${accentColor}40` : undefined,
+                borderColor: selectedRole ? `color-mix(in srgb, ${accentColor} 25%, transparent)` : undefined,
                 transition: "border-color 0.5s",
               }}
             >
@@ -195,7 +195,7 @@ export function LoginExperience() {
                   <div key={label} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full transition-all duration-300" style={{ background: progressIndex >= i ? accentColor : "var(--border)" }} />
-                      <span className="text-[8px] font-mono tracking-wider hidden sm:inline" style={{ color: progressIndex >= i ? `${accentColor}99` : "var(--foreground-muted)" }}>{label}</span>
+                      <span className="text-[8px] font-mono tracking-wider hidden sm:inline" style={{ color: progressIndex >= i ? `color-mix(in srgb, ${accentColor} 60%, transparent)` : "var(--foreground-muted)" }}>{label}</span>
                     </div>
                     {i < PROGRESS_STEPS.length - 1 && <div className="w-6 h-px bg-foreground/[0.06]" />}
                   </div>

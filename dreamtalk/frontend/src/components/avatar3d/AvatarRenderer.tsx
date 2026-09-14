@@ -40,7 +40,7 @@ export interface AvatarRendererProps {
  * profile has no head yet. Both modes share one lipsync track + audio clock.
  */
 export function AvatarRenderer({
-  mode = "2d", profile, speech, className = "", glow = "#CC3A63", interactive = true, onEnded,
+  mode = "2d", profile, speech, className = "", glow = "var(--primary)", interactive = true, onEnded,
 }: AvatarRendererProps) {
   if (mode === "3d") {
     // Only drive the real head when the backend actually baked blendshapes in;

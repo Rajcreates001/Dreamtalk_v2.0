@@ -48,7 +48,7 @@ export default function SettingsPage() {
                 className={cn(
                   "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                   isActive
-                    ? "bg-[#CC3A63]/10 text-foreground border border-[#CC3A63]/20"
+                    ? "bg-primary/10 text-foreground border border-primary/20"
                     : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04] border border-transparent"
                 )}
               >
@@ -66,14 +66,14 @@ export default function SettingsPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Full Name</label>
-                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="text" defaultValue="Alex" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Email</label>
-                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="email" defaultValue="alex@dreamtalk.ai" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Save Changes</button>
+              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium">Save Changes</button>
             </div>
           )}
 
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                     onClick={() => setToggles(prev => prev.map((v, j) => j === i ? !v : v))}
                     className={cn(
                       "w-9 h-5 rounded-full transition-all relative",
-                      toggles[i] ? "bg-[#CC3A63]" : "bg-foreground/[0.08]"
+                      toggles[i] ? "bg-primary" : "bg-foreground/[0.08]"
                     )}
                   >
                     <div className={cn(
@@ -108,19 +108,19 @@ export default function SettingsPage() {
               <h3 className="text-sm font-semibold text-foreground">Security</h3>
               <div className="space-y-1.5">
                 <label className="text-xs text-foreground-muted">Current Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                <input type="password" placeholder="••••••••" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">New Password</label>
-                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="password" placeholder="New password" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-foreground-muted">Confirm Password</label>
-                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30" />
+                  <input type="password" placeholder="Confirm" className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
-              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-medium">Update Password</button>
+              <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium">Update Password</button>
             </div>
           )}
 
@@ -130,7 +130,7 @@ export default function SettingsPage() {
               <div className="p-4 rounded-xl bg-foreground/[0.02] border border-foreground/[0.06]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-foreground-muted">Production Key</span>
-                  <span className="text-[10px] text-[#A2AB73]">Active</span>
+                  <span className="text-[10px] text-secondary">Active</span>
                 </div>
                 <code className="text-xs text-foreground font-mono">dt_sk_prod_••••••••••••••••</code>
               </div>

@@ -29,7 +29,7 @@ function FallbackHead({ type = "head" }: { type: "head" | "bust" | "sphere" }) {
     }
   })
 
-  const headColor = new THREE.Color("#CC3A63")
+  const headColor = new THREE.Color("var(--primary)")
   const darkHeadColor = new THREE.Color("#6366f1")
 
   if (type === "sphere") {
@@ -163,7 +163,7 @@ function ObjModel({ url, onLoad, onError }: { url: string; onLoad?: () => void; 
                 // Only apply fallback material if no material was loaded (from MTL or OBJ)
                 if (!child.material) {
                   child.material = new THREE.MeshPhysicalMaterial({
-                    color: "#CC3A63",
+                    color: "var(--primary)",
                     metalness: 0.05,
                     roughness: 0.4,
                   })
@@ -308,7 +308,7 @@ export function AvatarViewer3D({
         style={{ height: heightStr }}
       >
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#CC3A63]/30 border-t-[#CC3A63]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-[var(--primary)]" />
           <span className="text-xs text-foreground-muted">Initializing 3D viewer...</span>
         </div>
       </div>
@@ -321,7 +321,7 @@ export function AvatarViewer3D({
       style={{ height: heightStr }}
     >
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#CC3A63]/5 via-transparent to-[#A2AB73]/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
 
       {/* Grid pattern overlay */}
       <div
@@ -369,7 +369,7 @@ export function AvatarViewer3D({
 
       {/* Rotation indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-foreground/[0.06] pointer-events-none">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#A2AB73]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-secondary" />
         <span className="text-[10px] text-foreground font-medium">360°</span>
       </div>
     </div>

@@ -9,12 +9,12 @@ import {
 import { SectionWrapper, SectionHeading } from "./SectionWrapper"
 
 const stages = [
-  { id: "photo", icon: Camera, label: "Photo", color: "#CC3A63", desc: "Upload a reference photo or generate procedurally" },
-  { id: "voice", icon: Mic, label: "Voice", color: "#A2AB73", desc: "Clone or synthesize a voice in 50+ languages" },
+  { id: "photo", icon: Camera, label: "Photo", color: "var(--primary)", desc: "Upload a reference photo or generate procedurally" },
+  { id: "voice", icon: Mic, label: "Voice", color: "var(--secondary)", desc: "Clone or synthesize a voice in 50+ languages" },
   { id: "personality", icon: Heart, label: "Personality", color: "#D84C63", desc: "Define traits, tone, and behavioral patterns" },
   { id: "knowledge", icon: BookOpen, label: "Knowledge", color: "#D6A44C", desc: "Upload documents, websites, and media" },
-  { id: "memory", icon: Brain, label: "Memory", color: "#A2AB73", desc: "Configure memory architecture and persistence" },
-  { id: "deploy", icon: Globe, label: "Deploy", color: "#CC3A63", desc: "Deploy to web, mobile, API, or platform" },
+  { id: "memory", icon: Brain, label: "Memory", color: "var(--secondary)", desc: "Configure memory architecture and persistence" },
+  { id: "deploy", icon: Globe, label: "Deploy", color: "var(--primary)", desc: "Deploy to web, mobile, API, or platform" },
 ]
 
 export function AvatarStudioInteractive() {
@@ -65,9 +65,9 @@ export function AvatarStudioInteractive() {
                   onClick={() => setActiveStage(i)}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-500 text-left ${
                     isActive
-                      ? "bg-card/90 border border-[#CC3A63]/30 shadow-lg shadow-[#CC3A63]/5"
+                      ? "bg-card/90 border border-primary/30 shadow-lg shadow-primary/5"
                       : isCompleted
-                        ? "bg-card/60 border border-[#A2AB73]/20"
+                        ? "bg-card/60 border border-secondary/20"
                         : "bg-card/40 border border-foreground/[0.04] hover:border-foreground/[0.1]"
                   }`}
                   whileHover={{ x: 4 }}
@@ -77,14 +77,14 @@ export function AvatarStudioInteractive() {
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] shadow-lg shadow-[#CC3A63]/20"
+                        ? "bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20"
                         : isCompleted
-                          ? "bg-[#A2AB73]/20 border border-[#A2AB73]/30"
+                          ? "bg-secondary/20 border border-secondary/30"
                           : "bg-foreground/[0.04] border border-foreground/[0.06]"
                     }`}
                   >
                     {isCompleted ? (
-                      <Check className="h-4 w-4 text-[#A2AB73]" />
+                      <Check className="h-4 w-4 text-secondary" />
                     ) : (
                       <span className={`text-sm font-bold ${isActive ? "text-white" : "text-foreground-muted"}`}>
                         {String(i + 1).padStart(2, "0")}
@@ -107,7 +107,7 @@ export function AvatarStudioInteractive() {
                   {isActive && (
                     <motion.div
                       layoutId="pipeline-active"
-                      className="w-1.5 h-8 rounded-full bg-gradient-to-b from-[#CC3A63] to-[#A2AB73]"
+                      className="w-1.5 h-8 rounded-full bg-gradient-to-b from-primary to-secondary"
                     />
                   )}
                 </motion.button>
@@ -119,7 +119,7 @@ export function AvatarStudioInteractive() {
           <div className="mt-6 flex items-center gap-3">
             <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-[#CC3A63] to-[#A2AB73]"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
                 initial={{ width: "0%" }}
                 animate={{ width: `${(completed.length / stages.length) * 100}%` }}
                 transition={{ duration: 0.5 }}
@@ -141,7 +141,7 @@ export function AvatarStudioInteractive() {
             <div className="flex items-center gap-3 mb-6">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{ background: `${stages[activeStage].color}20` }}
+                style={{ background: `color-mix(in srgb, ${stages[activeStage].color} 13%, transparent)` }}
               >
                 {(() => {
                   const StageIcon = stages[activeStage].icon
@@ -172,7 +172,7 @@ export function AvatarStudioInteractive() {
                       <>
                         <div
                           className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                          style={{ background: `${stages[activeStage].color}15` }}
+                          style={{ background: `color-mix(in srgb, ${stages[activeStage].color} 8%, transparent)` }}
                         >
                           <StageIcon className="h-8 w-8" style={{ color: stages[activeStage].color }} />
                         </div>
@@ -197,7 +197,7 @@ export function AvatarStudioInteractive() {
               <motion.button
                 onClick={handleNext}
                 disabled={activeStage === stages.length - 1}
-                className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-[#CC3A63] to-[#A2AB73] text-white text-sm font-semibold disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-semibold disabled:opacity-30 transition-all flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -209,7 +209,7 @@ export function AvatarStudioInteractive() {
 
           {/* Floating decoration */}
           <motion.div
-            className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br from-[#CC3A63]/10 to-transparent blur-2xl"
+            className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-2xl"
             animate={{ scale: [1, 1.2, 1], rotate: [0, 10, 0] }}
             transition={{ duration: 6, repeat: Infinity }}
           />
@@ -225,7 +225,7 @@ export function AvatarStudioInteractive() {
         className="text-center mt-12"
       >
         <p className="text-sm text-foreground-muted">
-          <span className="text-[#CC3A63]">Interactive preview</span> — Click through each stage to explore the creation pipeline
+          <span className="text-primary">Interactive preview</span> — Click through each stage to explore the creation pipeline
         </p>
       </motion.div>
     </SectionWrapper>

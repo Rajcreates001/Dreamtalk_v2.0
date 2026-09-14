@@ -9,19 +9,19 @@ const memoryTypes = [
     icon: Zap,
     title: "Working Memory",
     desc: "Short-term context during active conversations with 7-item capacity. Retains what matters right now.",
-    color: "#CC3A63",
+    color: "var(--primary)",
   },
   {
     icon: Brain,
     title: "Episodic Memory",
     desc: "Past conversations, user preferences, and interaction history. Every session becomes lasting knowledge.",
-    color: "#A2AB73",
+    color: "var(--secondary)",
   },
   {
     icon: Layers,
     title: "Semantic Memory",
     desc: "Knowledge graphs built from uploaded documents, websites, and content. Structured intelligence.",
-    color: "#A2AB73",
+    color: "var(--secondary)",
   },
   {
     icon: GitBranch,
@@ -69,7 +69,7 @@ export function MemoryVisualization() {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(204,58,99,0.15)"
+                stroke="rgba(200,90,58,0.15)"
                 strokeWidth="1"
                 initial={{ pathLength: 0 }}
                 whileInView={{ pathLength: 1 }}
@@ -81,10 +81,10 @@ export function MemoryVisualization() {
 
           {/* Neural nodes */}
           {[
-            { x: 50, y: 100, color: "#CC3A63", label: "Input", size: 28 },
-            { x: 120, y: 60, color: "#A2AB73", label: "Process", size: 22 },
-            { x: 120, y: 140, color: "#A2AB73", label: "Analyze", size: 22 },
-            { x: 200, y: 100, color: "#A2AB73", label: "Memory", size: 32 },
+            { x: 50, y: 100, color: "var(--primary)", label: "Input", size: 28 },
+            { x: 120, y: 60, color: "var(--secondary)", label: "Process", size: 22 },
+            { x: 120, y: 140, color: "var(--secondary)", label: "Analyze", size: 22 },
+            { x: 200, y: 100, color: "var(--secondary)", label: "Memory", size: 32 },
             { x: 280, y: 60, color: "#D6A44C", label: "Store", size: 22 },
             { x: 280, y: 140, color: "#D6A44C", label: "Recall", size: 22 },
             { x: 350, y: 100, color: "#D84C63", label: "Output", size: 28 },
@@ -103,11 +103,11 @@ export function MemoryVisualization() {
                 style={{
                   width: node.size,
                   height: node.size,
-                  background: `${node.color}20`,
-                  border: `2px solid ${node.color}40`,
+                  background: `color-mix(in srgb, ${node.color} 13%, transparent)`,
+                  border: `2px solid color-mix(in srgb, ${node.color} 25%, transparent)`,
                 }}
                 animate={{
-                  boxShadow: [`0 0 0px ${node.color}00`, `0 0 12px ${node.color}30`, `0 0 0px ${node.color}00`],
+                  boxShadow: [`0 0 0px color-mix(in srgb, ${node.color} 1%, transparent)`, `0 0 12px color-mix(in srgb, ${node.color} 19%, transparent)`, `0 0 0px color-mix(in srgb, ${node.color} 1%, transparent)`],
                 }}
                 transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
               >
@@ -124,7 +124,7 @@ export function MemoryVisualization() {
           {[0, 1, 2].map((particle) => (
             <motion.div
               key={particle}
-              className="absolute w-1.5 h-1.5 rounded-full bg-[#CC3A63]"
+              className="absolute w-1.5 h-1.5 rounded-full bg-primary"
               initial={{ left: "10%", top: "50%", opacity: 0 }}
               animate={{
                 left: ["10%", "90%"],
@@ -148,7 +148,7 @@ export function MemoryVisualization() {
           <GlassCard key={mem.title}>
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-foreground/[0.06]"
-              style={{ background: `${mem.color}15` }}
+              style={{ background: `color-mix(in srgb, ${mem.color} 8%, transparent)` }}
             >
               <mem.icon className="h-5 w-5" style={{ color: mem.color }} />
             </div>

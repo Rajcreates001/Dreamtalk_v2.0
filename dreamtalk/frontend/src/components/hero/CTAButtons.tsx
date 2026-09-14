@@ -40,8 +40,8 @@ export function PrimaryButton() {
         }}
         animate={{
           background: hovered
-            ? "linear-gradient(135deg, #CC3A63, #A2AB73, #A2AB73, #CC3A63)"
-            : "linear-gradient(135deg, #CC3A63, #A2AB73)",
+            ? "linear-gradient(135deg, var(--primary), var(--secondary), var(--secondary), var(--primary))"
+            : "linear-gradient(135deg, var(--primary), var(--secondary))",
         }}
         transition={{ duration: 0.4 }}
       />
@@ -96,8 +96,8 @@ export function PrimaryButton() {
         className="absolute inset-0 rounded-2xl"
         animate={{
           boxShadow: hovered
-            ? "0 0 40px rgba(204,58,99,0.3), 0 0 80px rgba(162,171,115,0.15), inset 0 0 20px rgba(255,255,255,0.05)"
-            : "0 4px 20px rgba(204,58,99,0.2)",
+            ? "0 0 40px rgba(200,90,58,0.3), 0 0 80px rgba(60,150,138,0.15), inset 0 0 20px rgba(255,255,255,0.05)"
+            : "0 4px 20px rgba(200,90,58,0.2)",
         }}
         transition={{ duration: 0.3 }}
       />
@@ -132,7 +132,7 @@ export function SecondaryButton() {
         style={{
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          background: "radial-gradient(circle at 50% 50%, rgba(204,58,99,0.08), transparent)",
+          background: "radial-gradient(circle at 50% 50%, rgba(200,90,58,0.08), transparent)",
         }}
       />
 

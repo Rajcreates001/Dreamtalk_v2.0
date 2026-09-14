@@ -4,12 +4,12 @@ import { motion } from "motion/react"
 import { SectionWrapper } from "./SectionWrapper"
 
 const metrics = [
-  { value: "50K+", label: "Avatars Created", desc: "Digital Humans brought to life", color: "#CC3A63" },
-  { value: "10M+", label: "Conversations", desc: "Intelligent interactions served", color: "#A2AB73" },
-  { value: "50+", label: "Languages", desc: "Multilingual voice & text", color: "#A2AB73" },
+  { value: "50K+", label: "Avatars Created", desc: "Digital Humans brought to life", color: "var(--primary)" },
+  { value: "10M+", label: "Conversations", desc: "Intelligent interactions served", color: "var(--secondary)" },
+  { value: "50+", label: "Languages", desc: "Multilingual voice & text", color: "var(--secondary)" },
   { value: "<200ms", label: "Response Time", desc: "Real-time intelligence", color: "#D6A44C" },
   { value: "99.9%", label: "Uptime", desc: "Enterprise reliability", color: "#D84C63" },
-  { value: "94%", label: "Satisfaction", desc: "User happiness score", color: "#CC3A63" },
+  { value: "94%", label: "Satisfaction", desc: "User happiness score", color: "var(--primary)" },
 ]
 
 export function MetricsCounter() {
