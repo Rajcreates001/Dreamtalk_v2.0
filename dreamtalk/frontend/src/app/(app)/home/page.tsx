@@ -1,359 +1,342 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "motion/react"
 import Link from "next/link"
 import {
-  Sparkles,
-  Plus,
-  MessageSquare,
-  BookOpen,
-  Mic,
-  Upload,
-  BarChart3,
-  Brain,
-  Heart,
-  Clock,
-  Activity,
-  ChevronRight,
-  Cpu,
-  Globe,
-  Zap,
-  Loader2,
+  Mic, Boxes, Clapperboard, Plus, Loader2, Check, X, Radio,
+  Cpu, AlertTriangle, ChevronRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { analyticsApi, authApi, digitalTwinApi, digitalHumanApi, avatarApi } from "@/lib/api"
+import { authApi } from "@/lib/api"
+import { avatarRuntime, assetUrl } from "@/services/avatar/client"
+import type { AvatarProfile, RuntimeStatus } from "@/services/avatar/types"
 
-const QUICK_ACTIONS = [
-  { href: "/create", label: "Create Digital Human", icon: Plus, color: "var(--primary)", desc: "Create an AI version of someone" },
-  { href: "/dh/demo-1", label: "Start Conversation", icon: MessageSquare, color: "var(--secondary)", desc: "Chat with your digital human" },
-  { href: "/dh/demo-1?tab=knowledge", label: "Upload Knowledge", icon: BookOpen, color: "var(--secondary)", desc: "Teach your digital human" },
-  { href: "/create", label: "Clone Voice", icon: Mic, color: "var(--primary)", desc: "Upload a voice sample" },
-  { href: "/dh/demo-1?tab=scripts", label: "Generate Script", icon: Upload, color: "var(--warning)", desc: "Create audio in any language" },
-  { href: "/dh/demo-1?tab=settings", label: "Settings", icon: BarChart3, color: "var(--primary)", desc: "Customize your digital human" },
-]
+/* ═══════════════════════════════════════════════════════════════════
+ * The dashboard used to list `digital_twins`, a parallel table whose rows
+ * are all status="draft" and carry no voice, mesh or texture. The avatars
+ * that actually exist — the ones with a cloned voice and a rigged GLB —
+ * live in `avatar_profiles` and are served by /api/v1/avatar/*. Nothing
+ * joins the two tables, so a user who had successfully built an avatar
+ * still saw an empty, perpetually-draft dashboard.
+ *
+ * This page reads the runtime that owns the real data, and reports each
+ * capability from the asset that backs it rather than from a status string.
+ * ═══════════════════════════════════════════════════════════════════ */
 
-type DashboardData = {
-  avatarCount: number
-  conversationsToday: number
-  userName: string | null
-  activeAvatar: {
-    name: string
-    role: string
-    emotion: string
-    /** null when the backend has not reported a size — rendered as an em dash. */
-    knowledgeSize: string | null
-    languages: number
-    status: string
-  } | null
+type Capability = { label: string; ready: boolean; detail: string }
+
+/** Derive what a profile can actually do from the assets it really has. */
+function capabilities(p: AvatarProfile): Capability[] {
+  const voice = p.voice ?? {}
+  const look = p.appearance ?? {}
+  const caps = look.capabilities ?? {}
+  const shapes = look.blendshape_names ?? []
+
+  /* The runtime does not publish a top-level `is_cloned`. What it publishes
+   * is the result of its own clone-and-listen check, and that is the only
+   * field that answers "does this avatar speak in its own voice". Reading
+   * anything else here reports a working clone as missing. */
+  const cloned = voice.ready === true && voice.validation?.cloned === true
+  const clonedIn = voice.validated_language ?? voice.validation?.language
+  const has3d = Boolean(look.glb_url)
+  const has2d = caps.talkinghead_2d === true && Boolean(look.primary_image_url)
+
+  return [
+    {
+      label: "Voice clone",
+      ready: cloned,
+      detail: cloned
+        ? `verified${clonedIn ? ` in ${clonedIn}` : ""}${
+            voice.sample_language && clonedIn && voice.sample_language !== clonedIn
+              ? `; ${voice.sample_language} is outside clone coverage and uses a stand-in`
+              : ""
+          }`
+        : "no cloned voice, replies use a stand-in",
+    },
+    {
+      label: "3D avatar",
+      ready: has3d,
+      detail: has3d
+        ? `rigged head, ${shapes.length} morph target${shapes.length === 1 ? "" : "s"}`
+        : "no GLB mesh was built",
+    },
+    {
+      label: "2D lip-sync",
+      ready: has2d,
+      detail: has2d ? "photo-real talking head" : "no source photo for 2D rendering",
+    },
+  ]
+}
+
+function initialsOf(name: string) {
+  const w = name.trim().split(/\s+/)
+  return ((w.length > 1 ? w[0][0] + w[1][0] : name.slice(0, 2)) || "AV").toUpperCase()
 }
 
 export default function HomePage() {
-  const [greeting, setGreeting] = useState("Good Evening")
-  const [data, setData] = useState<DashboardData>({
-    avatarCount: 0,
-    conversationsToday: 0,
-    userName: null,
-    activeAvatar: null,
-  })
-  const [firstTwinId, setFirstTwinId] = useState<string | null>(null)
+  const router = useRouter()
+  const [greeting, setGreeting] = useState("Hello")
+  const [userName, setUserName] = useState<string | null>(null)
+  const [profiles, setProfiles] = useState<AvatarProfile[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [status, setStatus] = useState<RuntimeStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activating, setActivating] = useState<string | null>(null)
 
   useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour < 12) setGreeting("Good Morning")
-    else if (hour < 17) setGreeting("Good Afternoon")
-    else setGreeting("Good Evening")
+    const h = new Date().getHours()
+    setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening")
 
-    async function loadDashboard() {
+    let alive = true
+    void (async () => {
       try {
-        setLoading(true)
-
-        let userName: string | null = null
-        try {
-          const userData = await authApi.me()
-          userName = userData?.full_name || userData?.name || userData?.email || null
-        } catch {
-          const stored = localStorage.getItem("user")
-          if (stored) {
-            try { userName = JSON.parse(stored).full_name } catch {}
-          }
+        const me = await authApi.me()
+        if (alive) setUserName(me?.full_name || me?.name || me?.email || null)
+      } catch {
+        const stored = localStorage.getItem("user")
+        if (stored && alive) {
+          try { setUserName(JSON.parse(stored).full_name ?? null) } catch {}
         }
-
-        let avatarCount = 0
-        let activeAvatar: DashboardData["activeAvatar"] = null
-        let firstId: string | null = null
-        try {
-          const twins = await digitalTwinApi.list()
-          if (twins && twins.length > 0) {
-            avatarCount = twins.length
-            const first = twins[0]
-            firstId = first.id || first._id || first.twin_id
-            const activeStatus = (first.status === "published" || first.status === "active" || first.status === "completed") ? "Active" : "Draft"
-            activeAvatar = {
-              name: first.name || first.digital_twin_name || "Unnamed",
-              role: first.role || first.description || "Digital Human",
-              emotion: first.mood || first.current_emotion || "Calm",
-              knowledgeSize: first.knowledge_size || null,
-              languages: Array.isArray(first.languages) ? first.languages.length : first.language ? 1 : 1,
-              status: activeStatus,
-            }
-          }
-        } catch {
-          try {
-            const humans = await digitalHumanApi.list()
-            if (humans && humans.length > 0) {
-              avatarCount = humans.length
-              const first = humans[0]
-              firstId = first.id || first._id
-              activeAvatar = {
-                name: first.name || "Unnamed",
-                role: first.category || first.description || "Digital Human",
-                emotion: "Calm",
-                knowledgeSize: null,
-                languages: 1,
-                status: first.is_active ? "Active" : "Draft",
-              }
-            }
-          } catch {}
-        }
-
-        setFirstTwinId(firstId)
-
-        // Previously, a user with no avatars was shown a fabricated
-        // "Dr. Aria — Active" card. A new account must see an honest empty
-        // state, not someone else's avatar.
-
-        // conversationsToday was `Math.floor(Math.random() * 20) + 3` — a new
-        // account saw a different invented number on every page load. Use the
-        // real counter; fall back to 0, never to fiction.
-        let conversationsToday = 0
-        try {
-          const stats = await analyticsApi.stats()
-          conversationsToday = stats?.total_conversations ?? 0
-        } catch { conversationsToday = 0 }
-
-        setData({
-          avatarCount,
-          conversationsToday,
-          userName: userName?.split(" ")[0] || null,
-          activeAvatar,
-        })
-      } catch (err) {
-        console.error("Dashboard load error:", err)
-        // On failure, show nothing rather than a plausible-looking lie.
-        setData({
-          avatarCount: 0,
-          conversationsToday: 0,
-          userName: null,
-          activeAvatar: null,
-        })
-      } finally {
-        setLoading(false)
       }
-    }
 
-    loadDashboard()
+      try {
+        const r = await avatarRuntime.listProfiles()
+        if (!alive) return
+        setProfiles(r.profiles ?? [])
+        setActiveId(r.active_profile_id ?? r.profiles?.[0]?.id ?? null)
+      } catch (e) {
+        if (alive) setError(e instanceof Error ? e.message : "Could not reach the avatar runtime")
+      } finally {
+        if (alive) setLoading(false)
+      }
+
+      // Health is informational: a failure here must not blank the page.
+      try {
+        const s = await avatarRuntime.status()
+        if (alive) setStatus(s)
+      } catch { /* the strip simply stays hidden */ }
+    })()
+    return () => { alive = false }
   }, [])
 
+  /* Activation is server-side state, so /live and every other surface agree
+   * on which avatar is live. Navigate only once the server has confirmed. */
+  const talkTo = useCallback(async (id: string) => {
+    setActivating(id)
+    try {
+      await avatarRuntime.activate(id)
+      setActiveId(id)
+    } catch { /* /live falls back to the first profile */ }
+    router.push("/live")
+  }, [router])
+
+  const health = (() => {
+    if (!status) return null
+    const hw = (status.hardware ?? {}) as Record<string, unknown>
+    const vc = (status.voice_cloning ?? {}) as Record<string, unknown>
+    const a2d = (status.avatar_2d ?? {}) as Record<string, unknown>
+    const gpu = (hw.devices as Array<{ name?: string }> | undefined)?.[0]
+    return [
+      { label: "GPU", ok: Boolean(hw.cuda_available), text: gpu?.name ?? "CPU only" },
+      { label: "Voice cloning", ok: Boolean(vc.available), text: vc.engine ? String(vc.engine) : "unavailable" },
+      { label: "2D renderer", ok: Boolean(a2d.ready), text: a2d.preferred_engine ? String(a2d.preferred_engine) : "unavailable" },
+    ]
+  })()
+
+  const fleet = status?.profiles as { total?: number; ready?: number } | undefined
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* ─── Hero Section ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-[#1a1f35] to-card border border-foreground/[0.06] p-8"
-      >
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/10 blur-[100px]" />
-        <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-secondary/8 blur-[80px]" />
+    <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {greeting}{userName ? `, ${userName.split(" ")[0]}` : ""}
+        </h1>
+        <p className="mt-1 text-sm text-foreground-muted">
+          Your avatars, their voices, and the engines that drive them.
+        </p>
+      </header>
 
-        <div className="relative z-10">
-          <div className="flex items-start justify-between">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-                  {greeting}, {data.userName || "there"}
-                </h1>
-                <p className="text-sm text-foreground-muted">
-                  {loading ? "Loading..." : "Your digital humans are ready."}
-                </p>
-              </div>
+      {health && (
+        <div className="mb-8 flex flex-wrap gap-2">
+          {health.map((h) => (
+            <span
+              key={h.label}
+              className="glass-subtle inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
+            >
+              <span
+                aria-hidden
+                className={cn("h-1.5 w-1.5 rounded-full", h.ok ? "bg-secondary" : "bg-destructive")}
+              />
+              <span className="font-medium">{h.label}</span>
+              <span className="text-foreground-muted">{h.text}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
-              {!loading && (
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary" />
-                    </span>
-                    <span className="text-xs text-secondary font-medium">{data.avatarCount} Digital Human{data.avatarCount !== 1 ? "s" : ""}</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/10 border border-secondary/20">
-                    <MessageSquare className="h-3 w-3 text-secondary" />
-                    <span className="text-xs text-secondary font-medium">{data.conversationsToday} Conversations Today</span>
-                  </div>
-                </div>
-              )}
+      <section aria-labelledby="avatars-heading">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 id="avatars-heading" className="text-sm font-semibold tracking-[0.12em] uppercase text-foreground-muted">
+            Your avatars {profiles.length > 0 && `(${profiles.length})`}
+          </h2>
+          {profiles.length > 0 && (
+            <Link
+              href="/create"
+              className="neo-pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium"
+            >
+              <Plus className="h-4 w-4" aria-hidden /> New avatar
+            </Link>
+          )}
+        </div>
 
-              <Link
-                href="/create"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group"
-              >
-                Create Digital Human
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+        {loading && (
+          <div className="glass flex items-center gap-3 rounded-2xl p-8 text-sm text-foreground-muted">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading your avatars…
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="glass flex items-start gap-3 rounded-2xl p-6">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
+            <div>
+              <p className="text-sm font-medium">The avatar runtime did not respond</p>
+              <p className="mt-1 text-sm text-foreground-muted">{error}</p>
             </div>
           </div>
-        </div>
-      </motion.div>
+        )}
 
-      {/* ─── Quick Actions ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-4"
-      >
-        <h2 className="text-sm font-semibold text-foreground tracking-wide">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon
-            const dynamicHref = action.href.includes("/dh/")
-              ? (firstTwinId ? action.href.replace("/dh/demo-1", `/dh/${firstTwinId}`) : "/create")
-              : action.href
+        {!loading && !error && profiles.length === 0 && (
+          <div className="glass rounded-2xl p-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary">
+              <Plus className="h-6 w-6 text-white" aria-hidden />
+            </div>
+            <p className="text-base font-semibold">You have not built an avatar yet</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-foreground-muted">
+              One photo and about thirty seconds of speech is enough. DreamTalk builds a rigged
+              3D head, a photo-real 2D talking head, and a clone of your voice.
+            </p>
+            <Link
+              href="/create"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              Build my avatar <ChevronRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        )}
+
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {profiles.map((p, i) => {
+            const caps = capabilities(p)
+            const thumb = assetUrl(p.appearance?.primary_image_url)
+            const live = p.id === activeId
+            const busy = activating === p.id
             return (
-              <Link
-                key={action.label}
-                href={dynamicHref}
-                className="group relative overflow-hidden rounded-xl bg-card/80 border border-foreground/[0.06] p-4 hover:bg-card hover:border-foreground/[0.12] transition-all duration-200 hover:-translate-y-0.5"
+              <motion.li
+                key={p.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: Math.min(i, 5) * 0.04 }}
+                className={cn("glass layer-pop-sm rounded-2xl p-5", live && "glass-rim")}
               >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-all duration-200"
-                  style={{ background: `color-mix(in srgb, ${action.color} 8%, transparent)`, color: action.color }}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
-                <h3 className="text-xs font-semibold text-foreground mb-1">{action.label}</h3>
-                <p className="text-[10px] text-foreground-muted leading-relaxed">{action.desc}</p>
-              </Link>
-            )
-          })}
-        </div>
-      </motion.div>
-
-      <div className="grid lg:grid-cols-5 gap-6">
-        {/* ─── Current Avatar ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-3"
-        >
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-wide">Current Avatar</h2>
-
-            {loading ? (
-              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-8 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-foreground-muted" />
-              </div>
-            ) : data.activeAvatar ? (
-              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] overflow-hidden">
-                <div className="flex items-center gap-4 p-5 border-b border-foreground/[0.06]">
-                  <div className="relative w-16 h-16 shrink-0">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
-                      {data.activeAvatar.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                <div className="flex items-start gap-4">
+                  {thumb ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={thumb}
+                      alt=""
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-sm font-bold text-white">
+                      {initialsOf(p.name)}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-secondary border-2 border-border" />
-                  </div>
-                  <div className="flex-1 min-w-0">
+                  )}
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-foreground">{data.activeAvatar.name}</h3>
-                      <span className="px-2 py-0.5 rounded-md bg-secondary/10 text-[10px] text-secondary font-medium">{data.activeAvatar.status}</span>
+                      <h3 className="truncate font-semibold">{p.name}</h3>
+                      {live && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary">
+                          <Radio className="h-3 w-3" aria-hidden /> Active
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-foreground-muted mt-0.5">{data.activeAvatar.role}</p>
+                    <p className="mt-0.5 text-xs text-foreground-muted">
+                      {String(p.status ?? "unknown")}
+                    </p>
                   </div>
-                  <Link
-                    href={firstTwinId ? `/dh/${firstTwinId}` : "/create"}
-                    className="px-3 py-1.5 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all"
+                </div>
+
+                <ul className="mt-4 space-y-1.5">
+                  {caps.map((c) => (
+                    <li key={c.label} className="flex items-start gap-2 text-xs">
+                      {c.ready
+                        ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-secondary" aria-hidden />
+                        : <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground-muted" aria-hidden />}
+                      <span className={cn(c.ready ? "font-medium" : "text-foreground-muted")}>
+                        {c.label}
+                      </span>
+                      <span className="text-foreground-muted">— {c.detail}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => talkTo(p.id)}
+                    disabled={busy}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
-                    Open
+                    {busy
+                      ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      : <Clapperboard className="h-4 w-4" aria-hidden />}
+                    Talk
+                  </button>
+                  <Link
+                    href="/voice-cloning"
+                    className="neo-pressable inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium"
+                  >
+                    <Mic className="h-4 w-4" aria-hidden /> Voice
                   </Link>
                 </div>
+              </motion.li>
+            )
+          })}
+        </ul>
+      </section>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-foreground/[0.04]">
-                  {[
-                    { label: "Emotion", value: data.activeAvatar.emotion, color: "var(--primary)" },
-                    { label: "Knowledge", value: data.activeAvatar.knowledgeSize ?? "—", color: "var(--secondary)" },
-                    { label: "Languages", value: `${data.activeAvatar.languages}`, color: "var(--secondary)" },
-                    { label: "Response Style", value: data.activeAvatar.role, color: "var(--primary)" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="bg-card/60 p-4">
-                      <p className="text-[10px] text-foreground-muted tracking-wide uppercase">{stat.label}</p>
-                      <p className="text-lg font-bold text-foreground mt-1" style={{ color: stat.color }}>
-                        {stat.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl bg-card/80 border border-foreground/[0.06] p-8 text-center">
-                <p className="text-sm text-foreground-muted">No digital humans yet</p>
-                <Link href="/create" className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:text-foreground transition-all">
-                  <Plus className="h-3 w-3" />
-                  Create your first digital human
-                </Link>
-              </div>
-            )}
-          </div>
-        </motion.div>
+      <section aria-labelledby="do-heading" className="mt-10">
+        <h2 id="do-heading" className="mb-4 text-sm font-semibold tracking-[0.12em] uppercase text-foreground-muted">
+          What you can do
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { href: "/live", label: "Talk to your avatar", desc: "2D and 3D, with your cloned voice", icon: Clapperboard },
+            { href: "/voice-cloning", label: "Voice cloning", desc: "Record or upload a new sample", icon: Mic },
+            { href: "/create", label: "Build an avatar", desc: "Photo plus voice, one pass", icon: Boxes },
+          ].map(({ href, label, desc, icon: Icon }) => (
+            <Link key={href} href={href} className="glass layer-pop-sm group rounded-2xl p-5">
+              <Icon className="mb-3 h-5 w-5 text-primary" aria-hidden />
+              <p className="font-semibold">{label}</p>
+              <p className="mt-1 text-xs text-foreground-muted">{desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-        {/* ─── AI Insights ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2"
-        >
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-wide">Activity</h2>
-
-            <div className="space-y-2">
-              {[
-                { label: "Conversations", value: `${data.conversationsToday} today`, change: "", positive: true, icon: MessageSquare },
-                { label: "Emotion", value: data.activeAvatar?.emotion || "Calm", change: "", positive: true, icon: Heart },
-                { label: "Knowledge Base", value: data.activeAvatar?.knowledgeSize || "—", change: "", positive: true, icon: BookOpen },
-              ].map((insight) => {
-                const Icon = insight.icon
-                return (
-                  <div
-                    key={insight.label}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card/80 border border-foreground/[0.06] hover:bg-card transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-foreground/[0.04] flex items-center justify-center shrink-0">
-                      <Icon className="h-4 w-4 text-foreground-muted" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground">{insight.label}</p>
-                      <p className="text-lg font-bold text-foreground">{insight.value}</p>
-                    </div>
-                    {insight.change && (
-                      <span
-                        className={cn(
-                          "text-xs font-medium",
-                          insight.positive ? "text-secondary" : "text-destructive"
-                        )}
-                      >
-                        {insight.change}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      {status && (
+        <p className="mt-10 flex items-center gap-2 text-xs text-foreground-muted">
+          <Cpu className="h-3.5 w-3.5" aria-hidden />
+          Runtime {String(status.status ?? "unknown")}
+          {typeof fleet?.ready === "number" &&
+            ` — ${fleet.ready} of ${fleet.total} avatars ready across the deployment`}
+        </p>
+      )}
     </div>
   )
 }

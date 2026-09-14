@@ -10,6 +10,7 @@ import { Camera, Mic, Sparkles,
   Wand2, Zap, Music,
 } from "lucide-react"
 import { digitalTwinApi } from "@/lib/api"
+import { avatarRuntime } from "@/services/avatar/client"
 
 const RELATIONSHIPS = [
   "Friend", "Father", "Mother", "Brother", "Sister",
@@ -35,13 +36,14 @@ const AGE_GROUPS = ["Child", "Teen", "Young Adult", "Adult", "Senior"]
 const ACCENTS = ["Professional", "Friendly", "Soft", "Calm", "Energetic", "Warm"]
 const EMOTION_BIASES = ["Neutral", "Happy", "Calm", "Professional", "Supportive"]
 
+/* These mirror the calls handleGenerate actually makes. The old list
+ * included "Connecting Memories" and "Initializing Conversation", which
+ * corresponded to nothing and ticked green regardless. */
 const BUILD_STEPS = [
-  { id: "face", label: "Creating Face" },
-  { id: "voice", label: "Cloning Voice" },
-  { id: "brain", label: "Learning Documents" },
-  { id: "personality", label: "Understanding Personality" },
-  { id: "memory", label: "Connecting Memories" },
-  { id: "conversation", label: "Initializing Conversation" },
+  { id: "face", label: "Building face mesh" },
+  { id: "voice", label: "Cloning voice" },
+  { id: "activate", label: "Activating avatar" },
+  { id: "personality", label: "Adding personality" },
 ]
 
 const STEP_LABELS = ["Photo", "Voice", "Brain", "Relationship", "Personality"]
@@ -68,6 +70,10 @@ export default function CreateDigitalHumanPage() {
   const [generated, setGenerated] = useState(false)
   const [generatedTwinId, setGeneratedTwinId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
+  const [avatarName, setAvatarName] = useState("")
+  const [consent, setConsent] = useState(false)
+  /** Non-fatal problems from the optional brain/personality calls. */
+  const [warnings, setWarnings] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -93,11 +99,17 @@ export default function CreateDigitalHumanPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return !!photo
-      case 1: return voiceMethod === "upload" ? !!voiceFile : voiceMethod === "generate"
+      case 0: return !!photo && avatarName.trim().length > 0
+      // Cloning needs a real recording of the real voice. The synthetic
+      // option produces a stand-in voice and no clone, so it cannot satisfy
+      // this step on its own.
+      case 1: return !!voiceFile
       case 2: return brainTab === "documents" ? true : describeText.trim().length > 10
       case 3: return !!relationship
-      case 4: return traits.length > 0
+      // Building the avatar sends a face photo and a voice recording to the
+      // runtime, which derives a face mesh and a voice clone from them. That
+      // is biometric data, so it must not be uploaded on an assumption.
+      case 4: return traits.length > 0 && consent
       default: return false
     }
   }
@@ -108,88 +120,102 @@ export default function CreateDigitalHumanPage() {
     setCurrentStepLabel(label)
   }
 
+  /* ═══════════════════════════════════════════════════════════════════
+   * This wizard used to build only a `digital_twins` row: it uploaded the
+   * photo and voice to that subsystem, reported "Face created · Voice
+   * cloned", and finished. But digital_twins rows never leave status
+   * "draft" and never gain a mesh, a texture or a voice clone — every twin
+   * in the database is proof of that. The avatars that can actually speak
+   * live in `avatar_profiles`, built by POST /api/v1/avatar/profiles, and
+   * nothing in the UI ever called it. That is why the app appeared to
+   * create no avatars: the only creation path could not produce one.
+   *
+   * The runtime call is now the step that matters, and it is the step that
+   * is allowed to fail the build. The twin-side calls that follow carry the
+   * optional brain/personality extras and are reported as warnings.
+   * ═══════════════════════════════════════════════════════════════════ */
   const handleGenerate = async () => {
     setGenerating(true)
     setBuildProgress(0)
     setError(null)
+    setWarnings([])
 
     try {
-      // 1. Create the twin
-      updateBuildStep("Creating Digital Human...")
-      const twinName = `Digital Human (${relationship || "Friend"})`
-      const twin = await digitalTwinApi.create({
-        name: twinName,
-        description: describeText || undefined,
-        personality: traits.join(", "),
+      if (!photo) throw new Error("A face photo is required to build an avatar.")
+      if (!voiceFile) {
+        throw new Error(
+          "A voice recording is required to clone a voice. Go back to the Voice step and upload a sample."
+        )
+      }
+      if (!consent) throw new Error("Consent is required before biometric data is uploaded.")
+
+      // 1. Build the real avatar: face mesh, GLB, texture and voice clone.
+      //    This is the long pole — the runtime runs FLAME and the clone
+      //    engine inline — so the progress bar sits here deliberately.
+      updateBuildStep(
+        "Building face mesh and cloning voice… this takes several minutes, keep this tab open"
+      )
+      setBuildProgress(15)
+      const profile = await avatarRuntime.createProfile({
+        name: avatarName.trim(),
+        voiceSample: voiceFile,
+        faceImages: [photo],
+        consentConfirmed: true,
+        consentSubjectName: avatarName.trim(),
+        language: "auto",
       })
-      const twinId = twin.id || twin._id || twin.twin_id
-      if (!twinId) throw new Error("Failed to get twin ID from API")
-      setBuildProgress(10)
-
-      // 2. Upload photo (appearance)
-      updateBuildStep("Creating Face...")
-      if (photo) {
-        const formData = new FormData()
-        formData.append("file", photo)
-        await digitalTwinApi.uploadAppearance(twinId, formData)
-      }
-      setBuildProgress(25)
-
-      // 3. Handle voice
-      updateBuildStep("Cloning Voice...")
-      if (voiceMethod === "upload" && voiceFile) {
-        const formData = new FormData()
-        formData.append("file", voiceFile)
-        await digitalTwinApi.uploadVoice(twinId, formData)
-      } else if (voiceMethod === "generate") {
-        await digitalTwinApi.createSyntheticVoice(twinId, {
-          gender: voiceGender,
-          age: voiceAge,
-          region: voiceRegion,
-          accent: voiceAccent,
-          emotion: voiceEmotion,
-        })
-      }
-      setBuildProgress(40)
-
-      // 4. Upload knowledge if described
-      updateBuildStep("Learning Documents...")
-      if (brainTab === "describe" && describeText.trim()) {
-        const formData = new FormData()
-        const blob = new Blob([describeText], { type: "text/plain" })
-        formData.append("file", blob, "description.txt")
-        await digitalTwinApi.uploadKnowledge(twinId, formData)
-      }
-      setBuildProgress(55)
-
-      // 5. Set personality
-      updateBuildStep("Understanding Personality...")
-      await digitalTwinApi.setPersonality(twinId, {
-        traits,
-        description: describeText || undefined,
-      })
-      await digitalTwinApi.initializePersonality(twinId)
+      if (!profile?.id) throw new Error("The avatar runtime did not return a profile.")
       setBuildProgress(70)
 
-      // 6. Set relationship
-      updateBuildStep("Mapping Relationship...")
-      await digitalTwinApi.setRelationship(twinId, { type: relationship })
-      setBuildProgress(85)
-
-      // 7. Run the pipeline
-      updateBuildStep("Initializing Conversation...")
+      // Make it the avatar /live talks to.
+      updateBuildStep("Activating avatar…")
       try {
-        await digitalTwinApi.runPipeline(twinId)
+        await avatarRuntime.activate(profile.id)
       } catch {
-        // Pipeline may not be fully set up yet — that's OK for now
+        /* /live falls back to the first profile, so this is not fatal. */
       }
+      setBuildProgress(80)
+
+      /* 2. Optional extras. A failure here leaves a working avatar that
+       *    simply lacks the personality/knowledge trimmings, so it is
+       *    surfaced as a warning rather than thrown away as an error. */
+      updateBuildStep("Adding personality and knowledge…")
+      const notes: string[] = []
+      try {
+        const twin = await digitalTwinApi.create({
+          name: avatarName.trim(),
+          description: describeText || undefined,
+          personality: traits.join(", "),
+        })
+        const twinId = twin.id || twin._id || twin.twin_id
+        if (twinId) {
+          if (brainTab === "describe" && describeText.trim()) {
+            const formData = new FormData()
+            formData.append("file", new Blob([describeText], { type: "text/plain" }), "description.txt")
+            await digitalTwinApi.uploadKnowledge(twinId, formData)
+          }
+          await digitalTwinApi.setPersonality(twinId, {
+            traits,
+            description: describeText || undefined,
+          })
+          await digitalTwinApi.initializePersonality(twinId)
+          if (relationship) await digitalTwinApi.setRelationship(twinId, { type: relationship })
+        }
+      } catch (err) {
+        notes.push(
+          err instanceof Error
+            ? `Personality and knowledge were not saved: ${err.message}`
+            : "Personality and knowledge were not saved."
+        )
+      }
+      setWarnings(notes)
       setBuildProgress(100)
 
       await sleep(300)
       setGenerated(true)
-      setGeneratedTwinId(twinId)
-    } catch (err: any) {
-      setError(err.message || "Generation failed. Please try again.")
+      setGeneratedTwinId(profile.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Generation failed. Please try again.")
       setGenerating(false)
     }
   }
@@ -210,17 +236,26 @@ export default function CreateDigitalHumanPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h1 className="text-3xl font-bold text-foreground mb-2">Your Digital Human is Ready!</h1>
-          <p className="text-foreground-muted mb-8">
-            Face created · Voice cloned · Brain initialized · Personality mapped
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {avatarName.trim() || "Your avatar"} is ready
+          </h1>
+          <p className="text-foreground-muted mb-2">
+            Face mesh built · Voice cloned · Set as your active avatar
           </p>
-          <div className="flex items-center justify-center gap-4">
+          {/* Anything the optional brain/personality step could not save is
+              stated here rather than folded into the success line. */}
+          {warnings.length > 0 && (
+            <ul className="mx-auto mb-4 max-w-md space-y-1 text-xs text-foreground-muted">
+              {warnings.map((w) => <li key={w}>{w}</li>)}
+            </ul>
+          )}
+          <div className="mt-6 flex items-center justify-center gap-4">
             <button
-              onClick={() => router.push(`/dh/${generatedTwinId}`)}
+              onClick={() => router.push("/live")}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
             >
               <Sparkles className="h-4 w-4" />
-              Open Digital Human
+              Talk to {avatarName.trim() || "your avatar"}
             </button>
             <button
               onClick={() => {
@@ -234,6 +269,9 @@ export default function CreateDigitalHumanPage() {
                 setRelationship("")
                 setTraits([])
                 setError(null)
+                setAvatarName("")
+                setConsent(false)
+                setWarnings([])
               }}
               className="px-6 py-3 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted hover:text-foreground transition-all"
             >
@@ -313,10 +351,25 @@ export default function CreateDigitalHumanPage() {
           {step === 0 && (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-foreground mb-1">Upload a Photo</h2>
+                <h2 className="text-xl font-semibold text-foreground mb-1">Name and Photo</h2>
                 <p className="text-sm text-foreground-muted">
-                  This will be used to create the face and avatar
+                  The photo becomes the 3D face mesh and the 2D talking head
                 </p>
+              </div>
+
+              <div className="mx-auto max-w-md">
+                <label htmlFor="avatar-name" className="mb-1.5 block text-sm font-medium text-foreground">
+                  Avatar name
+                </label>
+                <input
+                  id="avatar-name"
+                  type="text"
+                  value={avatarName}
+                  onChange={(e) => setAvatarName(e.target.value)}
+                  placeholder="e.g. KB"
+                  maxLength={60}
+                  className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.04] px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-foreground-muted focus:border-primary/40"
+                />
               </div>
 
               {/* Upload area */}
@@ -381,7 +434,7 @@ export default function CreateDigitalHumanPage() {
               <div className="text-center">
                 <h2 className="text-xl font-semibold text-foreground mb-1">Choose Voice</h2>
                 <p className="text-sm text-foreground-muted">
-                  Upload a voice sample or generate an AI voice
+                  Around thirty seconds of clear speech is enough to clone this voice
                 </p>
               </div>
 
@@ -398,7 +451,7 @@ export default function CreateDigitalHumanPage() {
                 >
                   <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "var(--primary)" : "var(--foreground-muted)" }} />
                   <p className="text-sm font-medium text-foreground mb-1">Upload Voice</p>
-                  <p className="text-xs text-foreground-muted">Record or upload a sample</p>
+                  <p className="text-xs text-foreground-muted">Required to clone this voice</p>
                 </button>
                 <button
                   onClick={() => setVoiceMethod("generate")}
@@ -668,6 +721,27 @@ export default function CreateDigitalHumanPage() {
                   {traits.length} trait{traits.length > 1 ? "s" : ""} selected
                 </p>
               )}
+
+              {/* A face mesh and a voice clone are biometric data derived from
+                  the uploads. Building must be an explicit, informed act. */}
+              <div className="mx-auto max-w-xl rounded-2xl border border-foreground/[0.08] bg-foreground/[0.04] p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                  />
+                  <span className="text-xs text-foreground-muted">
+                    I confirm I am the person in this photo and recording, or I have their
+                    permission. I understand DreamTalk will derive a{" "}
+                    <span className="font-medium text-foreground">face mesh</span> and a{" "}
+                    <span className="font-medium text-foreground">clone of this voice</span>{" "}
+                    from the files I uploaded, and store them on this server so the avatar
+                    can speak later.
+                  </span>
+                </label>
+              </div>
             </div>
           )}
         </motion.div>

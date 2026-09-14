@@ -82,8 +82,18 @@ export interface AvatarAppearance {
 
 export interface AvatarVoice {
   reference_audio_url?: string
+  /** Language of the uploaded sample — not necessarily the cloned language. */
   sample_language?: string
-  is_cloned?: boolean
+  /** The clone the runtime actually verified, which may differ from the
+   *  sample language when the sample's language is outside engine coverage. */
+  validated_language?: string
+  /** True once a reference voice is stored and usable. */
+  ready?: boolean
+  /** Result of the runtime's own clone-and-listen check. `cloned` here is
+   *  the authoritative answer to "does this avatar speak in its own voice". */
+  validation?: { cloned?: boolean; engine?: string; language?: string; [k: string]: unknown }
+  /** Human-readable caveats, e.g. the sample language lacking clone coverage. */
+  clone_quality_warnings?: string[]
   [k: string]: unknown
 }
 

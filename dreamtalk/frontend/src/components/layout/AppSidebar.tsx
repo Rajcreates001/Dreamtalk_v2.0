@@ -12,23 +12,24 @@ import {
   Sparkles,
   Monitor,
   Mic,
-  Brain,
-  Headphones,
   Camera,
-  Puzzle,
-  Sliders,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { authApi, clearAuth, digitalTwinApi } from "@/lib/api"
+import { authApi, clearAuth } from "@/lib/api"
+import { avatarRuntime } from "@/services/avatar/client"
 
+/* Three modules, not seven.
+ *
+ * The removed five (Digital Brain, Voice Chat, Avatar Studio, Complete
+ * Builder, Brain Management) were either half-built or duplicated what
+ * /live and /voice-cloning already do properly, and they pushed the two
+ * features that actually work below the fold. Their routes still exist and
+ * still resolve if linked directly; they are simply no longer advertised
+ * as primary navigation. */
 const MODULES = [
-  { href: "/live", label: "Live Digital Human", icon: Monitor, color: "var(--primary)" },
-  { href: "/voice-cloning", label: "Voice Cloning", icon: Mic, color: "var(--primary)" },
-  { href: "/digital-brain", label: "Digital Brain", icon: Brain, color: "var(--secondary)" },
-  { href: "/voice-chat", label: "Voice Chat", icon: Headphones, color: "var(--secondary)" },
-  { href: "/avatar-studio", label: "Avatar Studio", icon: Camera, color: "var(--warning)" },
-  { href: "/builder", label: "Complete Builder", icon: Puzzle, color: "var(--primary)" },
-  { href: "/brain-manager", label: "Brain Management", icon: Sliders, color: "var(--destructive)" },
+  { href: "/live", label: "Talk to Avatar", icon: Monitor, color: "var(--primary)" },
+  { href: "/voice-cloning", label: "Voice Cloning", icon: Mic, color: "var(--secondary)" },
+  { href: "/create", label: "Build Avatar", icon: Camera, color: "var(--warning)" },
 ]
 
 export function AppSidebar() {
@@ -45,19 +46,30 @@ export function AppSidebar() {
       try { setUser(JSON.parse(stored)) } catch {}
     }
 
+    /* List avatar_profiles, not digital_twins.
+     *
+     * digital_twins is a parallel table whose rows never leave status
+     * "draft" and hold no voice, mesh or texture; the avatars a user has
+     * actually built live in avatar_profiles behind /api/v1/avatar. The two
+     * tables share no foreign key, so listing the wrong one showed names
+     * that could not speak — or nothing at all. */
     async function loadDhs() {
       try {
-        const twins = await digitalTwinApi.list()
-        if (twins && twins.length > 0) {
-          const colors = ["var(--primary)", "var(--secondary)", "var(--secondary)", "var(--primary)", "var(--warning)", "var(--primary)", "var(--destructive)"]
-          const mapped = twins.map((twin: any, i: number) => {
-            const name = twin.name || twin.digital_twin_name || "Digital Human"
-            const id = twin.id || twin._id || twin.twin_id
-            const words = name.split(" ")
+        const { profiles } = await avatarRuntime.listProfiles()
+        if (profiles && profiles.length > 0) {
+          const colors = ["var(--primary)", "var(--secondary)", "var(--warning)", "var(--destructive)"]
+          setDigitalHumans(profiles.map((p, i) => {
+            const name = p.name || "Avatar"
+            const words = name.trim().split(/\s+/)
             const initials = words.length >= 2 ? words[0][0] + words[1][0] : name.slice(0, 2)
-            return { id, name, initials: initials.toUpperCase(), color: colors[i % colors.length], href: `/dh/${id}` }
-          })
-          setDigitalHumans(mapped)
+            return {
+              id: p.id,
+              name,
+              initials: initials.toUpperCase(),
+              color: colors[i % colors.length],
+              href: "/live",
+            }
+          }))
         }
       } catch {}
       setDhLoading(false)
@@ -111,7 +123,7 @@ export function AppSidebar() {
         </AnimatePresence>
       </Link>
 
-      {/* ── 7 Module Navigation ── */}
+      {/* ── Module navigation ── */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -198,7 +210,7 @@ export function AppSidebar() {
                   exit={{ opacity: 0, width: 0 }}
                   className="font-medium whitespace-nowrap overflow-hidden"
                 >
-                  Create Digital Human
+                  Build Avatar
                 </motion.span>
               )}
             </AnimatePresence>
@@ -215,7 +227,7 @@ export function AppSidebar() {
               exit={{ opacity: 0 }}
               className="text-[10px] font-semibold tracking-[0.15em] uppercase text-foreground-muted block px-1"
             >
-              Your Digital Humans
+              Your Avatars
             </motion.span>
           )}
         </AnimatePresence>
@@ -226,7 +238,7 @@ export function AppSidebar() {
           </div>
         ) : digitalHumans.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-[10px] text-foreground-muted">No digital humans yet</p>
+            <p className="text-[10px] text-foreground-muted">No avatars yet</p>
           </div>
         ) : digitalHumans.map((dh) => {
           const active = pathname === dh.href || pathname?.startsWith(`/dh/${dh.id}`)
