@@ -302,6 +302,14 @@ services:
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
       HF_HOME: /models/huggingface
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      # Without this vLLM refuses to start here at all:
+      #   RuntimeError: UVA is not available   (v1/worker/gpu/buffer_utils.py)
+      # vLLM gates UVA on pinned memory, and under WSL it disables pinned
+      # memory BY DEFAULT even on kernels that support it — this box runs
+      # 6.6.87, far above vLLM's own 4.19.121 threshold, and
+      # torch.zeros(1024, pin_memory=True) succeeds. The opt-in flag is the
+      # supported way to say so.
+      VLLM_WSL2_ENABLE_PIN_MEMORY: "1"
     volumes:
       - dreamtalk-huggingface:/models/huggingface
     command:
