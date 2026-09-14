@@ -110,6 +110,11 @@ dreamtalk/avatar/static/*.obj
 dreamtalk/avatar/static/*.mtl
 dreamtalk/avatar/static/*.png
 dreamtalk/avatar/static/*.glb
+dreamtalk/avatar/static/*.jpg
+dreamtalk/avatar/static/*.jpeg
+dreamtalk/avatar/static/*.wav
+dreamtalk/avatar/static/*.mp4
+dreamtalk/avatar/static/pipeline_result.json
 dreamtalk/media/business_user/
 dreamtalk/media/healthcare_user/
 
