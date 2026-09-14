@@ -70,7 +70,7 @@ class MuseTalkAPI:
             "-i", input_pattern,
             "-vcodec", codec,
             "-preset", preset,
-            "-vf", "format=yuv420p",
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
             "-crf", str(crf),
         ]
         if audio_path and os.path.exists(audio_path):

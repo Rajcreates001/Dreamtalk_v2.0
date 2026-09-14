@@ -24,6 +24,12 @@ from dreamtalk.face.core.lipsync.musetalk.utils.audio_processor import AudioProc
 from dreamtalk.face.core.lipsync.musetalk.utils.utils import get_file_type, get_video_fps, datagen, load_all_model
 from dreamtalk.face.core.lipsync.musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs, coord_placeholder
 
+# H.264 with yuv420p requires BOTH dimensions divisible by 2. MuseTalk crops
+# around the detected face, so an odd size is routine (measured: 1832x1861),
+# and libx264 then refuses with "height not divisible by 2" — which silently
+# threw away a completed 564-frame neural render. Round down to even.
+EVEN_DIM_VF = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p"
+
 
 class MuseTalkInference:
     def __init__(self, config=None):
@@ -126,7 +132,7 @@ class MuseTalkInference:
             cmd = [
                 "ffmpeg", "-y", "-v", "warning", "-r", str(fps),
                 "-f", "image2", "-i", image_pattern, "-vcodec", codec,
-                "-preset", preset, "-vf", "format=yuv420p", *quality_args,
+                "-preset", preset, "-vf", EVEN_DIM_VF, *quality_args,
                 output_path,
             ]
             try:
