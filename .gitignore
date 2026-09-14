@@ -103,6 +103,13 @@ e2e_out/
 # are biometric-derived data and must never enter version control.
 dreamtalk/media/personal/
 dreamtalk/media/normal_user/
+# The avatar runtime's scratch directory. It holds the CURRENT generated head
+# and its baked texture — i.e. a reconstruction of a real person's face — which
+# is biometric-derived and must never enter version control.
+dreamtalk/avatar/static/*.obj
+dreamtalk/avatar/static/*.mtl
+dreamtalk/avatar/static/*.png
+dreamtalk/avatar/static/*.glb
 dreamtalk/media/business_user/
 dreamtalk/media/healthcare_user/
 
