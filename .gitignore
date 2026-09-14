@@ -115,6 +115,11 @@ dreamtalk/avatar/static/*.jpeg
 dreamtalk/avatar/static/*.wav
 dreamtalk/avatar/static/*.mp4
 dreamtalk/avatar/static/pipeline_result.json
+# Generated speech, including cloned-voice output, at any depth.
+dreamtalk/avatar/static/**/*.wav
+dreamtalk/avatar/static/**/*.mp4
+dreamtalk/avatar/static/**/*script_meta*.json
+!dreamtalk/avatar/static/*.html
 dreamtalk/media/business_user/
 dreamtalk/media/healthcare_user/
 
