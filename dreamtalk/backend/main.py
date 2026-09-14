@@ -273,6 +273,42 @@ async def load_avatar_models():
         logger.warning(f"Could not load avatar models: {e}")
 
 
+async def warm_musetalk():
+    """Load the 2D lip-sync model before anyone asks for a video.
+
+    MuseTalk's checkpoint is 3.2 GB and torch.load spends ~183s unpickling
+    its 686 tensors — measured, and CPU-bound rather than disk-bound, so a
+    faster mount does not help. The renderer caches the loaded model, but
+    nothing populated that cache until the first render request arrived, so
+    the first user to ask for a talking head waited several minutes with no
+    indication anything was happening. Doing it here moves that cost to
+    server start, where nobody is waiting on it.
+
+    Deliberately best-effort: a failure here must never stop the API from
+    serving text replies, which do not need this model at all.
+    """
+    if os.environ.get("MUSETALK_WARM_ON_START", "true").lower() != "true":
+        return
+    try:
+        import time
+
+        from dreamtalk.backend.services.two_d_avatar import get_two_d_avatar_renderer
+
+        renderer = get_two_d_avatar_renderer()
+        if not renderer.status().get("neural_usable"):
+            logger.info("MuseTalk warm-up skipped: neural renderer not usable here")
+            return
+        started = time.time()
+        api = await asyncio.to_thread(renderer._get_musetalk)
+        if api is None:
+            logger.warning("MuseTalk warm-up returned no renderer")
+        else:
+            logger.info("MuseTalk warmed in %.1fs — first 2D render will not pay the load",
+                        time.time() - started)
+    except Exception as exc:
+        logger.warning("MuseTalk warm-up failed (2D will load on demand): %s", exc)
+
+
 async def safe_db_init():
     pool = None
     try:
@@ -299,6 +335,12 @@ async def lifespan(app: FastAPI):
     # Start model loading in background (non-blocking)
     task = asyncio.ensure_future(load_avatar_models())
     task.add_done_callback(lambda t: logger.info(f"Model loading {'succeeded' if not t.exception() else f'failed: {t.exception()}'}"))
+
+    # Same pattern for the 2D lip-sync model: start it now, never await it.
+    warm = asyncio.ensure_future(warm_musetalk())
+    warm.add_done_callback(
+        lambda t: t.exception() and logger.warning(f"MuseTalk warm-up: {t.exception()}")
+    )
 
     logger.info("=" * 60)
     logger.info("DreamTalk Backend Ready!")
