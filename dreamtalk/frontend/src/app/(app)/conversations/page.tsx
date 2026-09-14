@@ -335,9 +335,9 @@ export default function ConversationsPage() {
                     <span className="text-xs font-bold text-emerald-600">D</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-foreground/[0.04] border border-foreground/[0.06] rounded-tl-md">
-                    <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-[#8A8178] animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-foreground-muted animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-foreground-muted animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-foreground-muted animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </motion.div>
               )}

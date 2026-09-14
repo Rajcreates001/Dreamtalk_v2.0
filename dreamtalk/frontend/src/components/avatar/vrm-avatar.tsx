@@ -139,13 +139,13 @@ function SphereHead({ emotion, isSpeaking, lipSyncValue }: {
       <mesh><sphereGeometry args={[0.55, 48, 48]} /><meshStandardMaterial map={faceTexture} roughness={0.5} metalness={0.05} /></mesh>
       {/* Eyes */}
       <group position={[-0.18, 0.12, 0.48]}>
-        <mesh ref={leftEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F3F4F4" /></mesh>
+        <mesh ref={leftEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="var(--foreground)" /></mesh>
         <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5A4A3A" /></mesh>
         <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#201D1D" /></mesh>
         <mesh position={[0.01, 0.01, 0.07]}><sphereGeometry args={[0.006, 8, 8]} /><meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.3} /></mesh>
       </group>
       <group position={[0.18, 0.12, 0.48]}>
-        <mesh ref={rightEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="#F3F4F4" /></mesh>
+        <mesh ref={rightEyeRef}><sphereGeometry args={[0.075, 24, 24]} /><meshStandardMaterial color="var(--foreground)" /></mesh>
         <mesh position={[0, 0, 0.04]}><sphereGeometry args={[0.038, 16, 16]} /><meshStandardMaterial color="#5A4A3A" /></mesh>
         <mesh position={[0, 0, 0.06]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#201D1D" /></mesh>
         <mesh position={[0.01, 0.01, 0.07]}><sphereGeometry args={[0.006, 8, 8]} /><meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.3} /></mesh>

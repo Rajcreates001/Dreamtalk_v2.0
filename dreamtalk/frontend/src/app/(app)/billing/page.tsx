@@ -10,7 +10,7 @@ const PLANS = [
     price: "$0",
     desc: "For personal exploration",
     features: ["1 Digital Human", "100 conversations/month", "Basic knowledge", "Community support"],
-    color: "#8A8178",
+    color: "var(--foreground-muted)",
   },
   {
     name: "Pro",

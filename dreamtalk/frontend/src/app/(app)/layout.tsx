@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
 import { AppSidebar } from "@/components/layout/AppSidebar"
 import { AppTopbar } from "@/components/layout/AppTopbar"
+import { AuroraField } from "@/components/depth"
 import { authApi, clearAuth } from "@/lib/api"
 
 // ─── Page transition variants ───
@@ -46,7 +47,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-dvh bg-background overflow-hidden">
+    // No `bg-background` here: <html> already carries the page colour, and an
+    // opaque background on this element would paint over the ambient field the
+    // glass chrome refracts (block backgrounds paint after -z-10 children).
+    <div className="flex h-dvh overflow-hidden">
+      <AuroraField intensity={1} />
       {/* Mobile sidebar backdrop */}
       {sidebarMobileOpen && (
         <div

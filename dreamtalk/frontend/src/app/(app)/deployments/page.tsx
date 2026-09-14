@@ -13,7 +13,7 @@ const DEPLOYMENTS = [
 const STATUS_CFG = {
   live: { label: "Live", color: "#A2AB73", icon: CheckCircle },
   deploying: { label: "Deploying", color: "#D6A44C", icon: RefreshCw },
-  pending: { label: "Pending", color: "#8A8178", icon: Clock },
+  pending: { label: "Pending", color: "var(--foreground-muted)", icon: Clock },
   error: { label: "Error", color: "#D84C63", icon: AlertTriangle },
 }
 

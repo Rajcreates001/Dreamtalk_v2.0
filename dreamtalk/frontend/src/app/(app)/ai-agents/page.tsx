@@ -46,14 +46,14 @@ export default function AIAgentsPage() {
                     <p className="text-[10px] text-foreground-muted">{agent.desc}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: agent.status === "active" ? "#A2AB7310" : "#8A817810" }}>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ background: agent.status === "active" ? "#A2AB7310" : "var(--foreground-muted)10" }}>
                   <span className="relative flex h-2 w-2">
                     {agent.status === "active" && (
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A2AB73] opacity-75" />
                     )}
-                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: agent.status === "active" ? "#A2AB73" : "#8A8178" }} />
+                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: agent.status === "active" ? "#A2AB73" : "var(--foreground-muted)" }} />
                   </span>
-                  <span className="text-[10px]" style={{ color: agent.status === "active" ? "#A2AB73" : "#8A8178" }}>
+                  <span className="text-[10px]" style={{ color: agent.status === "active" ? "#A2AB73" : "var(--foreground-muted)" }}>
                     {agent.status === "active" ? "Active" : "Idle"}
                   </span>
                 </div>
@@ -92,7 +92,7 @@ export default function AIAgentsPage() {
         <div className="flex items-center gap-3 p-3 rounded-lg bg-foreground/[0.02] border border-foreground/[0.06]">
           <div className="flex -space-x-2">
             {AGENTS.slice(0, 4).map((agent, i) => (
-              <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold border-2 border-[#2C2929]" style={{ background: `${agent.color}20`, color: agent.color }}>
+              <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-bold border-2 border-border" style={{ background: `${agent.color}20`, color: agent.color }}>
                 {agent.name.charAt(0)}
               </div>
             ))}

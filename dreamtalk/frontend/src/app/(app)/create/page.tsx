@@ -396,7 +396,7 @@ export default function CreateDigitalHumanPage() {
                       : "bg-foreground/[0.04] border-foreground/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
-                  <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "#CC3A63" : "#8A8178" }} />
+                  <Mic className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "upload" ? "#CC3A63" : "var(--foreground-muted)" }} />
                   <p className="text-sm font-medium text-foreground mb-1">Upload Voice</p>
                   <p className="text-xs text-foreground-muted">Record or upload a sample</p>
                 </button>
@@ -409,7 +409,7 @@ export default function CreateDigitalHumanPage() {
                       : "bg-foreground/[0.04] border-foreground/[0.06] hover:border-[#CC3A63]/20 hover:bg-[#CC3A63]/5"
                   )}
                 >
-                  <Wand2 className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "generate" ? "#CC3A63" : "#8A8178" }} />
+                  <Wand2 className="h-8 w-8 mx-auto mb-3" style={{ color: voiceMethod === "generate" ? "#CC3A63" : "var(--foreground-muted)" }} />
                   <p className="text-sm font-medium text-foreground mb-1">Generate AI Voice</p>
                   <p className="text-xs text-foreground-muted">Choose gender, age, region</p>
                 </button>
@@ -473,7 +473,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceAge}
                         onChange={(e) => setVoiceAge(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-card"
                       >
                         {AGE_GROUPS.map((a) => (
                           <option key={a}>{a}</option>
@@ -506,7 +506,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceAccent}
                         onChange={(e) => setVoiceAccent(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-card"
                       >
                         {ACCENTS.map((a) => (
                           <option key={a}>{a}</option>
@@ -518,7 +518,7 @@ export default function CreateDigitalHumanPage() {
                       <select
                         value={voiceEmotion}
                         onChange={(e) => setVoiceEmotion(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]"
+                        className="w-full px-3 py-2 rounded-lg bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-card"
                       >
                         {EMOTION_BIASES.map((e) => (
                           <option key={e}>{e}</option>
@@ -766,7 +766,7 @@ export default function CreateDigitalHumanPage() {
                     ) : isCurrent ? (
                       <Loader2 className="h-3 w-3 animate-spin text-[#CC3A63]" />
                     ) : (
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#8A8178]" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-foreground-muted" />
                     )}
                   </div>
                   <span

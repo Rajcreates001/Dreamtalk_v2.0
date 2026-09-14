@@ -159,7 +159,7 @@ export default function HomePage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2C2929] via-[#1a1f35] to-[#2C2929] border border-foreground/[0.06] p-8"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-[#1a1f35] to-card border border-foreground/[0.06] p-8"
       >
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#CC3A63]/10 blur-[100px]" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-[#A2AB73]/8 blur-[80px]" />
@@ -260,7 +260,7 @@ export default function HomePage() {
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#CC3A63] to-[#A2AB73] flex items-center justify-center text-white font-bold text-lg">
                       {data.activeAvatar.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#A2AB73] border-2 border-[#2C2929]" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#A2AB73] border-2 border-border" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

@@ -50,7 +50,7 @@ const FALLBACK_AVATARS: AvatarData[] = [
 const STATUS_CONFIG = {
   active: { label: "Active", color: "#A2AB73" },
   idle: { label: "Idle", color: "#D6A44C" },
-  offline: { label: "Offline", color: "#8A8178" },
+  offline: { label: "Offline", color: "var(--foreground-muted)" },
 }
 
 function mapToAvatarData(item: any, index: number): AvatarData {

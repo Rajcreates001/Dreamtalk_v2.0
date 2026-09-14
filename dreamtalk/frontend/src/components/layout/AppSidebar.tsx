@@ -81,7 +81,7 @@ export function AppSidebar() {
       layout
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
-        "hidden lg:flex flex-col border-r border-foreground/[0.06] bg-[#2C2929]/60 backdrop-blur-2xl relative shrink-0 h-dvh",
+        "hidden lg:flex flex-col border-r border-border glass relative shrink-0 h-dvh rounded-none",
         collapsed ? "w-[68px]" : "w-[240px]"
       )}
     >
@@ -103,7 +103,7 @@ export function AppSidebar() {
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: "auto" }}
               exit={{ opacity: 0, width: 0 }}
-              className="text-base font-bold bg-gradient-to-r from-[#F3F4F4] to-[#B0A79C] bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
+              className="text-base font-bold bg-gradient-to-r from-foreground to-foreground-muted bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
             >
               DreamTalk
             </motion.span>
@@ -120,7 +120,7 @@ export function AppSidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#8A8178] block px-1 mb-2"
+              className="text-[10px] font-semibold tracking-[0.15em] uppercase text-foreground-muted block px-1 mb-2"
             >
               Modules
             </motion.span>
@@ -138,8 +138,8 @@ export function AppSidebar() {
                 "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                 collapsed ? "justify-center py-2.5" : "px-3 py-2",
                 active
-                  ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-[#F3F4F4]"
-                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-foreground/[0.04]"
+                  ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-foreground"
+                  : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04]"
               )}
             >
               <div
@@ -213,7 +213,7 @@ export function AppSidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#8A8178] block px-1"
+              className="text-[10px] font-semibold tracking-[0.15em] uppercase text-foreground-muted block px-1"
             >
               Your Digital Humans
             </motion.span>
@@ -222,11 +222,11 @@ export function AppSidebar() {
 
         {dhLoading ? (
           <div className="flex justify-center py-4">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#8A8178] border-t-transparent" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-transparent" />
           </div>
         ) : digitalHumans.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-[10px] text-[#8A8178]">No digital humans yet</p>
+            <p className="text-[10px] text-foreground-muted">No digital humans yet</p>
           </div>
         ) : digitalHumans.map((dh) => {
           const active = pathname === dh.href || pathname?.startsWith(`/dh/${dh.id}`)
@@ -238,8 +238,8 @@ export function AppSidebar() {
                 "flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200 group",
                 collapsed ? "px-0 justify-center py-2.5" : "px-3 py-2",
                 active
-                  ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-[#F3F4F4]"
-                  : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-foreground/[0.04]"
+                  ? "bg-gradient-to-r from-[#CC3A63]/15 to-[#A2AB73]/10 text-foreground"
+                  : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04]"
               )}
             >
               <div
@@ -291,8 +291,8 @@ export function AppSidebar() {
                   exit={{ opacity: 0, width: 0 }}
                   className="min-w-0 overflow-hidden"
                 >
-                  <p className="text-xs font-semibold text-[#F3F4F4] truncate">{user.full_name || "User"}</p>
-                  <p className="text-[10px] text-[#B0A79C] capitalize truncate">{user.role || "Member"}</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{user.full_name || "User"}</p>
+                  <p className="text-[10px] text-foreground-muted capitalize truncate">{user.role || "Member"}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -301,7 +301,7 @@ export function AppSidebar() {
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-[#8A8178] hover:text-[#B0A79C] hover:bg-foreground/[0.04]",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground-muted hover:text-foreground-muted hover:bg-foreground/[0.04]",
             collapsed && "justify-center px-0"
           )}
         >
@@ -323,7 +323,7 @@ export function AppSidebar() {
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-[#8A8178] hover:text-[#D84C63] hover:bg-[#D84C63]/5",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-foreground-muted hover:text-[#D84C63] hover:bg-[#D84C63]/5",
             collapsed && "justify-center px-0"
           )}
         >

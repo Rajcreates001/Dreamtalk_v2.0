@@ -74,10 +74,10 @@ type DigitalTwin = {
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
   completed: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Live" },
   processing: { bg: "bg-[#D6A44C]/10", text: "text-[#D6A44C]", dot: "bg-[#D6A44C]", label: "Processing" },
-  draft: { bg: "bg-[#B0A79C]/10", text: "text-foreground-muted", dot: "bg-[#B0A79C]", label: "Draft" },
+  draft: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Draft" },
   published: { bg: "bg-[#A2AB73]/10", text: "text-[#A2AB73]", dot: "bg-[#A2AB73]", label: "Published" },
   failed: { bg: "bg-[#D84C63]/10", text: "text-[#D84C63]", dot: "bg-[#D84C63]", label: "Failed" },
-  default: { bg: "bg-[#B0A79C]/10", text: "text-foreground-muted", dot: "bg-[#B0A79C]", label: "Unknown" },
+  default: { bg: "bg-foreground-muted/10", text: "text-foreground-muted", dot: "bg-foreground-muted", label: "Unknown" },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -124,7 +124,7 @@ function StepIndicator({ label, completed }: { label: string; completed: boolean
         {completed ? (
           <CheckCircle2 className="h-3.5 w-3.5" />
         ) : (
-          <div className="h-2 w-2 rounded-full bg-[#8A8178]/50" />
+          <div className="h-2 w-2 rounded-full bg-foreground-muted/50" />
         )}
       </div>
       <span className={cn("text-xs", completed ? "text-foreground font-medium" : "text-foreground-muted")}>

@@ -304,12 +304,12 @@ export function AvatarViewer3D({
   if (!mounted) {
     return (
       <div
-        className={cn("flex items-center justify-center bg-[#2C2929]/40 rounded-2xl", className)}
+        className={cn("flex items-center justify-center bg-card/40 rounded-2xl", className)}
         style={{ height: heightStr }}
       >
         <div className="flex flex-col items-center gap-2">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#CC3A63]/30 border-t-[#CC3A63]" />
-          <span className="text-xs text-[#8A8178]">Initializing 3D viewer...</span>
+          <span className="text-xs text-foreground-muted">Initializing 3D viewer...</span>
         </div>
       </div>
     )
@@ -358,10 +358,10 @@ export function AvatarViewer3D({
       {/* Controls hint */}
       {showControls && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-foreground/[0.06] pointer-events-none">
-          <svg className="w-3 h-3 text-[#B0A79C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3 h-3 text-foreground-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
-          <span className="text-[10px] text-[#B0A79C] font-medium">
+          <span className="text-[10px] text-foreground-muted font-medium">
             Drag to rotate &bull; Scroll to zoom
           </span>
         </div>
@@ -370,7 +370,7 @@ export function AvatarViewer3D({
       {/* Rotation indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-foreground/[0.06] pointer-events-none">
         <div className="w-1.5 h-1.5 rounded-full bg-[#A2AB73]" />
-        <span className="text-[10px] text-[#D8D2C8] font-medium">360°</span>
+        <span className="text-[10px] text-foreground font-medium">360°</span>
       </div>
     </div>
   )

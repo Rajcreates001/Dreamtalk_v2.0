@@ -30,7 +30,7 @@ const INDIAN_LANGUAGES = [
 ]
 
 const EMOTIONS = [
-  { id: "neutral", label: "Neutral", color: "#B0A79C" },
+  { id: "neutral", label: "Neutral", color: "var(--foreground-muted)" },
   { id: "happy", label: "Happy", color: "#D6A44C" },
   { id: "sad", label: "Sad", color: "#6366F1" },
   { id: "angry", label: "Angry", color: "#D84C63" },
@@ -510,7 +510,7 @@ export default function DigitalHumanWorkspacePage() {
                 <div>
                   <label className="text-[10px] text-foreground-muted mb-1 block">Language</label>
                   <select value={scriptLang} onChange={(e) => setScriptLang(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
+                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-card">
                     {INDIAN_LANGUAGES.map((l) => (
                       <option key={l.code} value={l.code}>{l.name} ({l.native})</option>
                     ))}
@@ -519,7 +519,7 @@ export default function DigitalHumanWorkspacePage() {
                 <div>
                   <label className="text-[10px] text-foreground-muted mb-1 block">Emotion</label>
                   <select value={scriptEmotion} onChange={(e) => setScriptEmotion(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-[#2C2929]">
+                    className="w-full px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-xs text-foreground [&>option]:text-card">
                     {EMOTIONS.map((e) => (
                       <option key={e.id} value={e.id}>{e.label}</option>
                     ))}

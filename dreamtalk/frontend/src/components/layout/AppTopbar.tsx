@@ -102,19 +102,19 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
   }
 
   return (
-    <header className="flex items-center justify-between h-16 px-4 lg:px-6 border-b border-foreground/[0.06] bg-[#2C2929]/40 backdrop-blur-xl shrink-0 relative z-30">
+    <header className="flex items-center justify-between h-16 px-4 lg:px-6 border-b border-border glass-subtle shrink-0 relative z-30 rounded-none">
       {/* Left: Mobile hamburger + brand */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden w-9 h-9 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center text-[#B0A79C] hover:text-[#F3F4F4] transition-colors"
+          className="lg:hidden w-9 h-9 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors"
         >
           <Menu className="h-4 w-4" />
         </button>
         <div className="hidden sm:flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-[#8A8178] tracking-wide">DreamTalk</span>
-          <span className="text-[10px] text-[#8A8178]">/</span>
-          <span className="text-[10px] text-[#B0A79C] font-medium capitalize">
+          <span className="text-xs font-semibold text-foreground-muted tracking-wide">DreamTalk</span>
+          <span className="text-[10px] text-foreground-muted">/</span>
+          <span className="text-[10px] text-foreground-muted font-medium capitalize">
             {user?.role || "workspace"}
           </span>
         </div>
@@ -124,11 +124,11 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
       <div className="relative" ref={searchRef}>
         <button
           onClick={() => setSearchOpen(true)}
-          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-[#8A8178] text-sm hover:bg-foreground/[0.08] hover:border-foreground/[0.12] transition-all min-w-[240px] lg:min-w-[320px]"
+          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-foreground-muted text-sm hover:bg-foreground/[0.08] hover:border-foreground/[0.12] transition-all min-w-[240px] lg:min-w-[320px]"
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="text-xs">Search avatars, chats, documents...</span>
-          <div className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-foreground/[0.08] text-[10px] font-mono text-[#8A8178]">
+          <div className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-foreground/[0.08] text-[10px] font-mono text-foreground-muted">
             <Command className="h-2.5 w-2.5" />
             K
           </div>
@@ -140,11 +140,11 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="fixed sm:absolute top-16 sm:top-12 left-0 sm:left-1/2 sm:-translate-x-1/2 right-0 sm:right-auto sm:w-[480px] mx-4 sm:mx-0 rounded-2xl bg-[#2C2929] border border-foreground/[0.12] shadow-2xl shadow-black/40 overflow-hidden z-50"
+              className="fixed sm:absolute top-16 sm:top-12 left-0 sm:left-1/2 sm:-translate-x-1/2 right-0 sm:right-auto sm:w-[480px] mx-4 sm:mx-0 rounded-2xl glass-strong glass-rim shadow-elev-4 overflow-hidden z-50"
             >
               {/* Search input */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-foreground/[0.06]">
-                <Search className="h-4 w-4 text-[#8A8178] shrink-0" />
+                <Search className="h-4 w-4 text-foreground-muted shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -152,11 +152,11 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
                   onChange={(e) => { setSearchQuery(e.target.value); setSelectedIndex(0) }}
                   onKeyDown={handleKeyNavigation}
                   placeholder="Search avatars, conversations, documents..."
-                  className="flex-1 bg-transparent text-sm text-[#F3F4F4] placeholder:text-[#8A8178] focus:outline-none"
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground-muted focus:outline-none"
                 />
                 <button
                   onClick={() => { setSearchOpen(false); setSearchQuery("") }}
-                  className="text-[10px] px-2 py-1 rounded-md bg-foreground/[0.06] text-[#8A8178] hover:text-[#B0A79C] font-mono"
+                  className="text-[10px] px-2 py-1 rounded-md bg-foreground/[0.06] text-foreground-muted hover:text-foreground-muted font-mono"
                 >
                   ESC
                 </button>
@@ -166,7 +166,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
               <div className="p-2 space-y-0.5 max-h-[300px] overflow-y-auto">
                 {filteredItems.length === 0 ? (
                   <div className="px-4 py-8 text-center">
-                    <p className="text-xs text-[#8A8178]">No results found</p>
+                    <p className="text-xs text-foreground-muted">No results found</p>
                   </div>
                 ) : (
                   filteredItems.map((item, i) => {
@@ -179,8 +179,8 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
                         className={cn(
                           "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-all text-left",
                           i === selectedIndex
-                            ? "bg-[#CC3A63]/10 text-[#F3F4F4]"
-                            : "text-[#B0A79C] hover:text-[#D8D2C8] hover:bg-foreground/[0.04]"
+                            ? "bg-[#CC3A63]/10 text-foreground"
+                            : "text-foreground-muted hover:text-foreground hover:bg-foreground/[0.04]"
                         )}
                       >
                         <div className={cn(
@@ -198,15 +198,15 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
 
               {/* Footer hints */}
               <div className="flex items-center gap-3 px-4 py-2 border-t border-foreground/[0.06] bg-foreground/[0.02]">
-                <div className="flex items-center gap-1.5 text-[10px] text-[#8A8178]">
+                <div className="flex items-center gap-1.5 text-[10px] text-foreground-muted">
                   <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">↑↓</kbd>
                   <span>Navigate</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-[#8A8178]">
+                <div className="flex items-center gap-1.5 text-[10px] text-foreground-muted">
                   <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">↵</kbd>
                   <span>Open</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-[#8A8178] ml-auto">
+                <div className="flex items-center gap-1.5 text-[10px] text-foreground-muted ml-auto">
                   <kbd className="px-1 py-0.5 rounded bg-foreground/[0.06] font-mono">esc</kbd>
                   <span>Close</span>
                 </div>
@@ -219,7 +219,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar?: () => void })
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
         {/* Notification bell */}
-        <button className="relative w-9 h-9 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center text-[#B0A79C] hover:text-[#F3F4F4] hover:bg-foreground/[0.08] transition-all">
+        <button className="relative w-9 h-9 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] flex items-center justify-center text-foreground-muted hover:text-foreground hover:bg-foreground/[0.08] transition-all">
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#CC3A63] shadow-[0_0_6px_rgba(204,58,99,0.6)]" />
         </button>

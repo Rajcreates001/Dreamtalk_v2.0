@@ -6,7 +6,7 @@ import { Link2, Globe, Code2, Bot, Database, MessageSquare, FileText, CheckCircl
 
 const INTEGRATIONS = [
   { name: "Slack", desc: "Connect your AI workforce to Slack", icon: MessageSquare, color: "#4A154B", status: "connected" as const },
-  { name: "GitHub", desc: "Sync knowledge from repositories", icon: Code2, color: "#F3F4F4", status: "connected" as const },
+  { name: "GitHub", desc: "Sync knowledge from repositories", icon: Code2, color: "var(--foreground)", status: "connected" as const },
   { name: "Google Drive", desc: "Import documents from Drive", icon: Globe, color: "#4285F4", status: "available" as const },
   { name: "Notion", desc: "Sync workspaces as knowledge", icon: FileText, color: "#FFFFFF", status: "available" as const },
   { name: "WordPress", desc: "Deploy avatars on your site", icon: Globe, color: "#21759B", status: "available" as const },
@@ -17,7 +17,7 @@ const INTEGRATIONS = [
 
 const statusStyles = {
   connected: { label: "Connected", color: "#A2AB73", icon: CheckCircle },
-  available: { label: "Available", color: "#8A8178", icon: Plus },
+  available: { label: "Available", color: "var(--foreground-muted)", icon: Plus },
   premium: { label: "Premium", color: "#CC3A63", icon: Sparkles },
 }
 

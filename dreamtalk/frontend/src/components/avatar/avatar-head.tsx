@@ -270,7 +270,7 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
         {/* White */}
         <mesh ref={leftEyeWhiteRef}>
           <sphereGeometry args={[0.075, 24, 24]} />
-          <meshStandardMaterial color="#F3F4F4" roughness={0.3} />
+          <meshStandardMaterial color="var(--foreground)" roughness={0.3} />
         </mesh>
         {/* Iris + Pupil group (moves with gaze) */}
         <group ref={leftPupilRef} position={[0, 0, 0.04]}>
@@ -294,7 +294,7 @@ function Head({ expression, emotion }: { expression: ExpressionData; emotion: st
       <group position={[0.18, 0.12, 0.48]}>
         <mesh ref={rightEyeWhiteRef}>
           <sphereGeometry args={[0.075, 24, 24]} />
-          <meshStandardMaterial color="#F3F4F4" roughness={0.3} />
+          <meshStandardMaterial color="var(--foreground)" roughness={0.3} />
         </mesh>
         <group ref={rightPupilRef} position={[0, 0, 0.04]}>
           <mesh>

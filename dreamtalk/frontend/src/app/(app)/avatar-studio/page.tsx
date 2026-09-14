@@ -72,7 +72,7 @@ export default function AvatarStudioPage() {
     { name: "Sad", emoji: "😢", color: "#853953" },
     { name: "Surprised", emoji: "😮", color: "#D6A44C" },
     { name: "Angry", emoji: "😠", color: "#D84C63" },
-    { name: "Neutral", emoji: "😐", color: "#8A8178" },
+    { name: "Neutral", emoji: "😐", color: "var(--foreground-muted)" },
     { name: "Wink", emoji: "😉", color: "#9E3B6B" },
   ]
 

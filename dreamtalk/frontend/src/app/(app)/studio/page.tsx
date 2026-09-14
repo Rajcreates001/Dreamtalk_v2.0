@@ -230,7 +230,7 @@ export default function StudioPage() {
         </div>
 
         {/* Right: 3D Preview */}
-        <div className="flex-1 rounded-xl bg-gradient-to-br from-[#2C2929] to-[#0a0e1a] border border-foreground/[0.06] flex items-center justify-center relative overflow-hidden">
+        <div className="flex-1 rounded-xl bg-gradient-to-br from-card to-[#0a0e1a] border border-foreground/[0.06] flex items-center justify-center relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-[#CC3A63]/8 blur-[100px]" />
 
           <div className="relative text-center">
@@ -272,7 +272,7 @@ function AppearanceTab() {
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Gender">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
               <option>Neutral</option>
               <option>Male</option>
               <option>Female</option>
@@ -315,7 +315,7 @@ function VoiceTab() {
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Language">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
               <option>English</option>
               <option>Spanish</option>
               <option>French</option>
@@ -324,7 +324,7 @@ function VoiceTab() {
             </select>
           </Field>
           <Field label="Accent">
-            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+            <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
               <option>American</option>
               <option>British</option>
               <option>Indian</option>
@@ -401,7 +401,7 @@ function PersonalityTab() {
           <textarea rows={3} placeholder="Describe how your avatar should behave..." className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-[#CC3A63]/30 resize-none" />
         </Field>
         <Field label="Interaction Style">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>Friendly & Casual</option>
             <option>Professional & Formal</option>
             <option>Academic & Detailed</option>
@@ -493,7 +493,7 @@ function EmotionTab() {
         <SliderField label="Expression Intensity" value={70} unit="%" />
         <SliderField label="Recovery Speed" value={50} unit="%" />
         <Field label="Base Emotion">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>Calm</option>
             <option>Neutral</option>
             <option>Friendly</option>
@@ -519,7 +519,7 @@ function ExpressionsTab() {
     <TabShell title="Expressions" desc="Facial expressions and gesture animations">
       <div className="space-y-3">
         <Field label="Default Expression">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>Neutral</option>
             <option>Gentle Smile</option>
             <option>Friendly</option>
@@ -554,7 +554,7 @@ function RelationshipsTab() {
           <input type="range" min={0} max={100} value={bondLevel} onChange={(e) => setBondLevel(Number(e.target.value))} className="w-full mt-2 accent-[#CC3A63]" />
         </div>
         <Field label="Bonding Speed">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>Slow & Natural</option>
             <option>Balanced</option>
             <option>Fast & Warm</option>
@@ -586,7 +586,7 @@ function MotionTab() {
     <TabShell title="Motion" desc="Idle animations, movement style, and body language">
       <div className="space-y-3">
         <Field label="Idle Animation">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>Gentle Breathing</option>
             <option>Standing Still</option>
             <option>Subtle Sway</option>
@@ -671,7 +671,7 @@ function FineTuningTab() {
     <TabShell title="Fine Tuning" desc="Model parameters, training data, and optimization">
       <div className="space-y-3">
         <Field label="Base Model">
-          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-[#2C2929]">
+          <select className="w-full px-3 py-2.5 rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] text-sm text-foreground [&>option]:text-card">
             <option>GPT-4o</option>
             <option>Claude 3.5 Sonnet</option>
             <option>Gemini 1.5 Pro</option>
@@ -771,7 +771,7 @@ function PreviewTab() {
         </Field>
         <Field label="Background">
           <div className="grid grid-cols-4 gap-2">
-            {["#2C2929", "#1a1f35", "#8F9A5E", "#CC3A63"].map((bg) => (
+            {["var(--card)", "#1a1f35", "#8F9A5E", "#CC3A63"].map((bg) => (
               <button
                 key={bg}
                 className="aspect-video rounded-lg border border-foreground/[0.1] hover:scale-105 transition-transform"
@@ -830,7 +830,7 @@ function DeployTab() {
             ].map((c) => (
               <div key={c.item} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-foreground/[0.03]">
                 <div className={cn("w-3.5 h-3.5 rounded border flex items-center justify-center", c.done ? "bg-[#A2AB73] border-[#A2AB73]" : "border-foreground/[0.12]")}>
-                  {c.done && <Check className="h-2.5 w-2.5 text-[#2C2929]" />}
+                  {c.done && <Check className="h-2.5 w-2.5 text-card" />}
                 </div>
                 <span className={cn("text-[11px]", c.done ? "text-foreground" : "text-foreground-muted")}>{c.item}</span>
               </div>

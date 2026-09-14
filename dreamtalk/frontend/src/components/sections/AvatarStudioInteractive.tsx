@@ -95,7 +95,7 @@ export function AvatarStudioInteractive() {
                   {/* Stage info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <stage.icon className="h-4 w-4" style={{ color: isActive ? stage.color : "#8A8178" }} />
+                      <stage.icon className="h-4 w-4" style={{ color: isActive ? stage.color : "var(--foreground-muted)" }} />
                       <span className={`text-sm font-semibold ${isActive ? "text-foreground" : "text-foreground"}`}>
                         {stage.label}
                       </span>
