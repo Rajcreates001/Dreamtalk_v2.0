@@ -93,6 +93,108 @@ PHONEME_TO_VISEME = {
 }
 
 
+# ── Text → viseme, for every script DreamTalk speaks ──────────────────
+#
+# Energy-based segmentation alone gives timing but no shape: the mouth opens
+# in proportion to loudness, so every sound looks like the same vowel and the
+# result reads as chewing rather than speech. The spoken text is already
+# known at synthesis time, so the shapes can come from it.
+#
+# The nine Indic blocks in Unicode all inherit the ISCII layout, so one
+# offset table serves Devanagari, Bengali, Gurmukhi, Gujarati, Odia, Tamil,
+# Telugu, Kannada and Malayalam: independent vowels at +0x05..+0x14,
+# consonants at +0x15..+0x39, and vowel signs (matras) at +0x3E..+0x4C.
+# That regularity is why this is a table and not 22 language modules.
+INDIC_BLOCKS = (
+    0x0900,  # Devanagari — Hindi, Marathi, Nepali, Sanskrit, Konkani, Maithili, Dogri, Bodo
+    0x0980,  # Bengali    — Bengali, Assamese, Manipuri
+    0x0A00,  # Gurmukhi   — Punjabi
+    0x0A80,  # Gujarati
+    0x0B00,  # Odia
+    0x0B80,  # Tamil
+    0x0C00,  # Telugu
+    0x0C80,  # Kannada
+    0x0D00,  # Malayalam
+)
+
+# Offset within a block → viseme. Vowels carry the visible mouth shape;
+# consonants matter mainly where the lips close (the labial series).
+_INDIC_OFFSET_VISEME = {
+    0x05: "aa", 0x06: "aa",                      # a, aa
+    0x07: "IH", 0x08: "IH",                      # i, ii
+    0x09: "UH", 0x0A: "UH",                      # u, uu
+    0x0B: "RR", 0x0C: "RR",                      # vocalic r, l
+    0x0F: "E",  0x10: "AY",                      # e, ai
+    0x13: "OH", 0x14: "OW",                      # o, au
+    0x3E: "aa",                                  # matra aa
+    0x3F: "IH", 0x40: "IH",                      # matra i, ii
+    0x41: "UH", 0x42: "UH",                      # matra u, uu
+    0x47: "E",  0x48: "AY",                      # matra e, ai
+    0x4B: "OH", 0x4C: "OW",                      # matra o, au
+}
+
+
+def _indic_consonant_viseme(off: int) -> Optional[str]:
+    """Viseme for a consonant at `off` within an Indic block."""
+    if 0x15 <= off <= 0x19:
+        return "kk"                      # ka varga — velar
+    if 0x1A <= off <= 0x1E:
+        return "CH"                      # cha varga — palatal
+    if 0x1F <= off <= 0x28:
+        return "DD"                      # Ta and ta vargas — retroflex/dental
+    if 0x29 <= off <= 0x2E:
+        return "PP"                      # pa varga — LABIAL, the lips must close
+    if off in (0x2F, 0x33, 0x35):
+        return "nn"                      # ya, la, va
+    if off == 0x30 or off == 0x31:
+        return "RR"                      # ra
+    if 0x36 <= off <= 0x38:
+        return "SS"                      # sha, ssa, sa
+    if off == 0x39:
+        return "aa"                      # ha — open
+    return None
+
+
+# Latin fallback for English and romanised input.
+_LATIN_VISEME = {
+    "a": "aa", "e": "E", "i": "IH", "o": "OH", "u": "UH", "y": "IH",
+    "p": "PP", "b": "PP", "m": "PP",
+    "f": "FF", "v": "FF", "w": "UH",
+    "t": "DD", "d": "DD", "n": "nn", "l": "nn",
+    "k": "kk", "g": "kk", "c": "kk", "q": "kk",
+    "s": "SS", "z": "SS", "x": "SS",
+    "j": "CH", "h": "aa", "r": "RR",
+}
+
+
+def text_to_visemes(text: str) -> List[str]:
+    """Ordered viseme ids for `text`, across Indic scripts and Latin.
+
+    Returns the sequence of mouth shapes, not their timing — the audio
+    supplies timing. An empty list means the text carried nothing usable
+    (digits, punctuation, an unsupported script), and the caller should
+    keep the energy-derived labels rather than invent shapes.
+    """
+    out: List[str] = []
+    for ch in text:
+        cp = ord(ch)
+        matched = False
+        for base in INDIC_BLOCKS:
+            if base <= cp < base + 0x80:
+                off = cp - base
+                v = _INDIC_OFFSET_VISEME.get(off) or _indic_consonant_viseme(off)
+                if v:
+                    out.append(v)
+                matched = True
+                break
+        if matched:
+            continue
+        lower = ch.lower()
+        if lower in _LATIN_VISEME:
+            out.append(_LATIN_VISEME[lower])
+    return out
+
+
 @dataclass
 class VisemeKeyframe:
     """A single viseme animation keyframe."""
@@ -190,6 +292,41 @@ class LipSyncPipeline:
             # Fallback: create generic viseme sequence
             phoneme_segments = self._generate_generic_visemes(result.duration)
 
+        # Take the SHAPES from the text and the TIMING from the audio.
+        #
+        # `text` was accepted by this function and then never read: every
+        # mouth shape came from energy alone, so loud meant open and quiet
+        # meant closed, and one vowel looked exactly like another. That is
+        # why the 3D head appeared to chew rather than speak.
+        #
+        # The energy pass is still what decides WHEN the mouth moves — it is
+        # measuring the actual rendered audio, which no text analysis can do.
+        # Only the label on each segment is replaced, by walking the text's
+        # viseme sequence across the detected segments in order. This is not
+        # forced alignment and does not pretend to be: it guarantees the
+        # right shapes in the right order at times speech really occurs,
+        # which is the difference between chewing and speaking.
+        if text:
+            try:
+                seq = text_to_visemes(text)
+            except Exception as exc:                      # never break lip-sync
+                logger.debug("text_to_visemes failed: %s", exc)
+                seq = []
+            voiced = [i for i, seg in enumerate(phoneme_segments)
+                      if seg[2] not in ("SIL", "", None)]
+            if seq and voiced:
+                for n, i in enumerate(voiced):
+                    start_t, end_t, _ = phoneme_segments[i]
+                    # Spread the sequence evenly over the voiced segments.
+                    phoneme_segments[i] = (
+                        start_t, end_t, seq[n * len(seq) // len(voiced)],
+                    )
+                result.method = "text_visemes_on_energy_timing"
+                logger.info(
+                    "LipSync shapes from text: %d visemes over %d voiced segments",
+                    len(seq), len(voiced),
+                )
+
         # Map to visemes
         keyframes = []
         emotion_intensity = self._get_emotion_intensity(emotion)
@@ -219,7 +356,9 @@ class LipSyncPipeline:
 
         result.keyframes = keyframes
         result.total_frames = int(result.duration * self.fps)
-        result.method = "energy_based"
+        # Do not clobber the label set above when text supplied the shapes.
+        if not result.method:
+            result.method = "energy_based"
         result.processing_time_ms = round((time.time() - start) * 1000, 2)
 
         logger.info(
