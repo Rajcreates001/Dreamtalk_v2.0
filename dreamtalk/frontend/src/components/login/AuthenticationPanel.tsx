@@ -148,11 +148,12 @@ export function AuthenticationPanel({ selectedRole, onRoleSelect, step, accentCo
               </motion.div>
             ))}
 
-            {welcomeStep >= 4 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8">
-                <div className="h-0.5 mx-auto w-32 rounded-full" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)`, animation: "shimmer 2s ease-in-out infinite" }} />
-              </motion.div>
-            )}
+            {/* A shimmer bar used to sit here. `@keyframes shimmer` carries
+                `rotate(45deg)` because it is written for a sweep highlight
+                travelling across a masked container — applied to a standalone
+                bar it simply rotated it into a diagonal slash and flung it
+                across the card. The step list and "Entering DreamTalk..."
+                already show progress, so there is nothing to replace it with. */}
           </motion.div>
         ) : step === "role" ? (
           <motion.div key="role" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">

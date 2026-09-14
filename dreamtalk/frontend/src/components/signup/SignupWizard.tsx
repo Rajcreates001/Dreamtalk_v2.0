@@ -143,11 +143,9 @@ export function SignupWizard() {
                 <span className={`text-sm ${welcomeStep > i ? "text-foreground" : "text-foreground-muted"}`}>{text}</span>
               </motion.div>
             ))}
-            {welcomeStep >= 4 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
-                <div className="h-0.5 mx-auto w-40 rounded-full" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)`, animation: "shimmer 2s ease-in-out infinite" }} />
-              </motion.div>
-            )}
+            {/* Removed alongside the identical bar on the sign-in panel: the
+                `shimmer` keyframe rotates 45deg, so this rendered as a
+                diagonal line sweeping across the card. */}
           </motion.div>
         ) : (
           <motion.div key={step} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
