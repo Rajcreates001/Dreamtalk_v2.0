@@ -6,45 +6,51 @@ import cv2
 import numpy as np
 from .resnet import Resnet18
 
+# CelebAMask-HQ class order, which is what 79999_iter.pth was trained on.
+#
+# The previous list was a different 19-label ordering: it omitted the
+# eyeglasses and earring classes and put hair at 12 instead of 17. The
+# network was fine; the names on top of it were not. Segmenting the real
+# source portrait made that unmistakable — it reported "right_shoe 40.7%"
+# for the man's suit and "bag 3.9%" for his hair, because index 16 is cloth
+# and 17 is hair.
 FACE_LABELS = [
-    "background", "skin", "left_brow", "right_brow", "left_eye",
-    "right_eye", "left_ear", "right_ear", "nose", "upper_lip",
-    "lower_lip", "inner_mouth", "hair", "neck", "clothes",
-    "left_shoe", "right_shoe", "bag", "scarf",
+    "background", "skin", "l_brow", "r_brow", "l_eye",
+    "r_eye", "eye_g", "l_ear", "r_ear", "ear_r",
+    "nose", "mouth", "u_lip", "l_lip", "neck",
+    "neck_l", "cloth", "hair", "hat",
 ]
 
 SKIN_LABELS = {1}
 
-JAW_RELATED_LABELS = {1, 8, 9, 10, 11}
+# Everything MuseTalk regenerates below the eyes: skin, nose, the mouth
+# interior and both lips.
+#
+# This was {1, 8, 9, 10, 11}, chosen against the wrong label list. Under the
+# real ordering that set is skin + r_ear + earring + nose + mouth — it pulled
+# in the ear and the earring while EXCLUDING both lips (12, 13). The blend
+# mask for a talking mouth was leaving the lips out of the mouth region.
+JAW_RELATED_LABELS = {1, 10, 11, 12, 13}
 
 class ConvBNReLU(nn.Module):
     def __init__(self, in_chan, out_chan, ks=3, stride=1, padding=1):
         super(ConvBNReLU, self).__init__()
-        self.conv = nn.Conv2d(in_chan, out_chan, kernel_size=ks, stride=stride, padding=padding, bias=False)
+        self.conv = nn.Conv2d(in_chan, out_chan, kernel_size=ks, stride=stride,
+                              padding=padding, bias=False)
         self.bn = nn.BatchNorm2d(out_chan)
-        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        return x
+        return F.relu(self.bn(self.conv(x)))
 
 
-class SpatialPath(nn.Module):
-    def __init__(self):
-        super(SpatialPath, self).__init__()
-        self.conv1 = ConvBNReLU(3, 64, ks=7, stride=2, padding=3)
-        self.conv2 = ConvBNReLU(64, 64, ks=3, stride=2, padding=1)
-        self.conv3 = ConvBNReLU(64, 64, ks=3, stride=2, padding=1)
-        self.conv4 = ConvBNReLU(64, 64, ks=3, stride=1, padding=1)
+class BiSeNetOutput(nn.Module):
+    def __init__(self, in_chan, mid_chan, n_classes):
+        super(BiSeNetOutput, self).__init__()
+        self.conv = ConvBNReLU(in_chan, mid_chan, ks=3, stride=1, padding=1)
+        self.conv_out = nn.Conv2d(mid_chan, n_classes, kernel_size=1, bias=False)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        return x
+        return self.conv_out(self.conv(x))
 
 
 class AttentionRefinementModule(nn.Module):
@@ -53,101 +59,98 @@ class AttentionRefinementModule(nn.Module):
         self.conv = ConvBNReLU(in_chan, out_chan, ks=3, stride=1, padding=1)
         self.conv_atten = nn.Conv2d(out_chan, out_chan, kernel_size=1, bias=False)
         self.bn_atten = nn.BatchNorm2d(out_chan)
-        self.sigmoid = nn.Sigmoid()
+        self.sigmoid_atten = nn.Sigmoid()
 
     def forward(self, x):
-        x = self.conv(x)
-        feat = x
+        feat = self.conv(x)
         atten = F.avg_pool2d(feat, feat.size()[2:])
-        atten = self.conv_atten(atten)
-        atten = self.bn_atten(atten)
-        atten = self.sigmoid(atten)
-        out = torch.mul(feat, atten)
-        return out
+        atten = self.sigmoid_atten(self.bn_atten(self.conv_atten(atten)))
+        return torch.mul(feat, atten)
 
 
 class ContextPath(nn.Module):
+    """ResNet-18 trunk plus attention refinement at 1/16 and 1/32."""
+
     def __init__(self):
         super(ContextPath, self).__init__()
         self.resnet = Resnet18()
         self.arm16 = AttentionRefinementModule(256, 128)
         self.arm32 = AttentionRefinementModule(512, 128)
+        self.conv_head32 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
+        self.conv_head16 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
         self.conv_avg = ConvBNReLU(512, 128, ks=1, stride=1, padding=0)
 
     def forward(self, x):
-        x = self.resnet.conv1(x)
-        x = self.resnet.bn1(x)
-        x = self.resnet.relu(x)
-        x = self.resnet.maxpool(x)
-        x = self.resnet.layer1(x)
-        f8 = x
-        x = self.resnet.layer2(x)
-        f16 = x
-        x = self.resnet.layer3(x)
-        f32 = x
-        x = self.resnet.layer4(x)
-        f64 = x
+        feat8, feat16, feat32 = self.resnet(x)
+        h8, w8 = feat8.size()[2:]
+        h16, w16 = feat16.size()[2:]
+        h32, w32 = feat32.size()[2:]
 
-        f16_arm = self.arm16(f16)
-        f32_arm = self.arm32(f32)
-        f64_avg = F.avg_pool2d(f64, f64.size()[2:])
-        f64_avg = self.conv_avg(f64_avg)
-        f64_avg_up = F.interpolate(f64_avg, size=f32_arm.size()[2:], mode='nearest')
-        f32_up = F.interpolate(f32_arm, size=f16_arm.size()[2:], mode='nearest')
-        f16_up = F.interpolate(f16_arm, size=f8.size()[2:], mode='nearest')
-        return f8, f16_up, f32_up, f64_avg_up
+        avg = F.avg_pool2d(feat32, feat32.size()[2:])
+        avg = self.conv_avg(avg)
+        avg_up = F.interpolate(avg, (h32, w32), mode='nearest')
+
+        feat32_arm = self.arm32(feat32) + avg_up
+        feat32_up = self.conv_head32(
+            F.interpolate(feat32_arm, (h16, w16), mode='nearest'))
+
+        feat16_arm = self.arm16(feat16) + feat32_up
+        feat16_up = self.conv_head16(
+            F.interpolate(feat16_arm, (h8, w8), mode='nearest'))
+
+        # feat8 doubles as the spatial path: this architecture has no separate
+        # SpatialPath branch, which is why the checkpoint carries no
+        # spatial_path.* keys at all.
+        return feat8, feat16_up, feat32_up
 
 
 class FeatureFusionModule(nn.Module):
     def __init__(self, in_chan, out_chan):
         super(FeatureFusionModule, self).__init__()
-        self.convblk = ConvBNReLU(in_chan, out_chan, ks=3, stride=1, padding=1)
+        self.convblk = ConvBNReLU(in_chan, out_chan, ks=1, stride=1, padding=0)
         self.conv1 = nn.Conv2d(out_chan, out_chan // 4, kernel_size=1, bias=False)
         self.conv2 = nn.Conv2d(out_chan // 4, out_chan, kernel_size=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, fsp, fcp):
-        fcat = torch.cat([fsp, fcp], dim=1)
-        feat = self.convblk(fcat)
+        feat = self.convblk(torch.cat([fsp, fcp], dim=1))
         atten = F.avg_pool2d(feat, feat.size()[2:])
-        atten = self.conv1(atten)
-        atten = self.relu(atten)
-        atten = self.conv2(atten)
-        atten = self.sigmoid(atten)
-        feat_atten = torch.mul(feat, atten)
-        feat_out = feat_atten + feat
-        return feat_out
+        atten = self.sigmoid(self.conv2(self.relu(self.conv1(atten))))
+        return feat + torch.mul(feat, atten)
 
 
 class BiSeNet(nn.Module):
+    """Face-parsing BiSeNet matching weights/retinaface/79999_iter.pth.
+
+    Module names are load-bearing: cp / ffm / conv_out / conv_out16 /
+    conv_out32 are what the checkpoint's 191 keys are named after, so
+    renaming any of them silently reverts this to the geometric-ellipse
+    fallback. load_state_dict is called with strict=True by FaceParsing for
+    exactly that reason.
+    """
+
     def __init__(self, n_classes=19, left_cheek_width=90, right_cheek_width=90):
         super(BiSeNet, self).__init__()
         self.n_classes = n_classes
         self.left_cheek_width = left_cheek_width
         self.right_cheek_width = right_cheek_width
 
-        self.spatial_path = SpatialPath()
-        self.context_path = ContextPath()
-        self.ffm = FeatureFusionModule(64 + 128, 256)
-        self.conv_out = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=1, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, n_classes, kernel_size=1),
-        )
+        self.cp = ContextPath()
+        self.ffm = FeatureFusionModule(256, 256)
+        self.conv_out = BiSeNetOutput(256, 256, n_classes)
+        self.conv_out16 = BiSeNetOutput(128, 64, n_classes)
+        self.conv_out32 = BiSeNetOutput(128, 64, n_classes)
 
     def forward(self, x):
-        fsp = self.spatial_path(x)
-        f8, f16_up, f32_up, f64_avg_up = self.context_path(x)
-        fcp = f16_up
-        fcat = torch.cat([fsp, fcp], dim=1)
-        fcat = F.interpolate(fcat, scale_factor=8, mode='bilinear', align_corners=True)
-        feat = self.ffm(fsp, fcp)
-        feat = F.interpolate(feat, scale_factor=8, mode='bilinear', align_corners=True)
-        out = self.conv_out(feat)
-        out = F.interpolate(out, scale_factor=4, mode='bilinear', align_corners=True)
-        return out
+        h, w = x.size()[2:]
+        feat_res8, feat_cp8, feat_cp16 = self.cp(x)
+        feat_fuse = self.ffm(feat_res8, feat_cp8)
+        feat_out = self.conv_out(feat_fuse)
+        # Only the main head is used at inference; conv_out16/32 exist because
+        # the checkpoint carries their weights (deep supervision during
+        # training) and strict loading requires them to be present.
+        return F.interpolate(feat_out, (h, w), mode='bilinear', align_corners=True)
 
 
 def _cone_kernel(size: int) -> np.ndarray:
