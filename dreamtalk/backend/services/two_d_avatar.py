@@ -241,6 +241,13 @@ class TwoDAvatarRenderer:
                 api = self._get_musetalk()
                 if api is not None:
                     try:
+                        # Headroom must be re-checked before EVERY render, not
+                        # only before the first load. _get_musetalk() caches the
+                        # API and early-returns thereafter, but the host LLM
+                        # reloads on each reply to generate the text — so by the
+                        # time we render, the ~5 GB we evicted at load time is
+                        # back on the card and the VAE encode OOMs.
+                        self._ensure_vram_headroom()
                         filename = f"avatar_2d_{uuid.uuid4().hex}.mp4"
                         result = api.generate(
                             video_path=str(source),
