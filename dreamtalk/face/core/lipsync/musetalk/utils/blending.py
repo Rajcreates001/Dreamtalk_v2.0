@@ -21,11 +21,23 @@ def face_seg(image, mode="raw", fp=None):
         # source and blend only the generated mouth, jaw, and lower cheeks.
         width, height = image.size
         mask = np.zeros((height, width), dtype=np.uint8)
-        center = (width // 2, int(height * 0.68))
-        axes = (max(1, int(width * 0.42)), max(1, int(height * 0.30)))
+        # Keep the ellipse clear of the crop edges so the blur below can fall
+        # all the way to zero inside the image. The previous sizing reached
+        # 0.98 of the height, so the mask was still bright where the crop ended
+        # and the paste left a visible straight edge across the neck.
+        center = (width // 2, int(height * 0.63))
+        axes = (max(1, int(width * 0.34)), max(1, int(height * 0.23)))
         cv2.ellipse(mask, center, axes, 0, 0, 360, 255, -1)
-        mask[: int(height * 0.43), :] = 0
-        mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=max(2.0, width * 0.025))
+        # Fade the top out over a band rather than slicing it flat, which
+        # otherwise draws a horizontal line across the mid-face.
+        fade_top, fade_bottom = int(height * 0.36), int(height * 0.50)
+        if fade_bottom > fade_top:
+            ramp = np.linspace(0.0, 1.0, fade_bottom - fade_top, dtype=np.float32)
+            mask[fade_top:fade_bottom, :] = (
+                mask[fade_top:fade_bottom, :] * ramp[:, None]
+            ).astype(np.uint8)
+        mask[:fade_top, :] = 0
+        mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=max(3.0, width * 0.045))
         return Image.fromarray(mask)
     seg_image = fp(image, mode=mode)
     if seg_image is None:
@@ -44,15 +56,30 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
     face_large = body.crop(crop_box)
     ori_shape = face_large.size
     mask_image = face_seg(face_large, mode=mode, fp=fp)
-    mask_small = mask_image.crop((x - x_s, y - y_s, x1 - x_s, y1 - y_s))
-    mask_image = Image.new('L', ori_shape, 0)
-    mask_image.paste(mask_small, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))
-    width, height = mask_image.size
-    top_boundary = int(height * upper_boundary_ratio)
-    modified_mask_image = Image.new('L', ori_shape, 0)
-    modified_mask_image.paste(mask_image.crop((0, top_boundary, width, height)), (0, top_boundary))
-    blur_kernel_size = int(0.05 * ori_shape[0] // 2 * 2) + 1
-    mask_array = cv2.GaussianBlur(np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0)
+
+    if fp is None:
+        # The geometric fallback mask is already a soft ellipse sized to this
+        # crop, and it deliberately extends past the inner face box so its
+        # falloff completes inside the pasted region.
+        #
+        # The BiSeNet path below crops that mask to the face box and repastes
+        # it, which is right for a segmentation mask (it is zero outside the
+        # face anyway) but SHEARS the ellipse into a hard-edged rectangle —
+        # the visible seam across the neck and shoulder in rendered frames.
+        # Skip the crop entirely and keep the soft edge.
+        mask_array = np.array(mask_image)
+    else:
+        mask_small = mask_image.crop((x - x_s, y - y_s, x1 - x_s, y1 - y_s))
+        mask_image = Image.new('L', ori_shape, 0)
+        mask_image.paste(mask_small, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))
+        width, height = mask_image.size
+        top_boundary = int(height * upper_boundary_ratio)
+        modified_mask_image = Image.new('L', ori_shape, 0)
+        modified_mask_image.paste(mask_image.crop((0, top_boundary, width, height)), (0, top_boundary))
+        blur_kernel_size = int(0.05 * ori_shape[0] // 2 * 2) + 1
+        mask_array = cv2.GaussianBlur(
+            np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0
+        )
     mask_image = Image.fromarray(mask_array)
     face_large.paste(face, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))
     body.paste(face_large, crop_box[:2], mask_image)

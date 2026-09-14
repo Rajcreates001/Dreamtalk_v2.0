@@ -233,6 +233,17 @@ class TwoDAvatarRenderer:
         if requested not in {"auto", "musetalk", "audio-reactive"}:
             raise ValueError("2D engine must be auto, musetalk, or audio-reactive")
 
+        # Downscale before MuseTalk, not just in the audio-reactive fallback.
+        #
+        # MuseTalk synthesises the mouth at 256x256 internally and pastes it
+        # back into the detected face box. Feeding it the full-resolution
+        # portrait (measured: 1832px, face box ~700px) means that 256px patch
+        # is upscaled roughly 3x, which is why the mouth read as soft and
+        # smeared against a sharp background. Bringing the source down so the
+        # face lands near MuseTalk's native scale keeps the generated region
+        # and the untouched region at comparable detail.
+        source = self._fit_source(source, destination)
+
         started = time.perf_counter()
         with self._render_lock:
             neural_error = None
@@ -360,6 +371,39 @@ class TwoDAvatarRenderer:
             "angry": (1.08, 0.8), "frustrated": (1.05, 0.75), "sad": (0.82, 0.55),
             "fearful": (1.12, 0.9), "calm": (0.9, 0.45), "loving": (0.94, 0.55),
         }.get(emotion, (1.0, 0.65))
+
+    @staticmethod
+    def _fit_source(source: Path, destination: Path) -> Path:
+        """Cap the source resolution so MuseTalk is not upscaling its output.
+
+        Returns the original path when no resize is needed, otherwise a resized
+        copy alongside the render. INTER_AREA is the correct filter for
+        downscaling — it averages, so it does not alias the way INTER_LINEAR
+        does on high-frequency detail like hair and fabric.
+        """
+        try:
+            max_side = int(os.environ.get("AVATAR_2D_MAX_SIDE", "768"))
+        except ValueError:
+            max_side = 768
+        if max_side <= 0:
+            return source
+        image = cv2.imread(str(source), cv2.IMREAD_COLOR)
+        if image is None:
+            return source
+        height, width = image.shape[:2]
+        if max(height, width) <= max_side:
+            return source
+        scale = max_side / max(height, width)
+        resized = cv2.resize(
+            image, (int(width * scale), int(height * scale)), interpolation=cv2.INTER_AREA
+        )
+        fitted = destination / f"source_fit_{max_side}{source.suffix or '.png'}"
+        cv2.imwrite(str(fitted), resized)
+        logger.info(
+            "2D source scaled %dx%d -> %dx%d for MuseTalk",
+            width, height, resized.shape[1], resized.shape[0],
+        )
+        return fitted
 
     def _render_audio_reactive(self, source: Path, audio: Path, output: Path, emotion: str) -> None:
         image = cv2.imread(str(source), cv2.IMREAD_COLOR)
