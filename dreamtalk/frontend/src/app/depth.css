@@ -115,7 +115,17 @@
     pointer-events: none;
   }
 
-  /* Thinner film for chrome that should barely register until scrolled under. */
+  /* A card that READS like glass without costing a backdrop pass.
+   Same rim, same layered shadow, same translucent-looking fill — but the
+   fill is a flat blend against the page rather than a live blur of it.
+   Use this for repeated content cards; reserve real .glass for chrome,
+   where there are only ever a handful on screen at once. */
+.card-solid {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+/* Thinner film for chrome that should barely register until scrolled under. */
   .glass-subtle {
     background: var(--glass-bg-subtle);
     backdrop-filter: blur(calc(var(--glass-blur) * 0.55)) saturate(var(--glass-saturate));
@@ -266,6 +276,23 @@
 :root[data-perf="low"] {
   --glass-blur: 8px;
   --glass-saturate: 100%;
+}
+/* At this tier the machine has already failed the frame budget, so stop
+   paying for backdrop sampling entirely and fall back to an opaque surface.
+   A flat panel at 60fps beats a frosted one at 11. */
+:root[data-perf="low"] .glass,
+:root[data-perf="low"] .glass-strong,
+:root[data-perf="low"] .glass-subtle {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--surface-elevated) !important;
+}
+/* The per-section decorative blobs are the largest blurred surfaces on the
+   page (120px radius each, ~34 of them). They contribute almost nothing
+   visually at 2% opacity and cost the most. */
+:root[data-perf="low"] [class*="blur-["] {
+  filter: none !important;
+  opacity: 0 !important;
 }
 :root[data-perf="low"] .grain::after {
   display: none;

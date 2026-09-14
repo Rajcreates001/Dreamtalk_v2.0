@@ -284,10 +284,13 @@ export function GlassCard({
   return (
     <motion.div
       variants={staggerItem}
-      // Uses the shared depth system rather than a one-off recipe, so these
-      // cards pick up the specular rim, inner shadow and layered drop shadow
-      // that make glass read as glass — and degrade with the perf tiers.
-      className={`glass glass-rim rounded-[20px] p-6 ${
+      // NOT glass. There are ~20 of these on the landing page, and each
+      // backdrop-filter is an uncacheable full blur pass while the page
+      // scrolls — measured at 29 live glass layers and 11 FPS during scroll.
+      // Glass is reserved for chrome (nav, modals, toolbars). These get the
+      // specular rim and layered shadow, which is what actually reads as
+      // depth, at roughly zero per-frame cost.
+      className={`card-solid glass-rim rounded-[20px] p-6 shadow-elev-2 ${
         hover
           ? "hover:-translate-y-1 hover:border-primary/30 hover:shadow-elev-3 transition-all duration-300 ease-out group cursor-default"
           : ""

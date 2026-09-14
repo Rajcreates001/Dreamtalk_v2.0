@@ -85,6 +85,12 @@ function Model({ url, skinColor, reduced, onFit }: {
       }
     })
     strip.forEach((o) => o.removeFromParent())
+    // Debug handle, opt-in via ?debug3d — the R3F store is not reachable from
+    // the canvas element, so without this there is no way to inspect material
+    // and texture state on a running build.
+    if (typeof window !== "undefined" && window.location.search.includes("debug3d")) {
+      ;(window as unknown as { __dtAvatar?: unknown }).__dtAvatar = c
+    }
     return c
   }, [scene, skinColor])
 
