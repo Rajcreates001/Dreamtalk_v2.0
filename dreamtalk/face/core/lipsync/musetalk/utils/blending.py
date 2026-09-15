@@ -59,6 +59,47 @@ def face_seg(image, mode="raw", fp=None):
     return seg_image
 
 
+
+def _restore_detail(generated, reference, amount=None):
+    """Put back the high-frequency detail MuseTalk's VAE throws away.
+
+    The mouth is generated at 256x256 and pasted into a face box measured at
+    231x258 on a real source, so it is NOT an upscaling artefact - the patch
+    is already at native resolution. The softness is the autoencoder: it
+    reconstructs shape and motion faithfully and loses fine texture doing it.
+    Measured against untouched regions of the same rendered frame:
+
+        eyes+glasses (untouched)  laplacian var 684.4
+        hair         (untouched)                454.8
+        MOUTH        (regenerated)              258.0   -> 0.45x as sharp
+
+    Anything under about 0.6 reads as visibly soft, and it was reported as
+    "the mouth section is so blurr".
+
+    An unsharp mask restores the missing band. `amount` is derived per frame
+    from the sharpness gap rather than fixed, because the gap depends on how
+    much of the crop the mouth occupies: a constant that suits one framing
+    over-sharpens another into crunchy edges and ringing.
+    """
+    gen = generated.astype(np.float32)
+    if amount is None:
+        g = cv2.cvtColor(generated, cv2.COLOR_RGB2GRAY) if generated.ndim == 3 else generated
+        r = cv2.cvtColor(reference, cv2.COLOR_RGB2GRAY) if reference.ndim == 3 else reference
+        gv = float(cv2.Laplacian(g.astype(np.float32), cv2.CV_32F).var())
+        rv = float(cv2.Laplacian(r.astype(np.float32), cv2.CV_32F).var())
+        if gv <= 1e-6 or rv <= 1e-6:
+            return generated
+        # Laplacian variance scales roughly with the square of edge contrast,
+        # so the amplitude shortfall is the square root of the variance ratio.
+        deficit = max(0.0, (rv / gv) ** 0.5 - 1.0)
+        amount = float(np.clip(deficit, 0.0, 1.4))
+    if amount <= 0.02:
+        return generated
+    blurred = cv2.GaussianBlur(gen, (0, 0), sigmaX=1.1)
+    out = gen + amount * (gen - blurred)
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
 def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode="raw", fp=None):
     body = Image.fromarray(image[:, :, ::-1])
     face = Image.fromarray(face[:, :, ::-1])
@@ -94,6 +135,18 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
             np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0
         )
     mask_image = Image.fromarray(mask_array)
+
+    # Match the generated patch's sharpness to the face it is being pasted
+    # into, using the untouched crop as the reference. Done before the paste
+    # so the soft patch never reaches the frame.
+    try:
+        ref = np.array(face_large.crop(
+            (x - x_s, y - y_s, x1 - x_s, y1 - y_s)))
+        sharpened = _restore_detail(np.array(face), ref)
+        face = Image.fromarray(sharpened)
+    except Exception:
+        pass  # sharpening is an enhancement; never fail a render for it
+
     face_large.paste(face, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))
     body.paste(face_large, crop_box[:2], mask_image)
     body = np.array(body)

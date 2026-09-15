@@ -989,7 +989,20 @@ class FacePipeline:
                             )
 
                             rgb = source_image[:, :, ::-1] if source_image.shape[-1] == 3 else source_image
-                            pil = _Image.fromarray(rgb.astype("uint8")).resize((512, 512))
+                            full = _Image.fromarray(rgb.astype("uint8"))
+                            # Crop to the head before parsing.
+                            #
+                            # Feeding the whole frame resized to 512 makes the
+                            # head a small fraction of the image, and BiSeNet
+                            # then reports hair_fraction 0.039 and top_ratio
+                            # 0.0 — i.e. "this person has no hair" — where a
+                            # head-sized crop of the same photo measures 0.28
+                            # and 0.67. The parser is fine; it was being shown
+                            # a picture in which the hair was a few pixels tall.
+                            fw, fh = full.size
+                            head = full.crop((int(fw * 0.20), 0,
+                                              int(fw * 0.80), int(fh * 0.55)))
+                            pil = head.resize((512, 512))
                             parsing = FaceParsing()(pil, mode="all")
                             hair_i = FACE_LABELS.index("hair")
                             skin_i = FACE_LABELS.index("skin")
@@ -1006,7 +1019,7 @@ class FacePipeline:
                         from dreamtalk.pipeline.face_hair import build_hair
 
                         hair = build_hair(
-                            vertices, np.asarray(faces, dtype=np.int64),
+                            vertices, np.asarray(_faces, dtype=np.int64),
                             masks, frame, metrics=hair_metrics,
                             colour=hair_colour or (0.07, 0.05, 0.04),
                         )
