@@ -47,9 +47,20 @@ function capabilities(p: AvatarProfile): Capability[] {
     {
       label: "Voice clone",
       ready: cloned,
+      /* Coverage comes from the runtime, never from comparing languages here.
+       *
+       * This used to infer "sample_language is outside clone coverage" from
+       * sample_language !== validated_language. That inference held while
+       * IndicF5 covered 11 languages and validated Hindi for an English
+       * sample. Indic-Mio now clones all 23 including English, and the card
+       * still told users their English was a stand-in — while the runtime
+       * was cloning it. The backend publishes
+       * sample_language_supported_by_clone against the CURRENT engine; that
+       * is the only thing that can be right after an engine change. */
       detail: cloned
         ? `verified${clonedIn ? ` in ${clonedIn}` : ""}${
-            voice.sample_language && clonedIn && voice.sample_language !== clonedIn
+            voice.sample_language &&
+            voice.sample_language_supported_by_clone === false
               ? `; ${voice.sample_language} is outside clone coverage and uses a stand-in`
               : ""
           }`

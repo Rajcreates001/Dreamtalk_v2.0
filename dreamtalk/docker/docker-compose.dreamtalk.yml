@@ -326,11 +326,23 @@ services:
       # MuseTalk (~2 GiB, and it unloads after each render).
       - --gpu-memory-utilization
       - ${INDICMIO_GPU_MEMORY_UTILIZATION:-0.45}
-      # No CUDA graph capture. Graphs bought throughput we do not need - this
-      # model emits short speech-token sequences - and cost both the captured
-      # graph memory and a profiling reservation on top, on the exact card
-      # MuseTalk also has to fit on.
-      - --enforce-eager
+      # CUDA graphs stay ON. --enforce-eager was set here to save memory, and
+      # it cost far more than it saved: without graphs every decoded token
+      # goes through Python dispatch, so vLLM's throughput becomes a function
+      # of spare CPU. Measured on this box while MuseTalk was loading in
+      # another container (backend at 126% CPU, GPU at 0%):
+      #
+      #   Avg generation throughput: 1.4 - 5.0 tokens/s
+      #
+      # for a 0.6B model that should run 50-200 tok/s. Speech-token sequences
+      # are hundreds of tokens, so Indic-Mio's internal call hit httpx.ReadTimeout
+      # and returned 502 to the backend - while /health stayed green, which is
+      # why the service looked fine. Graph replay removes that per-token
+      # Python cost and makes synthesis robust to a busy CPU.
+      #
+      # Memory is not the constraint it was: the OOM that prompted --enforce-eager
+      # happened at 0.35 utilization, and 0.45 measured 2.27 GiB of KV cache
+      # headroom with eager mode, which comfortably absorbs the graphs.
       # Bound concurrent sequences so activation memory cannot spike into
       # MuseTalk's headroom. Speech synthesis here is one request at a time.
       - --max-num-seqs

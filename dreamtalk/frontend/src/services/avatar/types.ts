@@ -89,6 +89,12 @@ export interface AvatarVoice {
   validated_language?: string
   /** True once a reference voice is stored and usable. */
   ready?: boolean
+  /** Whether the CURRENTLY running clone engine covers `sample_language`.
+   *  Published by the backend because only it knows which engine is live —
+   *  the UI must not infer coverage by comparing language codes. */
+  sample_language_supported_by_clone?: boolean
+  /** Engine that answered the coverage question, for display/debugging. */
+  clone_engine_now?: string | null
   /** Result of the runtime's own clone-and-listen check. `cloned` here is
    *  the authoritative answer to "does this avatar speak in its own voice". */
   validation?: { cloned?: boolean; engine?: string; language?: string; [k: string]: unknown }
