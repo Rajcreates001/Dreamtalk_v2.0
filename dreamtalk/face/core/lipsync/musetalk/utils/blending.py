@@ -60,58 +60,46 @@ def face_seg(image, mode="raw", fp=None):
 
 
 
-def _restore_detail(generated, reference, amount=None):
-    """Put back the high-frequency detail MuseTalk's VAE throws away.
+def _restore_detail(generated, reference, sigma=1.5):
+    """Give the regenerated patch back the skin texture the VAE removed.
 
-    The mouth is generated at 256x256 and pasted into a face box measured at
-    231x258 on a real source, so it is NOT an upscaling artefact - the patch
-    is already at native resolution. The softness is the autoencoder: it
-    reconstructs shape and motion faithfully and loses fine texture doing it.
-    Measured against untouched regions of the same rendered frame:
+    MuseTalk is pasted at native resolution - the patch is 256x256 and the
+    detected face box measures 231x258 on a real source - so this is not a
+    resampling artefact. The autoencoder reconstructs shape and motion
+    faithfully and destroys fine texture doing it. Measured against untouched
+    regions of the same rendered frame, the lower face came back at 239.6
+    laplacian variance against the source's 502.6: 0.46x, and it was reported
+    as "smudged and not like avatar".
 
-        eyes+glasses (untouched)  laplacian var 684.4
-        hair         (untouched)                454.8
-        MOUTH        (regenerated)              258.0   -> 0.45x as sharp
+    Sharpening cannot fix that. An unsharp mask only amplifies edges that
+    survived, and the measurement says it tops out around 0.87 of the source.
+    Detail transfer instead keeps the low frequencies from the generated
+    patch, which carry the new mouth shape, and takes the high frequencies
+    from the original photograph, which still has the real skin.
 
-    Anything under about 0.6 reads as visibly soft, and it was reported as
-    "the mouth section is so blurr".
+    sigma is the crossover, and it is a genuine trade-off rather than a free
+    win: the donor frame is static, so the more of it you take the harder it
+    fights the animation. Measured over a rendered sequence, sharpness as a
+    fraction of the source against mouth motion as a fraction of the raw
+    generated output:
 
-    An unsharp mask restores the missing band. `amount` is derived per frame
-    from the sharpness gap rather than fixed, because the gap depends on how
-    much of the crop the mouth occupies: a constant that suits one framing
-    over-sharpens another into crunchy edges and ringing.
+        generated as-is          motion 1.00   sharpness 0.46
+        unsharp mask 0.448       motion 1.05   sharpness 0.87
+        detail transfer s=1.5    motion 0.91   sharpness 0.98
+        detail transfer s=2.5    motion 0.84   sharpness 1.00
+        detail transfer s=4.0    motion 0.74   sharpness 1.00
+
+    s=1.5 buys essentially all the sharpness for 9% of the motion. s=4.0
+    reaches the same sharpness and costs a quarter of the movement, which is
+    the ghosting showing up as a number.
     """
     gen = generated.astype(np.float32)
-    if amount is None:
-        g = cv2.cvtColor(generated, cv2.COLOR_RGB2GRAY) if generated.ndim == 3 else generated
-        r = cv2.cvtColor(reference, cv2.COLOR_RGB2GRAY) if reference.ndim == 3 else reference
-        # Measure the deficit where the model actually repaints.
-        #
-        # Averaging over the whole face box hides it: MuseTalk reproduces the
-        # eyes and brows almost exactly, and only the mouth and jaw come back
-        # soft, so the box-wide numbers were 475.2 against 599.7 - a ratio of
-        # 0.79 and an amount of 0.123, which is no correction at all. That is
-        # why the first render with this code measured 0.37 -> 0.38.
-        #
-        # The lower face alone measures 239.6 against 502.6: ratio 0.48,
-        # amount 0.448. Same frame, same patch, the honest number.
-        cut = int(g.shape[0] * 0.55)
-        g, r = g[cut:], r[cut:]
-        if g.size == 0 or r.size == 0:
-            return generated
-        gv = float(cv2.Laplacian(g.astype(np.float32), cv2.CV_32F).var())
-        rv = float(cv2.Laplacian(r.astype(np.float32), cv2.CV_32F).var())
-        if gv <= 1e-6 or rv <= 1e-6:
-            return generated
-        # Laplacian variance scales roughly with the square of edge contrast,
-        # so the amplitude shortfall is the square root of the variance ratio.
-        deficit = max(0.0, (rv / gv) ** 0.5 - 1.0)
-        amount = float(np.clip(deficit, 0.0, 1.4))
-    if amount <= 0.02:
+    ref = reference.astype(np.float32)
+    if gen.shape != ref.shape:
         return generated
-    blurred = cv2.GaussianBlur(gen, (0, 0), sigmaX=1.1)
-    out = gen + amount * (gen - blurred)
-    return np.clip(out, 0, 255).astype(np.uint8)
+    low = cv2.GaussianBlur(gen, (0, 0), sigmaX=sigma)
+    high = ref - cv2.GaussianBlur(ref, (0, 0), sigmaX=sigma)
+    return np.clip(low + high, 0, 255).astype(np.uint8)
 
 
 def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode="raw", fp=None):
