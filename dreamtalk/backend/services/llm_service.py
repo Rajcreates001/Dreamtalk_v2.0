@@ -105,9 +105,48 @@ async def chat_completion(
                 )
                 response.raise_for_status()
                 data = response.json()
+
+                # Reasoning models can return content: null.
+                #
+                # The configured model (gpt-oss-120b-coding) emits reasoning
+                # tokens before its answer and reports them separately. When
+                # the budget runs out mid-reasoning the reply comes back as
+                # finish_reason "length" with message.content EXACTLY null and
+                # the text stranded in message.reasoning — observed directly
+                # against the live endpoint. _clean_response(None) then fails
+                # or yields nothing, the caller logs "empty LLM response", and
+                # the avatar answers from the fallback path for no reason a
+                # log would explain.
+                #
+                # Retry once with a larger budget rather than giving up: the
+                # answer was never generated, so there is nothing to salvage
+                # from the first response.
+                choice = (data.get("choices") or [{}])[0]
+                message = choice.get("message") or {}
+                content = message.get("content")
+                if not content and choice.get("finish_reason") == "length":
+                    logger.warning(
+                        "%s returned no content (finish_reason=length, %d chars of "
+                        "reasoning); retrying with double the token budget",
+                        model, len(message.get("reasoning") or ""),
+                    )
+                    retry = {**current_payload,
+                             "max_tokens": int(current_payload.get("max_tokens", 512)) * 2}
+                    response = await client.post(
+                        f"{api_base}/chat/completions", headers=headers, json=retry)
+                    response.raise_for_status()
+                    data = response.json()
+                    choice = (data.get("choices") or [{}])[0]
+                    content = (choice.get("message") or {}).get("content")
+
+                if not content:
+                    raise RuntimeError(
+                        f"{model} returned no content "
+                        f"(finish_reason={choice.get('finish_reason')})")
+
                 _mark_endpoint_up(api_base)
                 return {
-                    "response": _clean_response(data["choices"][0]["message"]["content"]),
+                    "response": _clean_response(content),
                     "model": data.get("model", model),
                     "usage": data.get("usage", {}),
                     "api_base": api_base,
