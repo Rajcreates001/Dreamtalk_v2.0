@@ -77,7 +77,20 @@ x-shared-env: &shared-env
   # card also hosting the LLM that bar could never be met.
   MUSETALK_MIN_FREE_VRAM_GB: ${MUSETALK_MIN_FREE_VRAM_GB:-4.0}
   AVATAR_REQUIRE_GPU: ${AVATAR_REQUIRE_GPU:-true}
-  AVATAR_GPU_UNLOAD_AFTER_RENDER: ${AVATAR_GPU_UNLOAD_AFTER_RENDER:-true}
+  # Keep MuseTalk resident between renders.
+  #
+  # This defaulted to true, so the model was discarded after EVERY render and
+  # the next one paid the full cold load again. That load is ~20 minutes here
+  # (3.2 GB checkpoint, ~183s of CPU-bound unpickling for 686 tensors, plus
+  # fp16 conversion), which is why a 3-second clip measured 3482s end to end
+  # and why avatar_2d status kept reporting neural_loaded false moments after
+  # a successful warm-up. It also made the startup warm-up pointless: the
+  # first render consumed it and every render after paid full price.
+  #
+  # The card has room. Measured with vLLM serving Indic-Mio: 7096 MiB free of
+  # 8188, against ~2 GB for MuseTalk. Set this true again on a card where
+  # something else genuinely needs the memory back between renders.
+  AVATAR_GPU_UNLOAD_AFTER_RENDER: ${AVATAR_GPU_UNLOAD_AFTER_RENDER:-false}
   CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-0}
   NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
   # expandable_segments is deliberately OFF.
