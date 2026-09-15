@@ -350,10 +350,20 @@ async def lifespan(app: FastAPI):
             pass  # already reported by the callback above
         await warm_musetalk()
 
+    def _report_warm(t: asyncio.Future) -> None:
+        # Task.exception() RAISES CancelledError on a cancelled task, so the
+        # naive `t.exception() and log(...)` callback blew up inside uvloop on
+        # every shutdown — printing a traceback that looked like the warm-up
+        # had failed, while hiding any genuine warm-up error behind it.
+        if t.cancelled():
+            logger.info("MuseTalk warm-up cancelled (server shutting down)")
+            return
+        exc = t.exception()
+        if exc:
+            logger.warning("MuseTalk warm-up failed: %s", exc)
+
     warm = asyncio.ensure_future(_load_then_warm())
-    warm.add_done_callback(
-        lambda t: t.exception() and logger.warning(f"MuseTalk warm-up: {t.exception()}")
-    )
+    warm.add_done_callback(_report_warm)
 
     logger.info("=" * 60)
     logger.info("DreamTalk Backend Ready!")

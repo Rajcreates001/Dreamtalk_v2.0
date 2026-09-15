@@ -12,8 +12,8 @@ import { useAvatarChat } from "@/services/avatar/useAvatarChat"
  * talking-head + cloned voice), with a text conversation and a 2D/3D toggle.
  */
 export function AvatarConversation() {
-  const chat = useAvatarChat({ renderVideo: false })
   const [mode, setMode] = useState<AvatarMode>("2d")
+  const chat = useAvatarChat({ renderVideo: mode === "2d" })
   const [input, setInput] = useState("")
   const scroller = useRef<HTMLDivElement>(null)
 

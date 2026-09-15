@@ -25,6 +25,7 @@ import struct
 import subprocess
 import sys
 import time
+from urllib.parse import unquote, urlparse
 
 import numpy as np
 
@@ -213,10 +214,12 @@ def phase_lipsync() -> dict:
     d = r.json()
     url = d.get("video_url") or (d.get("video") or {}).get("video_url")
     local = None
+    expected_name = os.path.basename(unquote(urlparse(url or "").path))
     for cand in glob.glob(f"{RUNTIME}/{PROFILE}/responses/**/*.mp4", recursive=True):
-        if local is None or os.path.getmtime(cand) > os.path.getmtime(local):
+        if expected_name and os.path.basename(cand) == expected_name:
             local = cand
-    res = {"ok": True, "latency_s": round(dt, 1), "video_url": url,
+            break
+    res = {"ok": False, "latency_s": round(dt, 1), "video_url": url,
            "engine": d.get("engine"), "local": local}
     if local:
         res["motion"] = _frame_motion(local)
@@ -228,6 +231,10 @@ def phase_lipsync() -> dict:
               m.get("background", 9) < 0.5)
         res["verdict"] = ("PASS mouth moves, rest is still" if ok else
                           "FAIL see numbers above")
+        res["ok"] = bool(ok)
+        log("lipsync", res["verdict"])
+    else:
+        res["verdict"] = "FAIL response video was not found; refusing to inspect an older render"
         log("lipsync", res["verdict"])
     return res
 

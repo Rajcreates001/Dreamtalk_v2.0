@@ -69,6 +69,7 @@ export function TalkingHeadVideo({ profile, speech, className = "", glow = "var(
               ref={videoRef}
               src={videoUrl}
               playsInline
+              controls
               onEnded={onEnded}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
@@ -78,7 +79,11 @@ export function TalkingHeadVideo({ profile, speech, className = "", glow = "var(
         </AnimatePresence>
 
         {/* Audio-only playback (no rendered video) */}
-        {audioUrl && !videoUrl && <audio ref={audioRef} src={audioUrl} onEnded={onEnded} hidden />}
+        {audioUrl && !videoUrl && (
+          <audio ref={audioRef} src={audioUrl} onEnded={onEnded} controls
+            aria-label="Avatar speech"
+            className="absolute bottom-14 left-[5%] w-[90%]" />
+        )}
 
         {/* Live speaking meter (for the audio-only case) */}
         {speaking && !videoUrl && (

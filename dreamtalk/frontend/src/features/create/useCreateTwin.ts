@@ -160,7 +160,7 @@ export function useCreateTwin() {
       setFaceStatus("analyzing")
       const res: any = await pollUntil(
         () => digitalTwinApi.getAppearanceResult(twinId),
-        (r: any) => isOk(r?.status) || isFail(r?.status) || r?.face_detected === true,
+        (r: any) => isOk(r?.status) || isFail(r?.status),
       )
       setFaceResult({
         faceDetected: !!res.face_detected,
@@ -199,7 +199,7 @@ export function useCreateTwin() {
       setVoiceStatus("analyzing")
       const res: any = await pollUntil(
         () => digitalTwinApi.getVoiceResult(twinId),
-        (r: any) => isOk(r?.status) || isFail(r?.status) || r?.is_cloned === true,
+        (r: any) => isOk(r?.status) || isFail(r?.status),
       )
       setVoiceResult({
         isCloned: !!res.is_cloned,
@@ -263,7 +263,7 @@ export function useCreateTwin() {
       const res: any = await digitalTwinApi.runPipeline(twinId)
       const status = String(res?.status ?? "unknown")
       if (!isOk(status) || res?.error) {
-        setPipeline({ status, progress: 0, stage: status })
+        setPipeline({ status: "failed", progress: 0, stage: status })
         setError(res?.error || "Avatar processing failed. Please try again.")
         return
       }

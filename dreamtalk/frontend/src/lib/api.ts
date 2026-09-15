@@ -13,6 +13,29 @@ interface RequestOptions {
   auth?: boolean
 }
 
+/**
+ * An HTTP error that kept its status code.
+ *
+ * Callers need to tell "the server rejected your credentials" from "the
+ * server was not reachable". Collapsing both into a bare Error meant the
+ * app layout logged users out whenever the backend restarted, destroying a
+ * perfectly valid token because a fetch failed.
+ */
+export class ApiError extends Error {
+  readonly status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
+}
+
+/** True only for a genuine authentication rejection, never for a transport
+ *  failure, a timeout, or a 5xx while the backend is restarting. */
+export function isAuthRejection(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 401 || error.status === 403)
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {}, auth = false } = options
 
@@ -36,7 +59,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Request failed" }))
-    throw new Error(error.detail || `HTTP ${response.status}`)
+    throw new ApiError(error.detail || `HTTP ${response.status}`, response.status)
   }
 
   return response.json()

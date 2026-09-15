@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { AppSidebar } from "@/components/layout/AppSidebar"
 import { AppTopbar } from "@/components/layout/AppTopbar"
 import { AuroraField } from "@/components/depth"
-import { authApi, clearAuth } from "@/lib/api"
+import { authApi, clearAuth, isAuthRejection } from "@/lib/api"
 
 // ─── Page transition variants ───
 const pageVariants = {
@@ -28,10 +28,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
-    // Check auth on mount
-    authApi.me().catch(() => {
-      clearAuth()
-      router.push("/login")
+    /* Only a real auth rejection ends the session.
+     *
+     * This used to clear the token on ANY rejection, so a backend restart,
+     * a timeout or a 502 logged the user out and threw away credentials
+     * that were still valid — observed live: one ERR_EMPTY_RESPONSE during
+     * a deploy bounced an authenticated session back to /login.
+     * A transport failure says nothing about whether the token is good. */
+    authApi.me().catch((err) => {
+      if (isAuthRejection(err)) {
+        clearAuth()
+        router.push("/login")
+      }
     })
   }, [router])
 
