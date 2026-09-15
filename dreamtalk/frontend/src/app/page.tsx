@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import {
-  Sparkles, Menu, X, ChevronDown, ArrowRight, Check,
-  Bot, Users,
-  Search, LogIn,
+  Sparkles, Menu, X, ArrowRight, Check,
+  Bot, Users, LogIn,
 } from "lucide-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -89,19 +88,28 @@ const Nav = () => {
           </span>
         </Link>
 
+        {/* Only destinations that exist.
+         *
+         * This was ["Platform", "Solutions", "Developers", "Pricing"] rendered
+         * as <button> with no onClick and no href — four controls that
+         * highlighted on hover, showed a dropdown chevron, and did nothing at
+         * all when clicked. The page has exactly two real sections, #demo and
+         * #pricing; the other three named pages have never existed and still
+         * return 404. A nav entry that goes nowhere is worse than no entry:
+         * it reads as a broken app rather than a smaller one. */}
         <div className="hidden lg:flex items-center gap-8">
-          {["Platform", "Solutions", "Developers", "Pricing"].map((item) => (
-            <button key={item} className="flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground transition-colors">
-              {item} <ChevronDown className="h-3 w-3" />
-            </button>
+          {NAV_LINKS.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+            >
+              {item.label}
+            </a>
           ))}
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
-          <button className="w-9 h-9 rounded-xl bg-card/60 border border-border flex items-center justify-center text-foreground-muted hover:text-foreground transition-all">
-            <Search className="h-4 w-4" />
-          </button>
-
           <ThemeToggle />
 
           <Link href="/login" className="px-4 py-2 rounded-xl text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-card/60 transition-all">
@@ -126,10 +134,15 @@ const Nav = () => {
             className="lg:hidden bg-card/95 backdrop-blur-2xl border-t border-foreground/[0.06] overflow-hidden"
           >
             <div className="px-4 py-6 space-y-4">
-              {["Platform", "Solutions", "Developers", "Pricing", "Resources", "Company"].map((item) => (
-                <button key={item} className="block w-full text-left text-sm text-foreground hover:text-foreground py-2 transition-colors">
-                  {item}
-                </button>
+              {NAV_LINKS.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full text-left text-sm text-foreground hover:text-foreground py-2 transition-colors"
+                >
+                  {item.label}
+                </a>
               ))}
               <div className="flex items-center gap-3 pt-4 border-t border-foreground/[0.06]">
                 <Link href="/login" className="flex-1 text-center px-4 py-2.5 rounded-xl border border-foreground/[0.06] text-sm font-medium text-foreground">
@@ -146,6 +159,13 @@ const Nav = () => {
     </motion.header>
   )
 }
+
+/* The landing page's real sections. Anything not anchored to a section that
+ * exists does not belong in the nav — see the note at the desktop nav. */
+const NAV_LINKS = [
+  { label: "Live Demo", href: "#demo" },
+  { label: "Pricing", href: "#pricing" },
+] as const
 
 export default function LandingPage() {
   const [demoInput, setDemoInput] = useState("")
