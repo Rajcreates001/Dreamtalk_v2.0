@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
+import { assetUrl } from "@/services/avatar/client"
 import { AnimatePresence, motion } from "motion/react"
 import {
   ArrowLeft, ArrowRight, Camera, Check, ChevronRight, Cpu, Globe, Info,
@@ -11,6 +13,8 @@ import {
 import { STEP_ORDER, useCreateTwin, type Step } from "./useCreateTwin"
 import { useVoiceRecorder } from "./useVoiceRecorder"
 import { ThemeToggle } from "@/components/theme-toggle"
+
+const GeneratedHead = dynamic(() => import("@/components/avatar3d/GLBAvatar").then(m => m.GLBAvatar), { ssr: false })
 
 const STEP_META: Record<Exclude<Step, "consent">, { n: string; label: string }> = {
   identity: { n: "01", label: "Identity" },
@@ -492,6 +496,7 @@ function ProcessingStep({ c }: { c: C }) {
       {c.error && <ErrorBanner message={c.error} />}
 
       <div className="mt-6 text-left">
+        {failed && <button onClick={c.startProcessing} disabled={c.busy} className="mb-4 rounded-xl bg-primary px-5 py-3 text-primary-foreground disabled:opacity-40">Retry avatar generation</button>}
         <button onClick={() => setShowTech((s) => !s)} className="inline-flex items-center gap-2 text-sm text-foreground-muted hover:text-foreground transition-colors">
           <Cpu className="h-4 w-4" /> {showTech ? "Hide" : "Show"} technical details
         </button>
@@ -512,6 +517,8 @@ function ProcessingStep({ c }: { c: C }) {
 
 // ═══════════════════════════════════════════════════════════════════
 function PreviewStep({ c }: { c: C }) {
+  const generatedHead = assetUrl(c.runtimeProfile?.appearance?.glb_url)
+  const previewAudio = c.runtimeProfile?.voice?.preview_audio_url
   return (
     <div className="mx-auto max-w-3xl">
       <div className="text-center">
@@ -523,7 +530,9 @@ function PreviewStep({ c }: { c: C }) {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-5">
         <div className="sm:col-span-2 aspect-[4/5] overflow-hidden rounded-3xl border border-border bg-surface/50">
-          {c.faceResult?.previewUrl || c.facePreviewUrl ? (
+          {generatedHead ? (
+            <GeneratedHead url={generatedHead} interactive className="h-full w-full" />
+          ) : c.faceResult?.previewUrl || c.facePreviewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={c.faceResult?.previewUrl || c.facePreviewUrl!} alt={c.name} className="h-full w-full object-cover" />
           ) : (
@@ -535,9 +544,15 @@ function PreviewStep({ c }: { c: C }) {
           <h3 className="mt-1 font-display text-2xl font-bold">{c.name}</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <Row k="Visual identity" v={c.faceResult?.faceDetected ? "Ready" : "—"} good={c.faceResult?.faceDetected} />
-            <Row k="Voice identity" v={c.voiceResult ? (c.voiceResult.isCloned ? "Cloned" : c.voiceResult.isSynthetic ? "Synthetic" : "Ready") : "—"} good={!!c.voiceResult} />
+            <Row k="Voice identity" v={c.runtimeProfile?.voice?.validation?.cloned ? "Cloned and verified" : "Not verified"} good={!!c.runtimeProfile?.voice?.validation?.cloned} />
             <Row k="Status" v={c.pipeline?.status ?? "—"} good={c.isOk(c.pipeline?.status)} />
           </dl>
+          {typeof previewAudio === "string" && (
+            <div className="mt-4">
+              <p className="mb-2 text-sm">Listen to the generated cloned voice</p>
+              <audio controls preload="metadata" src={assetUrl(previewAudio)} className="w-full" />
+            </div>
+          )}
           <div className="mt-5 flex flex-wrap gap-2">
             {c.selectedLangs.map((code) => {
               const l = c.languages.find((x) => x.code === code)

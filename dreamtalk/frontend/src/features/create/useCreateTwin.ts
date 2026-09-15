@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { avatarApi, digitalTwinApi, getAccessToken } from "@/lib/api"
 import { avatarRuntime } from "@/services/avatar/client"
+import type { AvatarProfile } from "@/services/avatar/types"
 
 // ── View-model types (frontend-only; wire shapes live in lib/api.ts) ──
 export type Step = "consent" | "identity" | "voice" | "processing" | "preview"
@@ -96,6 +97,7 @@ export function useCreateTwin() {
 
   // Processing
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
+  const [runtimeProfile, setRuntimeProfile] = useState<AvatarProfile | null>(null)
 
   const blobUrls = useRef<string[]>([])
   const voiceBlobRef = useRef<Blob | null>(null)
@@ -166,7 +168,10 @@ export function useCreateTwin() {
         previewUrl: res.preview_url,
         statusRaw: res.status,
       })
-      setFaceStatus(isFail(res.status) || res.face_detected === false ? "error" : "done")
+      if (!res.face_detected || !isOk(res.status)) {
+        throw new Error(isFail(res.status) ? "Face analysis failed." : "Face analysis has not completed. Please retry.")
+      }
+      setFaceStatus("done")
     } catch (e: any) {
       setFaceStatus("error")
       setError(e?.message || "Face analysis failed.")
@@ -174,6 +179,7 @@ export function useCreateTwin() {
   }, [twinId])
 
   const clearFace = useCallback(() => {
+    faceFileRef.current = null
     setFaceFile(null); setFacePreviewUrl(null); setFaceStatus("idle"); setFaceResult(null)
   }, [])
 
@@ -201,7 +207,10 @@ export function useCreateTwin() {
         quality: res.quality_score ?? 0,
         statusRaw: res.status,
       })
-      setVoiceStatus(isFail(res.status) ? "error" : "done")
+      if (!isOk(res.status)) {
+        throw new Error(isFail(res.status) ? "Voice analysis failed." : "Voice analysis has not completed. Please retry.")
+      }
+      setVoiceStatus("done")
     } catch (e: any) {
       setVoiceStatus("error")
       setError(e?.message || "Voice processing failed.")
@@ -209,6 +218,7 @@ export function useCreateTwin() {
   }, [twinId])
 
   const clearVoice = useCallback(() => {
+    voiceBlobRef.current = null
     setVoiceUrl(null); setVoiceDuration(0); setVoiceStatus("idle"); setVoiceResult(null)
   }, [])
 
@@ -218,17 +228,22 @@ export function useCreateTwin() {
 
   /** Register a runtime avatar profile so /talk has a digital human to show. */
   const registerRuntimeProfile = useCallback(async () => {
-    if (!voiceBlobRef.current) return
-    try {
-      await avatarRuntime.createProfile({
+    if (!voiceBlobRef.current || !faceFileRef.current) {
+      throw new Error("Upload both a face photo and a voice sample before building your twin.")
+    }
+    const profile = await avatarRuntime.createProfile({
         name: name.trim() || "My Twin",
         voiceSample: voiceBlobRef.current,
         faceImages: faceFileRef.current ? [faceFileRef.current] : [],
         consentConfirmed: consent,
         consentSubjectName: name.trim() || undefined,
         language: primaryLang(),
-      })
-    } catch { /* runtime profile is optional; preview still proceeds */ }
+    })
+    setRuntimeProfile(profile)
+    if (!profile.appearance?.glb_url || !profile.voice?.validation?.cloned) {
+      throw new Error("Your avatar is incomplete: a generated 3D head and verified cloned voice are required. Please retry.")
+    }
+    return profile
   }, [name, consent, selectedLangs])
 
   // `/api/v1/pipeline/run` is synchronous — it returns the finished result, so
@@ -237,7 +252,8 @@ export function useCreateTwin() {
   // lifecycle status ("draft") and never transitions to complete, so the
   // progress ring sat at 0% forever even on success.
   const startProcessing = useCallback(async () => {
-    if (!twinId) return
+    if (!twinId || busy) return
+    setBusy(true)
     setStep("processing")
     setError(null)
     setPipeline({ status: "running", progress: 15, stage: "starting" })
@@ -245,22 +261,26 @@ export function useCreateTwin() {
       await digitalTwinApi.update(twinId, { language: primaryLang() }).catch(() => {})
       setPipeline({ status: "running", progress: 45, stage: "building" })
       const res: any = await digitalTwinApi.runPipeline(twinId)
-      const status = String(res?.status ?? "completed")
-      if (isFail(status) || res?.error) {
+      const status = String(res?.status ?? "unknown")
+      if (!isOk(status) || res?.error) {
         setPipeline({ status, progress: 0, stage: status })
         setError(res?.error || "Avatar processing failed. Please try again.")
         return
       }
-      setPipeline({ status, progress: 100, stage: status })
+      setPipeline({ status: "running", progress: 75, stage: "validating avatar and cloned voice" })
       await registerRuntimeProfile()
+      setPipeline({ status: "completed", progress: 100, stage: "completed" })
       setStep("preview")
     } catch (e: any) {
+      setPipeline({ status: "failed", progress: 0, stage: "failed" })
       const msg = String(e?.message ?? "")
       setError(msg.includes("Failed to fetch") || msg.includes("NetworkError")
         ? "Couldn't reach the backend. Make sure the DreamTalk API is running."
         : msg || "Processing failed.")
+    } finally {
+      setBusy(false)
     }
-  }, [twinId, selectedLangs, registerRuntimeProfile])
+  }, [twinId, selectedLangs, registerRuntimeProfile, busy])
 
 
 
@@ -281,7 +301,7 @@ export function useCreateTwin() {
     faceFile, facePreviewUrl, faceStatus, faceResult, analyzeFace, clearFace,
     voiceUrl, voiceDuration, voiceStatus, voiceResult, setVoice, clearVoice,
     languages, selectedLangs, toggleLang,
-    pipeline, startProcessing, isOk,
+    pipeline, runtimeProfile, startProcessing, isOk,
   }
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

@@ -1058,7 +1058,21 @@ class BrainPipeline:
         bg_state = self.bg.state_dict()
 
         # ── Step 8: Generate response ──
-        if model_name in ("deepseek", "llm") or "deepseek" in (model_name or "").lower() or "llm" in (model_name or "").lower():
+        #
+        # Any real model id means "ask the LLM". Only an explicit SNN request
+        # (or no model at all) takes the hand-written rule path.
+        #
+        # This used to test `"deepseek" in model_name or "llm" in model_name`,
+        # which quietly encoded one deployment's model naming as the rule for
+        # whether to think. Moving the fallback LLM from `deepseek-r1:7b` to
+        # `gpt-oss-120b-coding` matched neither substring, so the branch
+        # flipped from "ask the LLM" to "emit a canned paragraph", and users
+        # asking for a greeting were answered with "I've processed your input
+        # through my full cognitive architecture - encoding it as spike
+        # trains...". Nothing failed; the condition simply stopped being true.
+        wanted = (model_name or "").strip().lower()
+        use_llm = bool(wanted) and not wanted.startswith("snn")
+        if use_llm:
             system = LLMIntegration.ROLE_PROMPTS.get(role, LLMIntegration.ROLE_PROMPTS["normal_user"])
             if emotion:
                 system += (

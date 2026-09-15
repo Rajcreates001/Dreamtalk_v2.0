@@ -165,15 +165,17 @@ export default function CreateDigitalHumanPage() {
         language: "auto",
       })
       if (!profile?.id) throw new Error("The avatar runtime did not return a profile.")
+      if (!profile.appearance?.glb_url) {
+        throw new Error("The avatar was saved, but its 3D head could not be generated. Please retry with a clear front-facing photo.")
+      }
+      if (!profile.voice?.validation?.cloned) {
+        throw new Error(String(profile.voice?.validation_error || "The avatar was saved, but voice cloning could not be verified. Please retry when the voice engine is available."))
+      }
       setBuildProgress(70)
 
       // Make it the avatar /live talks to.
       updateBuildStep("Activating avatar…")
-      try {
-        await avatarRuntime.activate(profile.id)
-      } catch {
-        /* /live falls back to the first profile, so this is not fatal. */
-      }
+      await avatarRuntime.activate(profile.id)
       setBuildProgress(80)
 
       /* 2. Optional extras. A failure here leaves a working avatar that
