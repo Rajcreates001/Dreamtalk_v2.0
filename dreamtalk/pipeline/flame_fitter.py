@@ -810,6 +810,8 @@ def generate_uv_texture(
     *,
     photo_img: Optional[np.ndarray] = None,
     vertex_px: Optional[np.ndarray] = None,
+    head_mask: Optional[np.ndarray] = None,
+    vertex_visible: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Generate a UV texture atlas from per-vertex colors.
 
@@ -834,12 +836,51 @@ def generate_uv_texture(
     texture = np.zeros((output_size, output_size, 3), dtype=np.float32)
     weight = np.zeros((output_size, output_size), dtype=np.float32)
 
+    # Which vertices actually saw the subject?
+    #
+    # sample_colors_from_photo CLIPS projected coordinates into the image, so
+    # a vertex on the back of the skull - which the camera never saw - does
+    # not fail. It silently samples whatever sits at the nearest image edge:
+    # backdrop, suit shoulder, hair. Those colours are then "covered" as far
+    # as the weight buffer is concerned, so the gap fill never touches them,
+    # and the atlas keeps a dark smear where the back of the head should be.
+    # Measured on a rebuilt avatar: 10.9% of the atlas still black even with
+    # the gap fill running, because those texels were never gaps.
+    #
+    # A face is only written if all three of its vertices projected strictly
+    # inside the frame, and inside the head silhouette when one is supplied.
+    # Everything else is left uncovered so the skin fill below owns it.
+    vertex_valid = None
+    if vertex_px is not None and photo_img is not None:
+        ph, pw = photo_img.shape[:2]
+        inside = (
+            (vertex_px[:, 0] >= 0) & (vertex_px[:, 0] <= pw - 1)
+            & (vertex_px[:, 1] >= 0) & (vertex_px[:, 1] <= ph - 1)
+        )
+        if head_mask is not None:
+            xi = np.clip(vertex_px[:, 0].astype(np.int32), 0, pw - 1)
+            yi = np.clip(vertex_px[:, 1].astype(np.int32), 0, ph - 1)
+            inside &= head_mask[yi, xi] > 0
+        # The decisive test. A frontal photo shows one side of a closed
+        # surface, and the far side projects back INSIDE the frame, over the
+        # face - so a bounds check cannot catch it. Only the surface normal
+        # can: a vertex whose normal points away from the camera was never
+        # photographed, whatever pixel it happens to land on.
+        if vertex_visible is not None:
+            inside &= vertex_visible
+        vertex_valid = inside
+        logger.info("Texture sampling: %.1f%% of vertices projected onto the subject",
+                    100.0 * float(inside.mean()))
+
     # Render each face as a UV triangle
     # Use the UV coordinates from vt indexed by ft, not vertex_uv, for
     # the triangle rasterization, then sample colors via vertex_uv
     for fi in range(len(faces)):
         v_idx = faces[fi]  # (3,) vertex indices
         uv_idx = ft[fi]     # (3,) UV coordinate indices into vt
+
+        if vertex_valid is not None and not vertex_valid[v_idx].all():
+            continue
 
         # UV triangle in pixel space
         uv_px = np.zeros((3, 2), dtype=np.float32)
@@ -1197,12 +1238,34 @@ class FlameFitter:
         # Render UV texture atlas. Passing the projection lets the rasteriser
         # sample the photo per texel rather than interpolating 5023 per-vertex
         # colours, which is what actually puts skin detail in the atlas.
+        # Which vertices faced the camera when the photo was taken.
+        visible = None
+        try:
+            import cv2 as _cv2
+
+            faces_i = self.flame.faces.astype(np.int64)
+            vn = np.zeros_like(vertices_3d, dtype=np.float64)
+            tri = vertices_3d[faces_i]
+            fn = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+            for k in range(3):
+                np.add.at(vn, faces_i[:, k], fn)
+            vn /= np.maximum(np.linalg.norm(vn, axis=1, keepdims=True), 1e-9)
+            R, _ = _cv2.Rodrigues(np.asarray(rvec, dtype=np.float64))
+            # Camera looks down +Z in OpenCV convention; a surface is seen
+            # when its normal has a component back toward the camera.
+            n_cam = vn @ R.T
+            visible = n_cam[:, 2] < -0.05
+        except Exception as exc:
+            logger.info("Vertex visibility unavailable (%s); "
+                        "texture will keep unseen-surface samples", exc)
+
         texture = generate_uv_texture(
             vertex_uv, vertex_colors, tex["mean"],
             self.flame.faces, tex["ft"], tex["vt"],
             output_size=output_size,
             photo_img=photo_bgr,
             vertex_px=pixels_2d,
+            vertex_visible=visible,
         )
         return texture
 
