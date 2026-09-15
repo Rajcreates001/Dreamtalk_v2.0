@@ -917,6 +917,7 @@ class FacePipeline:
         mesh_path: Optional[str],
         output_dir: str,
         texture_path: Optional[str] = None,
+        source_image: Optional["np.ndarray"] = None,
     ) -> Tuple[Optional[str], List[str]]:
         """Package the textured mesh as a browser-native binary glTF asset.
 
@@ -965,6 +966,54 @@ class FacePipeline:
                         part["morph_targets"] = teeth_morph_targets(
                             part, targets, vertices, masks, frame)
                         mouth_parts.append(part)
+
+                    # FLAME models a skull, not hair: its scalp hugs the
+                    # cranium, so the subject's hair exists only as pixels
+                    # painted flat on bone and the head reads as shaved with
+                    # the crown cut off. Add a shell over the scalp, sized
+                    # from the subject's own hair as segmented in the photo.
+                    # Non-fatal: a head without the shell is the status quo,
+                    # a failed export is not.
+                    # Measure the subject's actual hair from their photo, so
+                    # the shell matches this head rather than an average one.
+                    hair_metrics, hair_colour = None, None
+                    if source_image is not None:
+                        try:
+                            from PIL import Image as _Image
+
+                            from dreamtalk.face.core.lipsync.musetalk.utils.face_parsing.model import (
+                                FACE_LABELS, FaceParsing,
+                            )
+                            from dreamtalk.pipeline.face_hair import (
+                                hair_metrics_from_parsing, sample_hair_colour,
+                            )
+
+                            rgb = source_image[:, :, ::-1] if source_image.shape[-1] == 3 else source_image
+                            pil = _Image.fromarray(rgb.astype("uint8")).resize((512, 512))
+                            parsing = FaceParsing()(pil, mode="all")
+                            hair_i = FACE_LABELS.index("hair")
+                            skin_i = FACE_LABELS.index("skin")
+                            hair_metrics = hair_metrics_from_parsing(parsing, hair_i, skin_i)
+                            hair_colour = sample_hair_colour(
+                                np.asarray(pil), parsing, hair_i)
+                            logger.info("Hair measured from photo: %s colour=%s",
+                                        hair_metrics, hair_colour)
+                        except Exception as exc:
+                            logger.info("Hair measurement unavailable (%s); "
+                                        "using conservative defaults", exc)
+
+                    try:
+                        from dreamtalk.pipeline.face_hair import build_hair
+
+                        hair = build_hair(
+                            vertices, np.asarray(faces, dtype=np.int64),
+                            masks, frame, metrics=hair_metrics,
+                            colour=hair_colour or (0.07, 0.05, 0.04),
+                        )
+                        for part in (hair or {}).get("parts", []):
+                            mouth_parts.append(part)
+                    except Exception as exc:
+                        logger.warning("Hair shell build failed: %s", exc)
                 except Exception as exc:
                     logger.warning("Blendshape/teeth build failed: %s", exc)
             elif len(vertices) != 5023:
@@ -1037,6 +1086,7 @@ class FacePipeline:
             result.mesh_3d_path = mesh_path
             result.mesh_glb_path, result.mesh_blendshape_names = self._export_glb(
                 mesh_path, output_dir, texture_path=tex_path,
+                source_image=image,
             )
             result.texture_path = tex_path
             result.mesh_vertex_count = mesh_info["vertex_count"]
