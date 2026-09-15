@@ -190,6 +190,16 @@ async def create_profile(
 @router.get("/profiles")
 async def list_profiles(current_user: dict = Depends(get_current_user)):
     runtime = get_avatar_runtime()
+    # Discover the clone engine before serialising. public_profile() decides
+    # whether a stored "language X is outside clone coverage" warning is still
+    # true, and it can only do that against a discovered engine — on a freshly
+    # started backend nothing has been discovered yet, so it would fall back to
+    # the smaller IndicF5 set and keep showing a warning Indic-Mio has made
+    # obsolete. discover() caches for 30s, so this is one call per half minute.
+    try:
+        await runtime.speech.discover()
+    except Exception:
+        pass  # coverage then falls back conservatively; never fail a listing
     return {
         "profiles": [
             runtime.public_profile(item)

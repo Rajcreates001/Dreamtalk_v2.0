@@ -163,6 +163,10 @@ class ClonedSpeechService:
         self._active_url: Optional[str] = None
         self._active_engine: Optional[str] = None
         self._health: dict[str, Any] = {}
+        # Keep the last engine we successfully discovered so callers that
+        # cannot await discover() (serialisers, template code) can still ask
+        # "does the CURRENT engine cover this language?" rather than trusting
+        # a claim recorded when some earlier engine was active.
         self._health_checked_at = 0.0
         self._discovery_lock = asyncio.Lock()
         self._synthesis_lock = asyncio.Lock()
@@ -194,6 +198,20 @@ class ClonedSpeechService:
             "http://localhost:8001",
         ]
         return list(dict.fromkeys(value.rstrip("/") for value in values if value))
+
+    def clone_languages_now(self) -> frozenset[str]:
+        """Languages the CURRENTLY discovered engine can clone into.
+
+        Synchronous on purpose: public_profile() serialises stored profiles
+        and cannot await discovery, but it still must not repeat a coverage
+        claim that a later engine has made false. Falls back to the smaller
+        IndicF5 set when nothing has been discovered yet, so an unknown
+        engine never over-promises.
+        """
+        engine = (self._health or {}).get("engine") or self._active_engine
+        if engine == "indic-mio":
+            return INDICMIO_LANGUAGES
+        return INDICF5_LANGUAGES
 
     async def discover(self, force: bool = False) -> dict[str, Any]:
         if not force and self._health and time.monotonic() - self._health_checked_at < 30:

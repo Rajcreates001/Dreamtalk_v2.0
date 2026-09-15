@@ -287,7 +287,33 @@ class AvatarRuntimeService:
         if reference_audio_path:
             voice["reference_audio_url"] = self._runtime_url(reference_audio_path)
         sample_language = normalize_language(voice.get("sample_language"))
-        voice["sample_language_supported_by_clone"] = sample_language in SUPPORTED_LANGUAGES
+
+        # Coverage is answered by the engine running NOW, not by whatever was
+        # running when this profile was built.
+        #
+        # clone_quality_warnings is written once at build time and stored
+        # forever. A profile built while IndicF5 was active carries "the
+        # sample language 'en' is outside the clone engine's coverage, so
+        # replies use a stand-in voice" — which was true then and is false
+        # now that Indic-Mio covers all 23 languages including English. The
+        # dashboard renders that string verbatim, so it told users their
+        # English replies were not cloned while the runtime was happily
+        # cloning them.
+        covered = self.speech.clone_languages_now()
+        voice["sample_language_supported_by_clone"] = sample_language in covered
+        voice["clone_engine_now"] = (
+            (getattr(self.speech, "_health", None) or {}).get("engine")
+            or getattr(self.speech, "_active_engine", None)
+        )
+        if sample_language in covered:
+            stale = [
+                w for w in (voice.get("clone_quality_warnings") or [])
+                if "outside the clone engine" in w
+            ]
+            if stale:
+                voice["clone_quality_warnings"] = [
+                    w for w in voice["clone_quality_warnings"] if w not in stale
+                ]
         if isinstance(voice.get("quality"), dict):
             voice["quality"].pop("path", None)
         if isinstance(voice.get("validation"), dict):
