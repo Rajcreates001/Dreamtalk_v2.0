@@ -85,6 +85,20 @@ def _restore_detail(generated, reference, amount=None):
     if amount is None:
         g = cv2.cvtColor(generated, cv2.COLOR_RGB2GRAY) if generated.ndim == 3 else generated
         r = cv2.cvtColor(reference, cv2.COLOR_RGB2GRAY) if reference.ndim == 3 else reference
+        # Measure the deficit where the model actually repaints.
+        #
+        # Averaging over the whole face box hides it: MuseTalk reproduces the
+        # eyes and brows almost exactly, and only the mouth and jaw come back
+        # soft, so the box-wide numbers were 475.2 against 599.7 - a ratio of
+        # 0.79 and an amount of 0.123, which is no correction at all. That is
+        # why the first render with this code measured 0.37 -> 0.38.
+        #
+        # The lower face alone measures 239.6 against 502.6: ratio 0.48,
+        # amount 0.448. Same frame, same patch, the honest number.
+        cut = int(g.shape[0] * 0.55)
+        g, r = g[cut:], r[cut:]
+        if g.size == 0 or r.size == 0:
+            return generated
         gv = float(cv2.Laplacian(g.astype(np.float32), cv2.CV_32F).var())
         rv = float(cv2.Laplacian(r.astype(np.float32), cv2.CV_32F).var())
         if gv <= 1e-6 or rv <= 1e-6:
