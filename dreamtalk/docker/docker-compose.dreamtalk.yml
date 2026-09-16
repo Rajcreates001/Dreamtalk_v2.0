@@ -394,6 +394,19 @@ services:
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
     volumes:
       - dreamtalk-huggingface:/models/huggingface
+    # Its own /health answers 200 as soon as the HTTP server is up, which is
+    # long before it can synthesize anything: the vLLM backend behind it takes
+    # minutes to load. depends_on covers an orderly `up`, but a restart policy
+    # does not honour depends_on, so after the host crash this container came
+    # back first, reported healthy, and every clone request fell through to the
+    # edge-tts stand-in with "All connection attempts failed" buried in a
+    # fallback_reason. Health has to mean the capability, not the process.
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8001/health && curl --fail --silent http://indic-mio-llm:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 600s
+      retries: 5
     depends_on:
       indic-mio-llm:
         condition: service_healthy
