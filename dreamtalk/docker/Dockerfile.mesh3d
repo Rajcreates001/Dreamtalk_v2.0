@@ -49,15 +49,43 @@ RUN git clone --depth 1 https://github.com/VAST-AI-Research/TripoSR.git /opt/tri
 
 WORKDIR /opt/triposr
 
-# torchmcubes must be built against the torch that is already installed, so it
-# gets its own step with build isolation off; installing it from
-# requirements.txt in one shot picks up a different torch and then fails to
-# import at runtime with an ABI mismatch.
+# torchmcubes has to be built against the torch that is already installed, and
+# getting there takes three steps rather than one. The obvious single
+# `pip install -r requirements.txt` fails twice over:
+#
+#  1. requirements.txt lists torchmcubes itself, and pip builds it in an
+#     isolated environment that has no torch: "torchmcubes must be built
+#     against an installed PyTorch". pip then abandons the whole resolve, so
+#     *nothing* in the file gets installed - and with `|| true` behind it
+#     that failure stays invisible until the service cannot import omegaconf.
+#  2. Passing --no-build-isolation fixes the torch visibility and breaks the
+#     build backend instead: "Cannot import 'scikit_build_core.build'",
+#     because with isolation off the backend must already be present.
+#
+# So: strip torchmcubes out of the requirements, install the rest normally,
+# install the build backend explicitly, then build torchmcubes against the
+# installed torch. And no `|| true` - a silent partial install here surfaces
+# much later as a runtime ImportError.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install -r requirements.txt || true && \
+    grep -iv torchmcubes requirements.txt > /tmp/requirements.notorch.txt && \
+    cat /tmp/requirements.notorch.txt && \
+    pip install -r /tmp/requirements.notorch.txt
+
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    pip install "scikit-build-core>=0.10" "cmake>=3.24" ninja && \
     pip install --no-build-isolation \
-      "git+https://github.com/tatsy/torchmcubes.git" && \
+      "git+https://github.com/tatsy/torchmcubes.git"
+
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install fastapi "uvicorn[standard]" python-multipart trimesh
+
+# Fail the build here rather than at the first reconstruction. An image that
+# starts, answers /health, and then cannot import its own CUDA extension is
+# the exact failure mode this project keeps hitting: a green healthcheck
+# beside a capability that does not work.
+RUN python -c "import torch, torchmcubes, trimesh, rembg, omegaconf; \
+    from torchmcubes import marching_cubes; \
+    print('torch', torch.__version__, 'torchmcubes OK')"
 
 COPY docker/mesh3d_server.py /opt/mesh3d_server.py
 

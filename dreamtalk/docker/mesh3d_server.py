@@ -95,6 +95,47 @@ def unload():
     return {"unloaded": True}
 
 
+def _bake(mesh, model, scene_code, resolution: int):
+    """Unwrap and bake a texture, falling back to vertex colours.
+
+    Baking needs xatlas for the UV unwrap and is the part of this pipeline
+    most likely to be missing or to fail on a degenerate mesh. Vertex colours
+    are always available and carry the same colour information at lower
+    spatial frequency, so a failed bake should downgrade the texture rather
+    than fail the reconstruction.
+    """
+    try:
+        import numpy as _np
+        from PIL import Image as _Image
+        from tsr.bake_texture import bake_texture as tsr_bake
+
+        baked = tsr_bake(mesh, model, scene_code, resolution)
+        mesh.visual = _mesh_texture_visual(mesh, baked)
+        logger.info("baked %dx%d texture", resolution, resolution)
+        return mesh
+    except Exception as exc:
+        logger.warning("texture bake unavailable (%s); keeping vertex colours",
+                       exc)
+        return mesh
+
+
+def _mesh_texture_visual(mesh, baked):
+    """Attach a baked texture to a trimesh mesh."""
+    import numpy as _np
+    import trimesh
+    from PIL import Image as _Image
+
+    image = baked["colors"]
+    if isinstance(image, _np.ndarray):
+        # bake_texture returns float RGB in 0..1 with the origin at the
+        # bottom, which is OpenGL's convention and not glTF's.
+        if image.dtype != _np.uint8:
+            image = (_np.clip(image, 0, 1) * 255).astype(_np.uint8)
+        image = _Image.fromarray(image[::-1])
+    return trimesh.visual.TextureVisuals(
+        uv=baked["uvs"], image=image)
+
+
 @app.post("/reconstruct")
 async def reconstruct(
     image: UploadFile = File(...),
@@ -131,11 +172,17 @@ async def reconstruct(
 
         with torch.no_grad():
             codes = model([pil], device=DEVICE)
-            meshes = model.extract_mesh(
-                codes, bake_texture, resolution=MC_RESOLUTION,
-                texture_resolution=texture_resolution,
-            )
+            # TSR.extract_mesh(scene_codes, has_vertex_color, resolution=...).
+            # The second argument is NOT "bake a texture" - it is the opposite
+            # of it, and passing bake_texture there asks for vertex colours
+            # whenever a texture was wanted and for neither when it was not.
+            # Texture baking is a separate pass over the extracted mesh.
+            meshes = model.extract_mesh(codes, not bake_texture,
+                                        resolution=MC_RESOLUTION)
         mesh = meshes[0]
+
+        if bake_texture:
+            mesh = _bake(mesh, model, codes[0], texture_resolution)
 
         out = tempfile.NamedTemporaryFile(suffix=".glb", delete=False)
         out.close()

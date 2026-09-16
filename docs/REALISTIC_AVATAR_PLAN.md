@@ -59,14 +59,36 @@ the orchestrator may unload the others for the duration rather than trying to
 fit everything at once.
 
 ### Phase 2 — measure, do not assume
-Reconstruct from the same source photo and compare against FLAME on:
-- **identity**: Facenet512 distance vs the photo (FLAME baseline: 0.1445)
-- **silhouette**: IoU of the rendered head against the BiSeNet head mask
-  from the photo — this is the number that captures "hair has volume"
-- geometry sanity: vertex count, watertightness, depth/width ratio
+`scripts/qa/mesh_compare.py` renders a mesh front-on and scores it two ways.
 
-Keep whichever wins per metric. FLAME may still win on identity while losing
-badly on silhouette; that result would itself decide the hybrid below.
+**FLAME baseline, measured on the KB profile:**
+
+| metric | value | reading |
+|---|---|---|
+| identity (Facenet512) | **0.1445** vs 0.300 threshold | recognisably the right person |
+| silhouette IoU | **0.5561** | |
+| recall | **0.6143** | 39% of the photographed head is simply absent |
+| precision | **0.8543** | what it does draw is mostly in the right place |
+| area ratio | **0.7191** | the render covers 72% of the head's area |
+
+That split is the whole argument in two numbers. Identity is fine because the
+photograph is projected on as texture. The outline is not, and the missing
+third is the crown and the hair — precision stays high while recall collapses,
+which is the signature of a shape that is *too small*, not one that is
+misplaced.
+
+Two properties of the harness are load-bearing:
+
+- Orientation is chosen by **detection confidence**, never by the identity
+  score, so it cannot select the pose that flatters the number it reports.
+- Pitch is a fallback, not part of the search. Including it let a −20° tilt
+  win on 0.9997 against 0.9993 of detector noise and moved the reported
+  identity from 0.1445 to 0.3494 — across the threshold. A search over poses
+  will find one that breaks your metric if you let it.
+
+Keep whichever model wins per metric. FLAME winning identity while losing
+silhouette is the expected outcome, and it is the argument for the hybrid
+below rather than a straight replacement.
 
 ### Phase 3 — animation transfer (the hard part)
 Give the generated mesh FLAME's blendshapes:
@@ -86,10 +108,27 @@ sharpness for 9% of the motion. Needs confirming on a rendered video, which
 is what Phase 0 makes affordable.
 
 ### Phase 5 — voice across 22 languages
-Indic-Mio is deployed and reports 23 clone languages. Verify each end to end
-rather than trusting the capability list: synthesize, confirm
-`validation.cloned`, measure pitch against the reference, and keep the audio
-for a human to judge accent.
+All 22 synthesize through Indic-Mio with `cloned: true`, no edge-tts
+fallback, no clipping, 2–24 s per request. That is the smoke test, and it
+stays true if the voice belongs to somebody else — which is the actual
+complaint. `scripts/qa/speaker_similarity.py` scores each output against the
+enrolment with WavLM-base-plus-sv.
+
+The first run of that harness reported an impostor control of **1.0000**. The
+same recording had been enrolled under several profile ids, so the "different
+speaker" was the subject. A control at 1.0 silently voids every other number
+in the report while looking like a strong result, so impostor selection now
+rejects candidates by content hash and again by similarity. The runtime does
+hold one genuinely different speaker — median f0 263 Hz against 143 Hz — and
+it scores **0.7447**. That is the line the cloned outputs have to clear.
+
+The only three languages below the same-speaker threshold were also the only
+three whose prompt was a single greeting word, synthesising to 0.64–0.72 s.
+An x-vector on a sub-second clip measures phonetics, not speaker. Those clips
+are now reported as unjudged rather than failed, and the prompts repeat the
+greeting to reach a measurable length — repetition rather than invented
+sentences, because a wrong sentence in a language nobody here can check tests
+the wrong thing.
 
 ### Phase 6 — end to end
 Login → build avatar → 3D → 2D → conversation in several languages, with the
