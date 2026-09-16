@@ -9,11 +9,17 @@
 # Licence: MIT for BOTH the source and the pretrained weights, which is the
 # distinction that disqualified Hunyuan3D (Tencent non-commercial, and
 # excluded in the EU/UK/KR) and PIFuHD (research-only terms).
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+#
+# Two stages, because the compiler is needed to build this image and not to
+# run it. The devel base is ~7GB against the runtime base's ~2.5GB, and
+# carrying nvcc, cmake and the CUDA headers into production cost around 8GB of
+# image — enough, on top of everything else, to fill the host disk hard enough
+# that the Docker VM's ext4 aborted its journal and took the daemon with it.
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS builder
 
-# devel, not runtime: torchmcubes compiles CUDA kernels at install time and
-# needs nvcc. The runtime image has the libraries but not the compiler, and
-# the failure surfaces late as a missing nvcc during pip install.
+# devel, not runtime, HERE: torchmcubes compiles CUDA kernels at install time
+# and needs nvcc. The runtime image has the libraries but not the compiler,
+# and the failure surfaces late as a missing nvcc during pip install.
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -66,8 +72,13 @@ WORKDIR /opt/triposr
 # install the build backend explicitly, then build torchmcubes against the
 # installed torch. And no `|| true` - a silent partial install here surfaces
 # much later as a runtime ImportError.
+#
+# gradio goes too. It is here for TripoSR's demo app, which this image does
+# not run, and it pins websockets<12 against the one uvicorn[standard]
+# installs - a conflict that resolves to a warning and 100MB of unused
+# dependencies.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    grep -iv torchmcubes requirements.txt > /tmp/requirements.notorch.txt && \
+    grep -ivE 'torchmcubes|gradio' requirements.txt > /tmp/requirements.notorch.txt && \
     cat /tmp/requirements.notorch.txt && \
     pip install -r /tmp/requirements.notorch.txt
 
@@ -97,19 +108,56 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     CMAKE_ARGS="-DCMAKE_CUDA_ARCHITECTURES=89" \
     pip install --no-build-isolation /opt/torchmcubes
 
+# onnxruntime is rembg's inference backend and rembg does not declare it, so
+# `import rembg` succeeds and using it does not. CPU build on purpose: the
+# GPU one brings its own CUDA and cuDNN, and background removal on one
+# portrait is a second either way.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install fastapi "uvicorn[standard]" python-multipart trimesh
+    pip install fastapi "uvicorn[standard]" python-multipart trimesh onnxruntime
 
-# Fail the build here rather than at the first reconstruction. An image that
-# starts, answers /health, and then cannot import its own CUDA extension is
-# the exact failure mode this project keeps hitting: a green healthcheck
-# beside a capability that does not work.
-RUN python -c "import torch, torchmcubes, trimesh, rembg, omegaconf; \
+# Build-only packages, dropped before the venv is copied forward. cmake and
+# ninja arrive as pip wheels carrying their own binaries; keeping them would
+# hand the runtime stage ~50MB of compiler it cannot use.
+RUN pip uninstall -y cmake ninja scikit-build-core pybind11 || true
+
+
+# ── runtime ───────────────────────────────────────────────────────────
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/models/huggingface \
+    MESH3D_PORT=8003 \
+    PATH=/opt/venv/bin:$PATH
+
+# python3 without -dev, no compiler, no git. libgl1 and libglib2.0-0 stay:
+# OpenCV and moderngl link against them at import time, so dropping them
+# turns into an ImportError rather than a smaller image.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    python3 libgl1 libglib2.0-0 curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/triposr /opt/triposr
+COPY --from=builder /opt/triposr_commit.txt /opt/triposr_commit.txt
+
+# Fail the build here rather than at the first reconstruction, and do it in
+# the RUNTIME stage rather than the builder: the builder still had nvcc and
+# the CUDA headers, so an extension that only resolves because of them would
+# pass there and fail here. An image that starts, answers /health, and then
+# cannot import its own CUDA extension is the exact failure mode this project
+# keeps hitting — a green healthcheck beside a capability that does not work.
+RUN python -c "import sys; sys.path.insert(0, chr(47) + 'opt/triposr'); \
+    import torch, torchmcubes, trimesh, rembg, onnxruntime, omegaconf; \
     from torchmcubes import marching_cubes; \
-    print('torch', torch.__version__, 'torchmcubes OK')"
+    from tsr.system import TSR; \
+    print('torch', torch.__version__, '| torchmcubes, rembg, TSR all import')"
 
 COPY docker/mesh3d_server.py /opt/mesh3d_server.py
 
+WORKDIR /opt/triposr
 EXPOSE 8003
 HEALTHCHECK --interval=30s --timeout=10s --start-period=240s --retries=5 \
     CMD curl --fail http://localhost:8003/health || exit 1

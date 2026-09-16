@@ -398,9 +398,38 @@ class AvatarRuntimeService:
         voice_quality = await asyncio.to_thread(prepare_reference_audio, voice_sample_path, str(voice_path))
 
         transcription = None
+        language_warnings: list[str] = []
         requested_language = None if language == "auto" else normalize_language(language)
         if not reference_text.strip():
-            transcription = await self.asr.transcribe(str(voice_path), requested_language)
+            # Detect first, always, even when the caller named a language.
+            #
+            # Passing a language straight through to Whisper forces the decode
+            # into it, and Whisper then reports language_probability 1.0
+            # because it was told rather than because it agrees. An English
+            # enrolment recording submitted as Hindi came back as
+            # "मरा ्चेण र्ची एक सी ख्लोने..." with confidence 1.0 and no
+            # warning - and that transcript is not cosmetic: Indic-Mio clones
+            # from the prompt audio *together with its transcript*, so a wrong
+            # one is a prompt that contradicts its own audio.
+            transcription = await self.asr.transcribe(str(voice_path), None)
+            detected, certainty = transcription.language, transcription.confidence
+            if requested_language and requested_language != detected:
+                if certainty >= 0.70:
+                    language_warnings.append(
+                        f"The recording is {detected} (detected at "
+                        f"{certainty:.0%}), not the {requested_language} that "
+                        f"was requested; the {detected} transcript was kept "
+                        f"because a transcript that disagrees with its own "
+                        f"audio degrades the voice clone.")
+                else:
+                    # Weak detection: the caller probably knows better than a
+                    # coin-flip, so honour the request and transcribe again.
+                    transcription = await self.asr.transcribe(
+                        str(voice_path), requested_language)
+                    language_warnings.append(
+                        f"Language detection was uncertain ({detected} at "
+                        f"{certainty:.0%}); transcribed as the requested "
+                        f"{requested_language}.")
             reference_text = transcription.text
             sample_language = transcription.language
         else:
@@ -506,7 +535,7 @@ class AvatarRuntimeService:
                 "ready": False,
                 "sample_language": sample_language,
                 "sample_language_supported_by_clone": sample_language in SUPPORTED_LANGUAGES,
-                "clone_quality_warnings": [],
+                "clone_quality_warnings": list(language_warnings),
                 "reference_text": reference_text.strip(),
                 "reference_audio_path": str(voice_path),
                 "reference_audio_url": self._runtime_url(str(voice_path)),
