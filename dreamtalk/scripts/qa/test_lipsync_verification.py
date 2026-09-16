@@ -7,10 +7,10 @@ import e2e_avatar as qa
 
 
 class LipSyncVerificationTests(unittest.TestCase):
-    def verify(self, files, motion):
+    def verify(self, files, motion, url_key="video_url"):
         response = Mock(status_code=200)
         response.json.return_value = {
-            "video_url": "/api/v1/avatar/assets/profile/responses/new.mp4?signature=test",
+            url_key: "/api/v1/avatar/assets/profile/responses/new.mp4?signature=test",
             "engine": "musetalk",
         }
         with ExitStack() as stack:
@@ -27,6 +27,12 @@ class LipSyncVerificationTests(unittest.TestCase):
         result, calls = self.verify(["/tmp/old.mp4"], {})
         self.assertFalse(result["ok"])
         self.assertEqual(calls, 0)
+
+    def test_accepts_legacy_url_contract(self):
+        result, _ = self.verify(["/tmp/new.mp4"], {
+            "mouth": 2, "mouth_over_eyes": 4, "background": 0.1,
+        }, url_key="url")
+        self.assertTrue(result["ok"])
 
     def test_rejects_a_motionless_new_video(self):
         result, _ = self.verify(["/tmp/new.mp4"], {

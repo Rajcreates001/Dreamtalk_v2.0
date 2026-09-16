@@ -27,7 +27,7 @@ export function TalkingHeadVideo({ profile, speech, className = "", glow = "var(
   const [openLevel, setOpenLevel] = useState(0)
 
   const poster = assetUrl(profile?.appearance?.primary_image_url)
-  const videoUrl = assetUrl(speech?.video?.video_url)
+  const videoUrl = assetUrl(speech?.video?.video_url ?? speech?.video?.url)
   const audioUrl = assetUrl(speech?.audio_url ?? speech?.audio?.audio_url)
   const speaking = !!(videoUrl || audioUrl)
 

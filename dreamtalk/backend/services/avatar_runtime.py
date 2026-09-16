@@ -1195,6 +1195,8 @@ class AvatarRuntimeService:
             )
             path = result.pop("path", None)
             result["url"] = self._runtime_url(path)
+            # Browser clients use video_url; keep url for existing API consumers.
+            result["video_url"] = result["url"]
             result["render_mode"] = "talkinghead_2d"
             return result
         except Exception as exc:

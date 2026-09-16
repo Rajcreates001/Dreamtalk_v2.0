@@ -6,6 +6,7 @@ import logging
 import math
 import os
 import tempfile
+import threading
 import traceback
 import uuid
 from pathlib import Path
@@ -19,23 +20,35 @@ from dreamtalk.pipeline.models import FaceAnalysisResult
 
 logger = logging.getLogger("dreamtalk.pipeline.face")
 
-# Optional imports with broad exception handling for torch DLL issues
-try:
-    import mediapipe as mp
-    mp_face_mesh = mp.solutions.face_mesh
-    mp_face_detection = mp.solutions.face_detection
-    mp_face_landmarks = mp.solutions.face_connections
-    MEDIAPIPE_AVAILABLE = True
-except Exception:
-    MEDIAPIPE_AVAILABLE = False
+# MediaPipe imports TensorFlow in some installed versions. Do not load it while
+# registering API routes: face analysis runs in a worker when actually requested.
+MEDIAPIPE_AVAILABLE = False
+MEDIAPIPE_TASKS_AVAILABLE = False
+_mediapipe_imported = False
+_mediapipe_import_lock = threading.Lock()
 
-try:
-    import mediapipe as mp
-    from mediapipe.tasks import python as mp_tasks_python
-    from mediapipe.tasks.python import vision as mp_tasks_vision
-    MEDIAPIPE_TASKS_AVAILABLE = hasattr(mp, "Image") and hasattr(mp_tasks_vision, "FaceLandmarker")
-except Exception:
-    MEDIAPIPE_TASKS_AVAILABLE = False
+
+def _import_mediapipe():
+    global mp, mp_face_mesh, mp_face_detection, mp_tasks_python, mp_tasks_vision
+    global MEDIAPIPE_AVAILABLE, MEDIAPIPE_TASKS_AVAILABLE, _mediapipe_imported
+    with _mediapipe_import_lock:
+        if _mediapipe_imported:
+            return
+        try:
+            import mediapipe as mp
+            if hasattr(mp, "solutions"):
+                mp_face_mesh = mp.solutions.face_mesh
+                mp_face_detection = mp.solutions.face_detection
+                MEDIAPIPE_AVAILABLE = True
+        except Exception as exc:
+            logger.warning("MediaPipe import unavailable: %s", exc)
+        try:
+            from mediapipe.tasks import python as mp_tasks_python
+            from mediapipe.tasks.python import vision as mp_tasks_vision
+            MEDIAPIPE_TASKS_AVAILABLE = hasattr(mp, "Image") and hasattr(mp_tasks_vision, "FaceLandmarker")
+        except Exception as exc:
+            logger.warning("MediaPipe Tasks import unavailable: %s", exc)
+        _mediapipe_imported = True
 
 DEEPFACE_AVAILABLE = importlib.util.find_spec("deepface") is not None
 
@@ -128,6 +141,7 @@ class FacePipeline:
     # ─── Lazy Model Loading ────────────────────────────────────────────────
 
     def _lazy_load_mediapipe(self):
+        _import_mediapipe()
         if MEDIAPIPE_AVAILABLE and self._face_mesh is None:
             try:
                 self._face_mesh = mp_face_mesh.FaceMesh(

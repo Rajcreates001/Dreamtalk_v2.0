@@ -24,6 +24,7 @@ export interface LanguageInfo {
 /** Rendered 2D talking-head video (only present when render_video=true). */
 export interface AvatarVideo {
   video_url?: string
+  url?: string
   duration?: number
   [k: string]: unknown
 }

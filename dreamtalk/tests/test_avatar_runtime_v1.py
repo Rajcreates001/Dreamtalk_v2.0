@@ -248,5 +248,43 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
             self.assertLessEqual(result.dominance, 1.0)
 
 
+class VideoContractTests(unittest.TestCase):
+    def test_face_pipeline_import_does_not_eagerly_load_mediapipe(self):
+        import ast
+        from dreamtalk.pipeline import face_pipeline
+
+        tree = ast.parse(Path(face_pipeline.__file__).read_text())
+        # Imports inside functions are allowed; module-level try/if imports are not.
+        def imports_at_startup(nodes):
+            for node in nodes:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    continue
+                if isinstance(node, ast.Import):
+                    yield from (alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    yield node.module or ""
+                yield from imports_at_startup(ast.iter_child_nodes(node))
+
+        self.assertFalse(any(name.startswith("mediapipe") for name in imports_at_startup(tree.body)))
+
+    def test_render_exposes_browser_and_legacy_urls(self):
+        from unittest.mock import Mock
+
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = AvatarRuntimeService.__new__(AvatarRuntimeService)
+            runtime.store = Mock(runtime_root=Path(temp))
+            runtime.two_d = Mock()
+            runtime.two_d.render.return_value = {
+                "status": "completed", "path": str(Path(temp) / "clip.mp4"),
+            }
+            runtime._runtime_url = Mock(return_value="/signed/clip.mp4")
+            result = runtime._render_video({
+                "id": "test", "appearance": {"source_image_paths": ["face.jpg"]},
+            }, "speech.wav", "neutral")
+            self.assertEqual(result["video_url"], "/signed/clip.mp4")
+            self.assertEqual(result["url"], result["video_url"])
+            self.assertNotIn("path", result)
+
+
 if __name__ == "__main__":
     unittest.main()

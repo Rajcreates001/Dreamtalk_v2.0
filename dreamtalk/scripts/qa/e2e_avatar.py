@@ -212,7 +212,8 @@ def phase_lipsync() -> dict:
         log("lipsync", f"FAIL {r.text[:300]}")
         return {"ok": False, "status": r.status_code, "body": r.text[:300]}
     d = r.json()
-    url = d.get("video_url") or (d.get("video") or {}).get("video_url")
+    video = d.get("video") or d
+    url = video.get("video_url") or video.get("url")
     local = None
     expected_name = os.path.basename(unquote(urlparse(url or "").path))
     for cand in glob.glob(f"{RUNTIME}/{PROFILE}/responses/**/*.mp4", recursive=True):
