@@ -3,6 +3,7 @@
 from PIL import Image
 import numpy as np
 import cv2
+import os
 
 
 def get_crop_box(box, expand):
@@ -102,6 +103,34 @@ def _restore_detail(generated, reference, sigma=1.5):
     return np.clip(low + high, 0, 255).astype(np.uint8)
 
 
+def _add_mouth_region(mask_array, face_box, crop_box):
+    """Guarantee that the generated lower-mouth pixels reach the final frame.
+
+    The optional face parser is trained for segmentation, not for MuseTalk's
+    crop coordinates. On some portraits it returns a jaw mask that is valid
+    but leaves the lips at a very low alpha. A soft, face-relative mouth
+    ellipse closes that gap without exposing the generated eyes or forehead.
+    """
+    try:
+        gain = float(os.environ.get("MUSETALK_MOUTH_MASK_GAIN", "1.0"))
+    except (TypeError, ValueError):
+        gain = 1.0
+    if gain <= 0:
+        return mask_array
+    x, y, x1, y1 = face_box
+    x_s, y_s = crop_box[:2]
+    width, height = mask_array.shape[1], mask_array.shape[0]
+    rx, ry = x - x_s, y - y_s
+    rw, rh = max(1, x1 - x), max(1, y1 - y)
+    center = (int(rx + rw * 0.50), int(ry + rh * 0.70))
+    axes = (max(2, int(rw * 0.38)), max(2, int(rh * 0.19)))
+    mouth = np.zeros((height, width), dtype=np.uint8)
+    cv2.ellipse(mouth, center, axes, 0, 0, 360, 255, -1)
+    mouth = cv2.GaussianBlur(mouth, (0, 0), sigmaX=max(2.0, rw * 0.035))
+    mouth = np.clip(mouth.astype(np.float32) * min(gain, 1.5), 0, 255).astype(np.uint8)
+    return np.maximum(mask_array, mouth)
+
+
 def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode="raw", fp=None):
     body = Image.fromarray(image[:, :, ::-1])
     face = Image.fromarray(face[:, :, ::-1])
@@ -136,6 +165,7 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
         mask_array = cv2.GaussianBlur(
             np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0
         )
+    mask_array = _add_mouth_region(mask_array, face_box, crop_box)
     mask_image = Image.fromarray(mask_array)
 
     # Match the generated patch's sharpness to the face it is being pasted
@@ -144,7 +174,10 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
     try:
         ref = np.array(face_large.crop(
             (x - x_s, y - y_s, x1 - x_s, y1 - y_s)))
-        sharpened = _restore_detail(np.array(face), ref)
+        generated = np.array(face)
+        if ref.shape[:2] != generated.shape[:2]:
+            ref = cv2.resize(ref, (generated.shape[1], generated.shape[0]), interpolation=cv2.INTER_CUBIC)
+        sharpened = _restore_detail(generated, ref)
         face = Image.fromarray(sharpened)
     except Exception:
         pass  # sharpening is an enhancement; never fail a render for it

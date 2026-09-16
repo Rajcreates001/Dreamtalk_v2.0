@@ -67,7 +67,7 @@ class MuseTalkConfig:
     use_saved_coord: bool = False
     saved_coord: bool = False
     use_float16: bool = field(default_factory=_default_float16)
-    parsing_mode: str = "jaw"
+    parsing_mode: str = field(default_factory=lambda: os.environ.get("MUSETALK_PARSING_MODE", "jaw"))
     left_cheek_width: int = 90
     right_cheek_width: int = 90
     version: str = "v15"

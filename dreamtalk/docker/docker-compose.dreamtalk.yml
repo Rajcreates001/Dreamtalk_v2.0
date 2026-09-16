@@ -76,6 +76,7 @@ x-shared-env: &shared-env
   # headroom bar comes down accordingly. It was 6.5 GB, sized for fp32 — on a
   # card also hosting the LLM that bar could never be met.
   MUSETALK_MIN_FREE_VRAM_GB: ${MUSETALK_MIN_FREE_VRAM_GB:-4.0}
+  MUSETALK_MOUTH_MASK_GAIN: ${MUSETALK_MOUTH_MASK_GAIN:-1.0}
   AVATAR_REQUIRE_GPU: ${AVATAR_REQUIRE_GPU:-true}
   # Keep MuseTalk resident between renders.
   #

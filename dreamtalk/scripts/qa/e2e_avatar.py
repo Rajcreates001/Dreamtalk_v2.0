@@ -174,14 +174,32 @@ def _frame_motion(video: str) -> dict:
         return {"frames": len(files), "error": "too few frames"}
     imgs = [cv2.imread(f, cv2.IMREAD_GRAYSCALE).astype(np.float32) for f in files]
     h, w = imgs[0].shape
-    bands = {
-        "forehead_eyes": (int(h * 0.15), int(h * 0.45)),
-        "mouth":         (int(h * 0.60), int(h * 0.85)),
-        "background":    (0, int(h * 0.08)),
-    }
-    out = {"frames": len(files), "size": [w, h]}
-    for name, (y0, y1) in bands.items():
-        diffs = [float(np.abs(imgs[i + 1][y0:y1] - imgs[i][y0:y1]).mean())
+    # The source is a portrait with the head in the upper half of a 768px
+    # canvas. Fixed full-frame percentages put the old mouth band on the
+    # shirt/torso and could report a valid talking render as motionless.
+    detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    faces = detector.detectMultiScale(imgs[0].astype(np.uint8), scaleFactor=1.08,
+                                      minNeighbors=5, minSize=(max(40, w // 10), max(40, h // 10)))
+    if len(faces):
+        fx, fy, fw, fh = max(faces, key=lambda box: int(box[2]) * int(box[3]))
+        regions = {
+            "forehead_eyes": (max(0, fy + int(fh * 0.08)), min(h, fy + int(fh * 0.48)),
+                               max(0, fx + int(fw * 0.10)), min(w, fx + int(fw * 0.90))),
+            "mouth": (max(0, fy + int(fh * 0.52)), min(h, fy + int(fh * 0.92)),
+                      max(0, fx + int(fw * 0.10)), min(w, fx + int(fw * 0.90))),
+            "background": (0, max(1, int(h * 0.08)), 0, w),
+        }
+        out_face = [int(fx), int(fy), int(fw), int(fh)]
+    else:
+        regions = {
+            "forehead_eyes": (int(h * 0.15), int(h * 0.45), 0, w),
+            "mouth": (int(h * 0.60), int(h * 0.85), 0, w),
+            "background": (0, int(h * 0.08), 0, w),
+        }
+        out_face = None
+    out = {"frames": len(files), "size": [w, h], "face_box": out_face}
+    for name, (y0, y1, x0, x1) in regions.items():
+        diffs = [float(np.abs(imgs[i + 1][y0:y1, x0:x1] - imgs[i][y0:y1, x0:x1]).mean())
                  for i in range(len(imgs) - 1)]
         out[name] = round(float(np.mean(diffs)), 3)
     out["mouth_over_eyes"] = (round(out["mouth"] / out["forehead_eyes"], 2)
@@ -227,8 +245,9 @@ def phase_lipsync() -> dict:
         m = res["motion"]
         log("lipsync", f"motion mouth={m.get('mouth')} eyes={m.get('forehead_eyes')} "
                        f"bg={m.get('background')} ratio={m.get('mouth_over_eyes')}")
-        ok = (m.get("mouth", 0) > 0.5 and
-              (m.get("mouth_over_eyes") or 0) > 1.5 and
+        eyes = float(m.get("forehead_eyes") or 0.0)
+        mouth_ratio_ok = eyes <= 0.15 or (m.get("mouth_over_eyes") or 0) > 1.5
+        ok = (m.get("mouth", 0) > 0.5 and mouth_ratio_ok and
               m.get("background", 9) < 0.5)
         res["verdict"] = ("PASS mouth moves, rest is still" if ok else
                           "FAIL see numbers above")

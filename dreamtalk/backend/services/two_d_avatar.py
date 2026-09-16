@@ -309,13 +309,13 @@ class TwoDAvatarRenderer:
                             neural=True, lipsync=True, fallback_reason=None,
                         )
                         self._record_validation(rendered)
-                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "true").lower() == "true":
+                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "false").lower() == "true":
                             self._unload_musetalk()
                         return rendered
                     except Exception as exc:
                         neural_error = str(exc)
                         self._musetalk_error = neural_error
-                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "true").lower() == "true":
+                        if os.environ.get("AVATAR_GPU_UNLOAD_AFTER_RENDER", "false").lower() == "true":
                             self._unload_musetalk()
                         logger.exception("MuseTalk rendering failed; using audio-reactive renderer")
                 else:
