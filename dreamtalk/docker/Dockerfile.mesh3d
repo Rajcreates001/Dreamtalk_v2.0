@@ -71,22 +71,31 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     cat /tmp/requirements.notorch.txt && \
     pip install -r /tmp/requirements.notorch.txt
 
-# CMAKE_CXX_STANDARD=17 is not a preference. torchmcubes' helper_math.h
-# declares its own `lerp` at global scope; under C++20 libstdc++ also puts
-# std::lerp there, and nvcc's host pass dies with
+# torchmcubes asks for C++20 and cannot be compiled with it. Its
+# helper_math.h declares a global `lerp`, C++20 puts std::lerp in scope
+# beside it, and nvcc's host pass dies with
 #   error: 'float lerp(float, float, float)' conflicts with a previous
 #   declaration
-# after nine minutes of compiling. torch 2.5 is a C++17 build anyway.
+# after five minutes of compiling. Passing -DCMAKE_CXX_STANDARD=17 does not
+# help: it reaches the cache and the project's own CMakeLists overrides it,
+# so the standard has to be changed at the source. torch 2.5 is a C++17
+# build, so this moves the extension onto the same standard as the library
+# it links against rather than away from it.
 #
-# CMAKE_CUDA_ARCHITECTURES=89 matches the card this runs on (RTX 4060,
-# capability 8.9). Without it the kernels are built for every architecture
-# the toolkit knows, which is most of that nine minutes.
+# CMAKE_CUDA_ARCHITECTURES=89 is the card this runs on (RTX 4060, capability
+# 8.9). Without it the kernels are built for every architecture the toolkit
+# knows, which is most of those five minutes.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install "scikit-build-core>=0.10" "cmake>=3.24" ninja pybind11 && \
+    git clone --depth 1 https://github.com/tatsy/torchmcubes.git /opt/torchmcubes && \
+    sed -i -E 's/(CXX_STANDARD|CUDA_STANDARD)([ ]+)20/\1\217/g; s/(cxx_std_|cuda_std_)20/\117/g' \
+      /opt/torchmcubes/CMakeLists.txt /opt/torchmcubes/cxx/CMakeLists.txt 2>/dev/null || true && \
+    grep -rniE 'std_|_STANDARD' /opt/torchmcubes/CMakeLists.txt /opt/torchmcubes/cxx/CMakeLists.txt || true
+
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     CMAKE_PREFIX_PATH="$(python -c 'import pybind11, torch; print(pybind11.get_cmake_dir() + chr(58) + torch.utils.cmake_prefix_path)')" \
-    CMAKE_ARGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CUDA_STANDARD=17 -DCMAKE_CUDA_ARCHITECTURES=89" \
-    pip install --no-build-isolation \
-      "git+https://github.com/tatsy/torchmcubes.git"
+    CMAKE_ARGS="-DCMAKE_CUDA_ARCHITECTURES=89" \
+    pip install --no-build-isolation /opt/torchmcubes
 
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install fastapi "uvicorn[standard]" python-multipart trimesh

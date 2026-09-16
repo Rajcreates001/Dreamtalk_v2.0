@@ -32,7 +32,11 @@ import numpy as np
 API = "http://localhost:5000/api/v1"
 EMAIL = "wiz1789388539@qa.dev"
 PASSWORD = "Qa!2345678"
-PROFILE = "71d2b3f8-51eb-4435-a4ee-665f60049850"
+# Overridable so a freshly rebuilt avatar can be checked without editing
+# the harness - which is how a "verified" number ends up describing the
+# previous build.
+PROFILE = os.environ.get("DREAMTALK_QA_PROFILE",
+                         "71d2b3f8-51eb-4435-a4ee-665f60049850")
 RUNTIME = "/app/dreamtalk/media/avatar_runtime"
 OUT = "/tmp/e2e_out"
 os.makedirs(OUT, exist_ok=True)
@@ -111,12 +115,73 @@ def phase_mesh() -> dict:
     log("mesh", f"blink closes {closure:.1f}% of the eyeball "
                 f"({'PASS' if closure >= 95 else 'FAIL - eye cannot shut'})")
 
+    # "the morph moves some vertices" is too weak a test - a viseme that
+    # displaced the ears would pass it - so check WHERE the motion lands.
+    #
+    # Not by mask, though. The first version of this check required 20% of a
+    # viseme's displacement to fall inside FLAME's `lips` region and failed
+    # `aa` and `ih`. The mesh was fine; the test was wrong. `lips` contains
+    # only the lip vertices, and an open-mouth viseme correctly moves mostly
+    # jaw, chin and upper neck - `aa` puts 49% of its motion in `neck`, which
+    # is what a dropped jaw looks like.
+    #
+    # The displacement centroid needs no mask to be the right one. Measured on
+    # a good head: visemes sit at 16-28% of head height and blink at 63%.
+    up = int(np.argmax(ext))
+    y = v[:, up]
+    lo, hi = float(y.min()), float(y.max())
+    visemes = [n for n in ("aa", "ih", "ou", "ee", "oh") if n in names]
+    res["morph_detail"] = {}
+    deltas = {}
+    bad = []
     for n in names:
         d = accessor(js, binc, prim["targets"][names.index(n)]["POSITION"])
-        moved = int((np.linalg.norm(d, axis=1) > 1e-6).sum())
+        mag = np.linalg.norm(d, axis=1)
+        moved = int((mag > 1e-6).sum())
+        total = float(mag.sum())
+        height = (float(((y - lo) / (hi - lo) * (mag / total)).sum())
+                  if total > 0 else 0.0)
+        deltas[n] = d.astype(np.float64).ravel()
+        res["morph_detail"][n] = {"moved_vertices": moved,
+                                  "max_displacement": round(float(mag.max()), 5),
+                                  "centroid_height": round(height, 3)}
         if moved == 0:
-            log("mesh", f"WARN morph '{n}' moves no vertices")
-    res["ok"] = closure >= 95 and depth_ratio > 0.5
+            log("mesh", f"FAIL morph '{n}' moves no vertices")
+            bad.append(n)
+        elif n in visemes and height > 0.40:
+            log("mesh", f"FAIL viseme '{n}' is centred at {height:.0%} of head "
+                        f"height - that is not the mouth")
+            bad.append(n)
+    for n in visemes:
+        info = res["morph_detail"][n]
+        log("mesh", f"viseme {n:3} moves {info['moved_vertices']:4} verts, "
+                    f"centred at {info['centroid_height']:.0%} of head height, "
+                    f"max {info['max_displacement']:.4f}")
+    if "blink" in res["morph_detail"]:
+        log("mesh", f"blink        centred at "
+                    f"{res['morph_detail']['blink']['centroid_height']:.0%} "
+                    f"of head height")
+
+    # Five visemes that are the same shape would animate as one. Any pair
+    # above this correlation is a duplicate wearing two names.
+    pairs = []
+    for i, a in enumerate(visemes):
+        for b in visemes[i + 1:]:
+            u, w = deltas[a], deltas[b]
+            denom = float(np.linalg.norm(u) * np.linalg.norm(w))
+            sim = float(u @ w / denom) if denom else 0.0
+            pairs.append((round(sim, 3), a, b))
+            if sim > 0.98:
+                log("mesh", f"FAIL visemes '{a}' and '{b}' are the same shape "
+                            f"(cosine {sim:.3f})")
+                bad.append(f"{a}~{b}")
+    res["viseme_pair_similarity"] = sorted(pairs, reverse=True)
+    if pairs:
+        worst = max(pairs)
+        log("mesh", f"most similar viseme pair: {worst[1]}/{worst[2]} at "
+                    f"cosine {worst[0]:.3f} (1.000 would mean identical)")
+    res["bad_morphs"] = bad
+    res["ok"] = closure >= 95 and depth_ratio > 0.5 and not bad
     return res
 
 
