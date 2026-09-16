@@ -108,8 +108,15 @@ export function PrimaryButton() {
 export function SecondaryButton() {
   const [hovered, setHovered] = useState(false)
 
+  // A <button> with no handler: it hovered, it rippled, and it did nothing,
+  // which is what "when i click some buttons in the hero page nothing is
+  // working" was pointing at. The landing page already renders the demo as
+  // <SectionWrapper id="demo">, so this is an anchor to it - a real link, so
+  // it also works with the keyboard and with middle-click, which an onClick
+  // handler would not.
   return (
-    <motion.button
+    <motion.a
+      href="#demo"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="group relative inline-flex items-center gap-2.5 px-9 py-4 rounded-2xl overflow-hidden cursor-pointer"
@@ -149,6 +156,6 @@ export function SecondaryButton() {
       >
         <ArrowRight className="h-3.5 w-3.5 text-foreground/60" />
       </motion.div>
-    </motion.button>
+    </motion.a>
   )
 }

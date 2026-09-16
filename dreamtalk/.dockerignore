@@ -94,6 +94,11 @@ Dockerfile
 Dockerfile.*
 .dockerignore
 docker/
+# ...except the service entrypoints that are COPYed into images. The
+# build context is dreamtalk/, so a blanket docker/ rule silently drops
+# these and the COPY fails with "not found" on a file that is plainly
+# there. Negations are evaluated last-match-wins, so this re-includes.
+!docker/mesh3d_server.py
 
 # Jupyter
 *.ipynb

@@ -18,13 +18,17 @@ from e2e_avatar import API, token
 TEXTS = {
     "as": "নমস্কাৰ, আপোনাক স্বাগতম।",
     "bn": "নমস্কার, আপনাকে স্বাগতম।",
-    "brx": "खुलुमबाइ।",
+    # Repeated, not extended: a longer sentence would have to be invented
+    # in a language nobody here can verify, and a wrong sentence would
+    # test the wrong thing. Repetition keeps the text correct and gets
+    # the clip past the duration where an x-vector is just noise.
+    "brx": "खुलुमबाइ। खुलुमबाइ। खुलुमबाइ। खुलुमबाइ।",
     "doi": "नमस्कार। तुंदा स्वागत ऐ।",
     "gu": "નમસ્તે, તમારું સ્વાગત છે.",
     "hi": "नमस्ते, आपका स्वागत है।",
     "kn": "ನಮಸ್ಕಾರ, ನಿಮಗೆ ಸ್ವಾಗತ.",
     "kok": "नमस्कार, तुमचें स्वागत आसा।",
-    "ks": "آداب۔",
+    "ks": "آداب۔ آداب۔ آداب۔ آداب۔",
     "mai": "प्रणाम, अहाँक स्वागत अछि।",
     "ml": "നമസ്കാരം, നിങ്ങൾക്ക് സ്വാഗതം.",
     "mni": "ꯈꯨꯔꯨꯝꯖꯔꯤ।",
@@ -33,7 +37,7 @@ TEXTS = {
     "or": "ନମସ୍କାର, ଆପଣଙ୍କୁ ସ୍ୱାଗତ।",
     "pa": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ।",
     "sa": "नमस्कारः। भवतः स्वागतम्।",
-    "sat": "ᱡᱚᱦᱟᱨ।",
+    "sat": "ᱡᱚᱦᱟᱨ। ᱡᱚᱦᱟᱨ। ᱡᱚᱦᱟᱨ। ᱡᱚᱦᱟᱨ।",
     "sd": "سلام، ڀلي ڪري آيا.",
     "ta": "வணக்கம், உங்களை வரவேற்கிறேன்.",
     "te": "నమస్కారం, మీకు స్వాగతం.",
