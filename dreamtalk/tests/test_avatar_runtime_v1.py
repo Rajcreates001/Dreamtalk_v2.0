@@ -249,6 +249,23 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
 
 
 class VideoContractTests(unittest.TestCase):
+    def test_musetalk_warmup_and_request_share_one_initialization(self):
+        import time
+        from concurrent.futures import ThreadPoolExecutor
+        from unittest.mock import Mock, patch
+        from dreamtalk.backend.services.two_d_avatar import TwoDAvatarRenderer
+
+        renderer = TwoDAvatarRenderer()
+        api = Mock()
+        api.load_models.side_effect = lambda: time.sleep(0.05)
+        module_name = "dreamtalk.face.core.lipsync.musetalk.musetalk_api"
+        with patch.dict("sys.modules", {module_name: Mock(MuseTalkAPI=Mock(return_value=api))}), \
+                patch.object(renderer, "_ensure_vram_headroom"):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                results = list(pool.map(lambda _: renderer._get_musetalk(), range(2)))
+        self.assertTrue(all(result is api for result in results))
+        api.load_models.assert_called_once()
+
     def test_face_pipeline_import_does_not_eagerly_load_mediapipe(self):
         import ast
         from dreamtalk.pipeline import face_pipeline

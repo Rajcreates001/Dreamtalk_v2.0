@@ -38,6 +38,7 @@ class TwoDAvatarRenderer:
         self._musetalk = None
         self._musetalk_error: Optional[str] = None
         self._render_lock = threading.Lock()
+        self._model_load_lock = threading.Lock()
 
     def status(self) -> dict[str, Any]:
         required = {
@@ -190,6 +191,12 @@ class TwoDAvatarRenderer:
             logger.debug("VRAM headroom check skipped: %s", exc)
 
     def _get_musetalk(self):
+        # Startup warm-up and the first request can arrive simultaneously.
+        # Serialize initialization to avoid constructing two GPU model stacks.
+        with self._model_load_lock:
+            return self._load_musetalk()
+
+    def _load_musetalk(self):
         if self._musetalk is not None:
             return self._musetalk
 
