@@ -101,7 +101,7 @@ def main() -> int:
             "consent_subject_name": name,
             "consent_version": "1.0",
         }
-        r = client.post("%s/avatar-runtime/profiles" % API, data=data, files=files)
+        r = client.post("%s/avatar/profiles" % API, data=data, files=files)
         if r.status_code >= 400:
             print("HTTP %d: %s" % (r.status_code, r.text[:1500]), file=sys.stderr)
             return 1

@@ -294,9 +294,13 @@ def evaluate(glb, photo, tag, mesh_name=None, vertex_colour=False):
     # distance from 0.1445 to 0.3494 - across the threshold, so the harness
     # would have announced that the avatar is not the same person. So pitch is
     # a fallback, tried only where the upright pose finds no face at all.
+    # +/-90 of pitch is in the list because a reconstructor may hand back a
+    # Z-up mesh, and no amount of yaw turns a Z-up head upright. It is tried
+    # last, after the tilts, because a 90 degree pitch on a Y-up mesh is a
+    # face pointing at the ceiling and will never detect.
     candidates = []
     for yd in (0, 90, 180, 270):
-        for pd in (0, -20, 20):
+        for pd in (0, -20, 20, -90, 90):
             vr = pitch(yaw(v, yd), pd)
             img, cov = rasterise(vr, uv, f, tex, vcol, use_vertex_colour=use_vc)
             path = os.path.join(OUT, "%s_y%d_p%d.png" % (tag, yd, pd))

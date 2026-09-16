@@ -30,6 +30,10 @@ from dreamtalk.face.core.lipsync.musetalk.utils.preprocessing import get_landmar
 # threw away a completed 564-frame neural render. Round down to even.
 EVEN_DIM_VF = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p"
 
+# Whether NVENC actually works here, learned from the first real encode
+# attempt and then reused. None means not yet established.
+_NVENC_USABLE = None
+
 
 class MuseTalkInference:
     def __init__(self, config=None):
@@ -123,8 +127,9 @@ class MuseTalkInference:
         load the driver's encode library.  A real encode attempt is therefore
         the only reliable capability probe.
         """
+        global _NVENC_USABLE
         encoders = [("libx264", "medium", ["-crf", "18"])]
-        if hw_video_encode:
+        if hw_video_encode and _NVENC_USABLE is not False:
             encoders.insert(0, ("h264_nvenc", "p4", ["-cq", "18", "-b:v", "0"]))
 
         last_error = None
@@ -137,12 +142,20 @@ class MuseTalkInference:
             ]
             try:
                 self._run_ffmpeg(cmd, f"video assembly ({codec})")
+                if codec == "h264_nvenc":
+                    _NVENC_USABLE = True
                 return codec
             except subprocess.CalledProcessError as exc:
                 last_error = exc
                 if codec != "h264_nvenc":
                     raise
-                logger.warning("NVENC is unavailable; retrying with libx264")
+                # Remember the answer. The probe has to be a real encode, but
+                # it does not have to be repeated: every render was paying a
+                # failed NVENC attempt and logging it at error level, which
+                # makes a working pipeline read as a broken one.
+                _NVENC_USABLE = False
+                logger.warning("NVENC is unavailable; using libx264 for this "
+                               "and subsequent renders")
                 if os.path.exists(output_path):
                     os.remove(output_path)
         raise last_error or RuntimeError("No usable H.264 encoder")

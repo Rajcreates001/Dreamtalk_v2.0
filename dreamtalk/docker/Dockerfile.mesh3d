@@ -71,8 +71,20 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     cat /tmp/requirements.notorch.txt && \
     pip install -r /tmp/requirements.notorch.txt
 
+# CMAKE_CXX_STANDARD=17 is not a preference. torchmcubes' helper_math.h
+# declares its own `lerp` at global scope; under C++20 libstdc++ also puts
+# std::lerp there, and nvcc's host pass dies with
+#   error: 'float lerp(float, float, float)' conflicts with a previous
+#   declaration
+# after nine minutes of compiling. torch 2.5 is a C++17 build anyway.
+#
+# CMAKE_CUDA_ARCHITECTURES=89 matches the card this runs on (RTX 4060,
+# capability 8.9). Without it the kernels are built for every architecture
+# the toolkit knows, which is most of that nine minutes.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install "scikit-build-core>=0.10" "cmake>=3.24" ninja && \
+    pip install "scikit-build-core>=0.10" "cmake>=3.24" ninja pybind11 && \
+    CMAKE_PREFIX_PATH="$(python -c 'import pybind11, torch; print(pybind11.get_cmake_dir() + chr(58) + torch.utils.cmake_prefix_path)')" \
+    CMAKE_ARGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CUDA_STANDARD=17 -DCMAKE_CUDA_ARCHITECTURES=89" \
     pip install --no-build-isolation \
       "git+https://github.com/tatsy/torchmcubes.git"
 
