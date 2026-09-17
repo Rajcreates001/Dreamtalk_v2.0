@@ -90,16 +90,55 @@ Keep whichever model wins per metric. FLAME winning identity while losing
 silhouette is the expected outcome, and it is the argument for the hybrid
 below rather than a straight replacement.
 
-### Phase 3 — animation transfer (the hard part)
-Give the generated mesh FLAME's blendshapes:
-1. fit FLAME to the generated mesh (or to the same photo)
-2. for each generated vertex, find its correspondence on the FLAME surface
-3. carry each FLAME blendshape delta across that correspondence, weighted by
-   distance, so the generated mesh inherits aa/ih/ou/ee/oh/blink/emotions
+### Phase 2 — RESULT: the generated mesh does not win
 
-Validation is the same measurement already used on the current head: blink
-must close ≥95% of the eyeball diameter, and each viseme must move a non-zero
-vertex set in the mouth region.
+`dreamtalk-mesh3d` runs TripoSR and reconstructs from the same photograph in
+165s: 60,697 vertices against FLAME's 5,023. Measured side by side:
+
+| model | verts | identity | verdict | IoU | recall | precision | area |
+|---|---|---|---|---|---|---|---|
+| FLAME head only | 5,023 | 0.2235 | same person | 0.5538 | 0.6134 | 0.8508 | 0.72x |
+| **FLAME + hair shell** | 5,764 | **0.1953** | same person | **0.6606** | **0.7161** | 0.8949 | 0.80x |
+| TripoSR generated | 60,697 | **0.3260** | **not recognised** | 0.1847 | 0.6087 | 0.2096 | **2.90x** |
+
+Two caveats first, because both are real:
+
+- **Identity is measured on vertex colours, not a baked texture.** Baking needs
+  an OpenGL context and the container is headless
+  (`XOpenDisplay: cannot open display`), so 60,697 colour samples stand in for
+  a 2048² atlas. A baked texture would likely improve on 0.3260.
+- **The silhouette metric asks about the head.** TripoSR reconstructs the bust,
+  so precision 0.21 is partly the mask excluding neck and shoulders rather than
+  the mesh being wrong. Area 2.90x says the same thing.
+
+Neither rescues it, because **recall depends on neither**. Recall is pure
+coverage of the photographed head: FLAME with the hair shell reaches
+**0.7161**, TripoSR **0.6087**. Ignoring everything it draws outside the head,
+the generated mesh still captures less of the actual head than the template fit
+does — while being unrecognisable as the subject and carrying twelve times the
+geometry.
+
+**Decision: keep FLAME geometry.** The complaint that started this work —
+"you are compressing the image onto a pre-built 3D model" — is answered better
+by the hair shell, generated from the subject's own segmented hair and worth
+0.5538 to 0.6606 of IoU, than by replacing the topology with something that
+scores worse on every measurement surviving its own caveats.
+
+mesh3d stays deployed. It is the honest way to re-test this once the texture
+bake works headless, and reconstruction is the right tool if the product ever
+needs a bust rather than an animatable head.
+
+
+### Phase 3 — NOT REQUIRED
+
+Blendshape transfer onto generated topology was the plan's stated main risk,
+and Phase 2 removes the reason to take it. There is no point carrying FLAME's
+blendshapes onto a mesh that is a worse likeness of the subject than FLAME is.
+
+The animation the head already has is measured on the shipped GLB: blink
+closes 104.7% of the eyeball diameter, all five visemes are centred at 16-28%
+of head height against blink's 63%, and the most similar viseme pair (aa/ih)
+sits at cosine 0.959 — distinct, if only just.
 
 ### Phase 4 — 2D mouth
 Detail transfer (low frequencies from the generated patch, high frequencies
