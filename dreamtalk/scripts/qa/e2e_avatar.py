@@ -30,13 +30,15 @@ from urllib.parse import unquote, urlparse
 import numpy as np
 
 API = "http://localhost:5000/api/v1"
-# The one place these live. Other harnesses import them from here rather than
-# repeating the literal - this password is already published in this file on
-# origin, and the fix for that is rotating the account, not scattering more
-# copies of it through the tree. Override without editing anything:
-#   docker exec -e DREAMTALK_QA_PASSWORD=... dreamtalk-backend ...
-EMAIL = os.environ.get("DREAMTALK_QA_EMAIL", "wiz1789388539@qa.dev")
-PASSWORD = os.environ.get("DREAMTALK_QA_PASSWORD", "Qa!2345678")
+# Credentials come from the environment and are not stored here. An earlier
+# revision of this file hardcoded them, so they are already in this
+# repository's history and the account needs rotating regardless - but a
+# harness is not a place to keep a password, and every new commit that carries
+# one makes the eventual cleanup harder.
+#
+#   docker exec -e DREAMTALK_QA_EMAIL=... -e DREAMTALK_QA_PASSWORD=... #       dreamtalk-backend python /app/dreamtalk/scripts/qa/e2e_avatar.py all
+EMAIL = os.environ.get("DREAMTALK_QA_EMAIL", "")
+PASSWORD = os.environ.get("DREAMTALK_QA_PASSWORD", "")
 # Overridable so a freshly rebuilt avatar can be checked without editing
 # the harness - which is how a "verified" number ends up describing the
 # previous build.
@@ -55,6 +57,10 @@ def log(section: str, msg: str) -> None:
 
 def token() -> str:
     import httpx
+    if not EMAIL or not PASSWORD:
+        raise SystemExit(
+            "Set DREAMTALK_QA_EMAIL and DREAMTALK_QA_PASSWORD. They are not "
+            "stored in the repository; pass them to docker exec with -e.")
     r = httpx.post(f"{API}/auth/login",
                    json={"email": EMAIL, "password": PASSWORD}, timeout=60)
     r.raise_for_status()
