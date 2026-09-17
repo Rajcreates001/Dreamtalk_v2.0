@@ -98,10 +98,16 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 # knows, which is most of those five minutes.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install "scikit-build-core>=0.10" "cmake>=3.24" ninja pybind11 && \
-    git clone --depth 1 https://github.com/tatsy/torchmcubes.git /opt/torchmcubes && \
-    sed -i -E 's/(CXX_STANDARD|CUDA_STANDARD)([ ]+)20/\1\217/g; s/(cxx_std_|cuda_std_)20/\117/g' \
-      /opt/torchmcubes/CMakeLists.txt /opt/torchmcubes/cxx/CMakeLists.txt 2>/dev/null || true && \
-    grep -rniE 'std_|_STANDARD' /opt/torchmcubes/CMakeLists.txt /opt/torchmcubes/cxx/CMakeLists.txt || true
+    git clone --depth 1 https://github.com/tatsy/torchmcubes.git /opt/torchmcubes
+
+# No `|| true` on the clone. The first version chained the sed and an
+# informational grep behind one, and `A && B && C || true && D` swallowed a
+# transient "Failed to connect to github.com port 443: Connection refused".
+# The layer reported DONE with nothing cloned, and the failure surfaced two
+# steps later as pip complaining that /opt/torchmcubes is not a package name.
+RUN sed -i -E 's/(CXX_STANDARD|CUDA_STANDARD)([ ]+)20/\1\217/g; s/(cxx_std_|cuda_std_)20/\117/g' \
+      /opt/torchmcubes/CMakeLists.txt && \
+    grep -niE 'std_|_STANDARD' /opt/torchmcubes/CMakeLists.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     CMAKE_PREFIX_PATH="$(python -c 'import pybind11, torch; print(pybind11.get_cmake_dir() + chr(58) + torch.utils.cmake_prefix_path)')" \

@@ -15,6 +15,7 @@ from typing import Any, Optional
 import httpx
 import numpy as np
 
+from dreamtalk.backend.services import speaker_verify
 from dreamtalk.backend.services.multimodal_language import SUPPORTED_LANGUAGES, normalize_language
 
 logger = logging.getLogger("dreamtalk.avatar.speech")
@@ -80,6 +81,10 @@ class SpeechResult:
     reference_language: Optional[str] = None
     cross_lingual: bool = False
     quality_warnings: list[str] = field(default_factory=list)
+    # None means the take was not measured (too short, model unavailable),
+    # never that it scored badly.
+    speaker_similarity: Optional[float] = None
+    synthesis_attempts: int = 1
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -323,9 +328,95 @@ class ClonedSpeechService:
                     "The reference language is outside IndicF5's documented 11-language set"
                 )
 
-        output_path = self.output_dir / f"clone_{self._active_engine}_{language}_{uuid.uuid4().hex}.wav"
         default_timeout = "900" if health.get("device") == "cpu" else "300"
         timeout_seconds = float(os.environ.get("INDICF5_TIMEOUT", default_timeout))
+
+        # The engine samples, so one take is a draw and not a result. Score
+        # each against the enrolment, resynthesise anything that does not
+        # sound like the speaker, and keep the best either way. The
+        # measurements behind the floor are in speaker_verify.
+        attempts = speaker_verify.max_attempts() if speaker_verify.enabled() else 1
+        floor = speaker_verify.floor()
+        best_path: Optional[Path] = None
+        best_score: Optional[float] = None
+        candidate: Optional[Path] = None
+        used = 0
+        for attempt in range(attempts):
+            candidate = (
+                self.output_dir
+                / f"clone_{self._active_engine}_{language}_{uuid.uuid4().hex}.wav"
+            )
+            await self._synthesize_once(
+                candidate, text, reference_path, reference_text,
+                language, emotion, timeout_seconds,
+            )
+            used = attempt + 1
+            score = await asyncio.to_thread(
+                speaker_verify.similarity, str(candidate), str(reference_path)
+            )
+            if score is None:
+                # Not measured is not a low score. Take this one and stop,
+                # rather than turning a missing model into three syntheses.
+                best_path, best_score = candidate, None
+                break
+            if best_score is None or score > best_score:
+                if best_path is not None and best_path != candidate:
+                    best_path.unlink(missing_ok=True)
+                best_path, best_score = candidate, score
+            else:
+                candidate.unlink(missing_ok=True)
+            if score >= floor:
+                break
+            logger.info(
+                "clone take %d/%d scored %.4f against a floor of %.2f; "
+                "resynthesising", used, attempts, score, floor,
+            )
+
+        output_path = best_path if best_path is not None else candidate
+        if best_score is not None and best_score < floor:
+            quality_warnings.append(
+                f"The closest of {used} attempts scored {best_score:.2f} "
+                f"against the enrolled voice, below the {floor:.2f} floor; "
+                f"this reply may not sound like the speaker."
+            )
+            logger.warning(
+                "clone for %s kept a take at %.4f after %d attempts "
+                "(floor %.2f)", language, best_score, used, floor,
+            )
+
+        if self._active_engine != "indic-mio":
+            await asyncio.to_thread(self._apply_emotional_prosody, output_path, emotion)
+        duration, sample_rate = _audio_metadata(output_path)
+        return SpeechResult(
+            path=str(output_path),
+            audio_url=f"/outputs/{output_path.name}",
+            engine=self._active_engine or "unknown",
+            cloned=True,
+            language=language,
+            duration=duration,
+            sample_rate=sample_rate,
+            emotion=emotion,
+            service_url=self._active_url,
+            reference_language=normalized_reference_language,
+            cross_lingual=bool(
+                normalized_reference_language and normalized_reference_language != language
+            ),
+            quality_warnings=quality_warnings,
+            speaker_similarity=best_score,
+            synthesis_attempts=used,
+        )
+
+    async def _synthesize_once(
+        self,
+        output_path: Path,
+        text: str,
+        reference_path: Path,
+        reference_text: str,
+        language: str,
+        emotion: str,
+        timeout_seconds: float,
+    ) -> None:
+        """One request to the clone engine, written to output_path."""
         timeout = httpx.Timeout(timeout_seconds, connect=10.0)
         async with self._synthesis_lock:
             with reference_path.open("rb") as ref_file:
@@ -349,26 +440,6 @@ class ClonedSpeechService:
                     if len(response.content) < 256:
                         raise RuntimeError(f"{self._active_engine} returned an invalid audio payload")
                     output_path.write_bytes(response.content)
-
-        if self._active_engine != "indic-mio":
-            await asyncio.to_thread(self._apply_emotional_prosody, output_path, emotion)
-        duration, sample_rate = _audio_metadata(output_path)
-        return SpeechResult(
-            path=str(output_path),
-            audio_url=f"/outputs/{output_path.name}",
-            engine=self._active_engine or "unknown",
-            cloned=True,
-            language=language,
-            duration=duration,
-            sample_rate=sample_rate,
-            emotion=emotion,
-            service_url=self._active_url,
-            reference_language=normalized_reference_language,
-            cross_lingual=bool(
-                normalized_reference_language and normalized_reference_language != language
-            ),
-            quality_warnings=quality_warnings,
-        )
 
     def _apply_emotional_prosody(self, path: Path, emotion: str) -> None:
         """Apply restrained prosody changes while preserving speaker identity."""

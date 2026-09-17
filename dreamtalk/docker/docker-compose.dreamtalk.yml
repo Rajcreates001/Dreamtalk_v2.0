@@ -388,7 +388,16 @@ services:
       MIOTTS_LLM_MODEL: SPRINGLab/Indic-Mio
       MIOTTS_CODEC_MODEL: Aratako/MioCodec-25Hz-44.1kHz-v2
       MIOTTS_DEVICE: cuda
-      MIOTTS_BEST_OF_N_ENABLED: "false"
+      MIOTTS_BEST_OF_N_ENABLED: ${MIOTTS_BEST_OF_N_ENABLED:-false}
+      MIOTTS_BEST_OF_N_DEFAULT: ${MIOTTS_BEST_OF_N_DEFAULT:-1}
+      # The sampler defaults to temperature 0.8 with top_p 1.0, and nothing
+      # trims the tail. Synthesising the same Kashmiri sentence three times
+      # from one profile produced speaker similarities of 0.6731, 0.8736 and
+      # 0.8080 - a spread of 0.20, wider than the gap between two different
+      # avatars, and the low take sits below the 0.7447 an unrelated speaker
+      # scores. Overridable so the effect can be measured rather than assumed.
+      MIOTTS_LLM_TEMPERATURE: ${MIOTTS_LLM_TEMPERATURE:-0.8}
+      MIOTTS_LLM_TOP_P: ${MIOTTS_LLM_TOP_P:-0.9}
       MIOTTS_MAX_TEXT_LENGTH: "600"
       HF_HOME: /models/huggingface
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
