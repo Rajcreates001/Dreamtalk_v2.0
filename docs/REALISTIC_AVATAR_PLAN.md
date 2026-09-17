@@ -140,45 +140,94 @@ closes 104.7% of the eyeball diameter, all five visemes are centred at 16-28%
 of head height against blink's 63%, and the most similar viseme pair (aa/ih)
 sits at cosine 0.959 — distinct, if only just.
 
-### Phase 4 — 2D mouth
-Detail transfer (low frequencies from the generated patch, high frequencies
-from the photograph) is committed and measured in isolation at 0.98 of source
-sharpness for 9% of the motion. Needs confirming on a rendered video, which
-is what Phase 0 makes affordable.
+### Phase 4 — 2D mouth (DONE, by measurement)
 
-### Phase 5 — voice across 22 languages
-All 22 synthesize through Indic-Mio with `cloned: true`, no edge-tts
-fallback, no clipping, 2–24 s per request. That is the smoke test, and it
-stays true if the voice belongs to somebody else — which is the actual
-complaint. `scripts/qa/speaker_similarity.py` scores each output against the
-enrolment with WavLM-base-plus-sv.
+The crossover between the generated patch's low frequencies and the
+photograph's high frequencies is a weight, not a switch, and it was set by
+rendering the same clip four times:
 
-The first run of that harness reported an impostor control of **1.0000**. The
-same recording had been enrolled under several profile ids, so the "different
-speaker" was the subject. A control at 1.0 silently voids every other number
-in the report while looking like a strong result, so impostor selection now
-rejects candidates by content hash and again by similarity. The runtime does
-hold one genuinely different speaker — median f0 263 Hz against 143 Hz — and
-it scores **0.7447**. That is the line the cloned outputs have to clear.
+    weight   sharpness   motion   aperture spread   interior SD
+     0.00      0.112      3.163       0.1012           8.27
+     0.50      0.248      2.884       0.1031           7.77
+     0.85      0.662      2.725       0.1039           7.42   <- default
+     1.00      0.906      2.664       0.1006           7.29
 
-The only three languages below the same-speaker threshold were also the only
-three whose prompt was a single greeting word, synthesising to 0.64–0.72 s.
-An x-vector on a sub-second clip measures phonetics, not speaker. Those clips
-are now reported as unjudged rather than failed, and the prompts repeat the
-greeting to reach a measurable length — repetition rather than invented
-sentences, because a wrong sentence in a language nobody here can check tests
-the wrong thing.
+The worry that drove this to 0.00 - that a still photograph's lips get
+imprinted over a generated open mouth - is testable, and aperture spread is
+the test: it would fall if the mouth were being held shut. It does not fall
+anywhere in the range. Motion and interior variation do, by 14%, which is the
+static donor fighting the animation and is the actual price paid.
 
-### Phase 6 — end to end
-Login → build avatar → 3D → 2D → conversation in several languages, with the
-measurements above attached to each step.
+Isolation of the patch is unchanged and verified on every render: mouth
+motion 2.7, forehead and eyes 0.0, background 0.0.
 
-## What would make this fail
+### Phase 5 — voice across 22 languages (DONE)
 
-- **Blendshape transfer is the real risk.** If correspondence is poor the
-  mouth will deform wrongly, which is worse than a static but correct head.
-  Phase 2's numbers decide whether to proceed or to keep FLAME geometry and
-  spend the effort on texture completion instead.
-- 8 GB is tight for three models. Orchestrated unloading is the fallback.
-- Generated meshes are often not watertight and can carry inverted normals;
-  both break the renderer in ways that look like "the avatar is broken".
+All 22 synthesize through Indic-Mio with `cloned: true`, no edge-tts fallback,
+no clipping. That was always the easy half. The hard half is whether the audio
+is the enrolled speaker, and it is now measured on every request rather than
+sampled by a harness: `speaker_verify` scores each take with
+WavLM-base-plus-sv, resynthesises anything below 0.80, and returns the best of
+up to three with the score attached.
+
+Definitive sweep on the current avatar:
+
+    22/22 scored, min 0.8765 (bn), mean 0.9197, max 0.9524 (kn)
+    22/22 above the 0.86 same-speaker line
+    every one on the FIRST attempt - 22 syntheses for 22 requests
+    impostor control 0.7447, from a genuinely different speaker
+    (median f0 263 Hz against the subject's 143 Hz)
+
+Two findings that only a gate makes visible:
+
+- The engine samples. One sentence synthesised five times spans 0.19 of
+  similarity, and single takes have landed at 0.5684 - below what an unrelated
+  speaker scores. A report that averages this reads "22 of 22 cloned"; a
+  listener hears one utterance.
+- Kashmiri is the weak language. It has needed all three attempts and still
+  come back at 0.7622, at which point the reply carries a quality warning
+  saying it may not sound like the speaker rather than being shipped quietly.
+
+The impostor control is the reason any of these numbers mean anything, and it
+had to be fixed before it did: the first version picked another profile's
+reference and scored exactly 1.0000, because the same recording had been
+enrolled under several ids. Candidates are now rejected by content hash and
+again by similarity.
+
+### Phase 6 — end to end (DONE)
+
+Measured on avatar `a489f6f4`, built through the production creation endpoint
+from one photograph and one 11-second recording.
+
+    3D    Head, teeth, tongue and hair in the GLB
+          identity 0.1953 against a 0.300 threshold
+          silhouette IoU 0.6606, covering 72% of the photographed head
+          blink closes 104.7% of the eyeball
+          five visemes at 16-28% of head height, blink at 63%
+          closest viseme pair aa/ih at cosine 0.959
+
+    2D    mouth motion 2.7, forehead and eyes 0.0, background 0.0
+          mouth keeps 66% of the source photo's sharpness
+          aperture varies over 10.4% of the mouth box
+          untouched cheek control at 99%, so the codec costs 1%
+
+    voice 22/22 languages, every one on the first attempt
+          mean 0.9197 against the enrolled speaker, min 0.8765
+          impostor control 0.7447
+
+    stack nine services healthy, mesh3d included
+
+## What is still open
+
+- **Texture baking is not available in the container.** TripoSR's bake wants
+  an OpenGL context and gets `XOpenDisplay: cannot open display`, so the
+  generated mesh is scored on 60,697 vertex colours rather than a 2048²
+  atlas. Fixing it needs libEGL in the runtime stage, the graphics driver
+  capability on the container, and `create_context(standalone=True,
+  backend="egl")`. It is the one change that could move Phase 2's identity
+  number of 0.3260, and until it is done that number carries an asterisk.
+- **Kashmiri does not clone reliably.** It is the only language that has
+  needed all three attempts and still failed the floor. The reply says so; it
+  is not fixed.
+- **aa and ih are 96% the same shape.** They pass the distinctness check, but
+  only just, and `ih` should be the narrower mouth.
