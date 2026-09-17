@@ -30,8 +30,13 @@ from urllib.parse import unquote, urlparse
 import numpy as np
 
 API = "http://localhost:5000/api/v1"
-EMAIL = "wiz1789388539@qa.dev"
-PASSWORD = "Qa!2345678"
+# The one place these live. Other harnesses import them from here rather than
+# repeating the literal - this password is already published in this file on
+# origin, and the fix for that is rotating the account, not scattering more
+# copies of it through the tree. Override without editing anything:
+#   docker exec -e DREAMTALK_QA_PASSWORD=... dreamtalk-backend ...
+EMAIL = os.environ.get("DREAMTALK_QA_EMAIL", "wiz1789388539@qa.dev")
+PASSWORD = os.environ.get("DREAMTALK_QA_PASSWORD", "Qa!2345678")
 # Overridable so a freshly rebuilt avatar can be checked without editing
 # the harness - which is how a "verified" number ends up describing the
 # previous build.

@@ -26,8 +26,7 @@ import time
 import httpx
 
 API = "http://localhost:5000/api/v1"
-EMAIL = "wiz1789388539@qa.dev"
-PASSWORD = "Qa!2345678"
+
 RUNTIME = "/app/dreamtalk/media/avatar_runtime"
 
 

@@ -33,20 +33,10 @@ sys.path.insert(0, "/app/dreamtalk/scripts/qa")
 from speaker_similarity import (  # noqa: E402
     Encoder, SAME_SPEAKER_THRESHOLD, cosine, load_16k, pick_impostor,
 )
+from e2e_avatar import API, token  # noqa: E402
 from verify_22_languages import TEXTS  # noqa: E402
 
-API = "http://localhost:5000/api/v1"
-EMAIL = "wiz1789388539@qa.dev"
-PASSWORD = "Qa!2345678"
 RUNTIME = "/app/dreamtalk/media/avatar_runtime"
-
-
-def token() -> str:
-    r = httpx.post("%s/auth/login" % API,
-                   json={"email": EMAIL, "password": PASSWORD}, timeout=60)
-    r.raise_for_status()
-    d = r.json()
-    return (d.get("tokens") or d)["access_token"]
 
 
 def synthesize(client, profile: str, language: str) -> bytes:
