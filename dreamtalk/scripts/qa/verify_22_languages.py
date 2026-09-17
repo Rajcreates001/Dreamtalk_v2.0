@@ -87,6 +87,12 @@ def main():
                 row.update(engine=payload.get("engine"), cloned=payload.get("cloned"),
                            duration_s=round(duration, 3), sample_rate=rate,
                            rms=round(rms, 6), clipping_fraction=round(clipping, 6),
+                           # The gate's own verdict on this take, and how many
+                           # it needed. A pass here is stronger than "cloned":
+                           # cloned says which route was taken, this says the
+                           # audio was checked against the enrolled speaker.
+                           speaker_similarity=payload.get("speaker_similarity"),
+                           synthesis_attempts=payload.get("synthesis_attempts"),
                            quality_warnings=payload.get("quality_warnings", []))
                 row["passed"] = bool(payload.get("cloned") is True and
                                      np.isfinite(audio).all() and

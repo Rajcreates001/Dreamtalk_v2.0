@@ -15,6 +15,7 @@ three resident.
 """
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import os
@@ -114,8 +115,12 @@ def _bake(mesh, model, scene_code, resolution: int):
         logger.info("baked %dx%d texture", resolution, resolution)
         return mesh
     except Exception as exc:
-        logger.warning("texture bake unavailable (%s); keeping vertex colours",
-                       exc)
+        # Only truthful because extract_mesh is now always called with
+        # has_vertex_color=True. Say which fallback actually applies.
+        kept = getattr(getattr(mesh, "visual", None), "vertex_colors", None)
+        logger.warning("texture bake unavailable (%s); %s", exc,
+                       "keeping vertex colours" if kept is not None
+                       else "AND THE MESH HAS NO VERTEX COLOURS EITHER")
         return mesh
 
 
@@ -152,6 +157,19 @@ async def reconstruct(
         raise HTTPException(400, f"unreadable image: {exc}") from exc
 
     started = time.time()
+
+    # Everything below is synchronous GPU work, so it runs in a worker thread.
+    # Doing it inline blocked the event loop for the whole reconstruction:
+    # /health stopped answering, which meant the container's own healthcheck
+    # reported it unhealthy for exactly as long as it was busy being useful.
+    return await asyncio.to_thread(
+        _reconstruct_sync, pil, bake_texture, texture_resolution,
+        remove_background, foreground_ratio, started,
+    )
+
+
+def _reconstruct_sync(pil, bake_texture, texture_resolution,
+                      remove_background, foreground_ratio, started):
     model = _load()
 
     try:
@@ -174,12 +192,20 @@ async def reconstruct(
             codes = model([pil], device=DEVICE)
             # TSR.extract_mesh(scene_codes, has_vertex_color, resolution=...).
             # The second argument is NOT "bake a texture" - it is the opposite
-            # of it, and passing bake_texture there asks for vertex colours
-            # whenever a texture was wanted and for neither when it was not.
-            # Texture baking is a separate pass over the extracted mesh.
-            meshes = model.extract_mesh(codes, not bake_texture,
-                                        resolution=MC_RESOLUTION)
+            # of it. Always ask for vertex colours, regardless of whether a
+            # texture is wanted on top.
+            #
+            # Passing `not bake_texture` here produced a mesh with neither.
+            # Baking needs an OpenGL context and there is none in a headless
+            # container ("XOpenDisplay: cannot open display"), so the bake fell
+            # back to "keeping vertex colours" that had never been extracted.
+            # The GLB came out carrying POSITION and nothing else: 60697
+            # vertices of correct geometry with no colour anywhere, which
+            # renders as a featureless grey blob and detects as no face at all.
+            meshes = model.extract_mesh(codes, True, resolution=MC_RESOLUTION)
         mesh = meshes[0]
+        has_colour = getattr(getattr(mesh, "visual", None), "vertex_colors",
+                             None) is not None
 
         if bake_texture:
             mesh = _bake(mesh, model, codes[0], texture_resolution)
@@ -195,6 +221,7 @@ async def reconstruct(
             headers={
                 "X-Mesh-Vertices": str(len(mesh.vertices)),
                 "X-Mesh-Faces": str(len(mesh.faces)),
+                "X-Mesh-Has-Colour": "1" if has_colour else "0",
                 "X-Elapsed-Seconds": f"{elapsed:.2f}",
             },
         )

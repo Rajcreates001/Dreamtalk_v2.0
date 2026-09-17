@@ -24,9 +24,15 @@ def multi_head_attention_forward_patched(
     assert head_dim * num_heads == embed_dim
 
     if use_separate_proj_weight:
-        q = q_proj_weight(query)
-        k = k_proj_weight(key)
-        v = v_proj_weight(value)
+        # PyTorch passes projection WEIGHTS here, not modules. Calling them
+        # works only if the caller happens to hand over Linear layers, and the
+        # class in ar_modules_activation registers these as Parameters - so
+        # this branch raised "'Parameter' object is not callable" for its own
+        # caller as much as for anybody else. It is only reached when
+        # embed_dim differs across q/k/v, which is why nobody noticed.
+        q = torch.nn.functional.linear(query, q_proj_weight)
+        k = torch.nn.functional.linear(key, k_proj_weight)
+        v = torch.nn.functional.linear(value, v_proj_weight)
     else:
         qkv = torch.nn.functional.linear(query, in_proj_weight, in_proj_bias)
         q, k, v = qkv.chunk(3, dim=-1)

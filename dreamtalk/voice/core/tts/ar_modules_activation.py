@@ -13,7 +13,22 @@ from torch.nn.parameter import Parameter
 
 from .ar_modules_mha_patch import multi_head_attention_forward_patched
 
-F.multi_head_attention_forward = multi_head_attention_forward_patched
+# Upstream GPT-SoVITS replaced torch.nn.functional.multi_head_attention_forward
+# globally at import time. It needs a patched version because stock PyTorch has
+# no `cache` argument and this decoder is autoregressive - but assigning it onto
+# F rebinds the function for every model in the process, and the patched one
+# does not honour PyTorch's contract.
+#
+# Measured consequence: WavLM calls F.multi_head_attention_forward with
+# use_separate_proj_weight=True and q_proj_weight as a Parameter, exactly as
+# documented, and the patched body does `q = q_proj_weight(query)`. Every
+# WavLM forward pass in this backend died with "'Parameter' object is not
+# callable" - which is how the clone speaker-verification gate came to be
+# installed, enabled, and silently doing nothing.
+#
+# The class below is the only caller that needs the cache, so it calls the
+# patched function by name. Nothing else in the process is affected.
+_mha_forward = multi_head_attention_forward_patched
 
 
 class MultiheadAttention(Module):
@@ -76,7 +91,7 @@ class MultiheadAttention(Module):
             query, key, value = (x.transpose(1, 0) for x in (query, key, value))
 
         if not self._qkv_same_embed_dim:
-            attn_output, attn_output_weights = F.multi_head_attention_forward(
+            attn_output, attn_output_weights = _mha_forward(
                 query, key, value, self.embed_dim, self.num_heads,
                 self.in_proj_weight, self.in_proj_bias,
                 self.bias_k, self.bias_v, self.add_zero_attn,
@@ -91,7 +106,7 @@ class MultiheadAttention(Module):
                 cache=cache,
             )
         else:
-            attn_output, attn_output_weights = F.multi_head_attention_forward(
+            attn_output, attn_output_weights = _mha_forward(
                 query, key, value, self.embed_dim, self.num_heads,
                 self.in_proj_weight, self.in_proj_bias,
                 self.bias_k, self.bias_v, self.add_zero_attn,

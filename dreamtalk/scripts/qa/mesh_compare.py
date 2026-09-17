@@ -282,6 +282,14 @@ def evaluate(glb, photo, tag, mesh_name=None, vertex_colour=False):
         tag, len(v), len(f),
         ("%dx%d" % (tex.shape[1], tex.shape[0])) if tex is not None else "none",
         use_vc))
+    if tex is None and not has_col:
+        # Say it once, plainly. A mesh with no colour renders as flat grey,
+        # every orientation detects no face, and the twenty "no face" lines
+        # that follow look like a reconstruction failure when the geometry is
+        # in fact fine. Identity is unmeasurable here; silhouette is not.
+        print("[%s] NO COLOUR: neither a texture nor COLOR_0. The identity "
+              "score below is meaningless; the silhouette is still valid "
+              "because it only uses coverage." % tag)
 
     # Yaw is a real search: a generated mesh arrives in whatever frame the
     # reconstructor chose, and nothing says +Z is forward. Pitch is not - the
@@ -337,7 +345,20 @@ def evaluate(glb, photo, tag, mesh_name=None, vertex_colour=False):
 
     photo_mask = head_mask_from_photo(photo)
     photo_box, _ = detect_face(photo)
-    sil = silhouette_iou(best["cov"], best["box"], photo_mask, photo_box, tag)
+    box = best["box"]
+    if box is None:
+        # No face to align by - fall back to the rendered coverage's own
+        # bounding box against the photo head mask's. Cruder than a face-box
+        # alignment and worth saying so, but it keeps the silhouette
+        # measurable for an untextured mesh instead of reporting nothing.
+        ys, xs = np.nonzero(best["cov"])
+        if len(xs):
+            box = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+            my, mx = np.nonzero(photo_mask)
+            photo_box = [int(mx.min()), int(my.min()), int(mx.max()), int(my.max())]
+            print("[%s] no face detected; aligning silhouettes by bounding "
+                  "box instead of face box" % tag)
+    sil = silhouette_iou(best["cov"], box, photo_mask, photo_box, tag)
 
     return {"tag": tag, "glb": glb, "vertices": int(len(v)), "faces": int(len(f)),
             "orientation": {"yaw": best["yaw"], "pitch": best["pitch"],

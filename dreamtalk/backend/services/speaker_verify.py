@@ -112,7 +112,10 @@ def _load():
             local = _ensure_safetensors()
             extractor = AutoFeatureExtractor.from_pretrained(local)
             model = WavLMForXVector.from_pretrained(local).to("cpu").eval()
-            torch.set_grad_enabled(False)
+            # Deliberately NOT torch.set_grad_enabled(False): that switches
+            # the mode for everything else sharing this process, and the FLAME
+            # fit in the same backend descends a gradient. Scoping it to the
+            # forward pass in _embed costs nothing and breaks nothing.
             _model, _extractor = model, extractor
             logger.info("speaker verification ready (%s, cpu)", MODEL)
         except Exception as exc:
@@ -145,8 +148,8 @@ def _embed(audio):
 
     inputs = extractor(audio, sampling_rate=16000, return_tensors="pt",
                        padding=True)
-    with torch.no_grad():
-        return model(**inputs).embeddings[0]
+    with torch.inference_mode():
+        return model(**inputs).embeddings[0].clone()
 
 
 def similarity(candidate_path: str, reference_path: str) -> Optional[float]:
@@ -169,6 +172,12 @@ def similarity(candidate_path: str, reference_path: str) -> Optional[float]:
             return None
         import torch
         return round(float(torch.nn.functional.cosine_similarity(a, b, dim=-1)), 4)
-    except Exception as exc:
-        logger.info("speaker similarity not measured (%s)", exc)
+    except Exception:
+        # Full traceback, not a one-line message. This path degrades silently
+        # by design - a failure here returns None and the caller carries on
+        # with an unverified take - so the log is the only place the reason
+        # can surface, and "'Parameter' object is not callable" on its own
+        # cost an hour of guessing.
+        logger.warning("speaker similarity not measured; the clone gate is "
+                       "inactive until this is fixed", exc_info=True)
         return None

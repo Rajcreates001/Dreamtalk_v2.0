@@ -119,11 +119,17 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 # GPU one brings its own CUDA and cuDNN, and background removal on one
 # portrait is a second either way.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install fastapi "uvicorn[standard]" python-multipart trimesh onnxruntime
+    pip install fastapi "uvicorn[standard]" python-multipart onnxruntime \
+      "trimesh>=4.5"
 
-# Build-only packages, dropped before the venv is copied forward. cmake and
-# ninja arrive as pip wheels carrying their own binaries; keeping them would
-# hand the runtime stage ~50MB of compiler it cannot use.
+# trimesh is installed here rather than taken from TripoSR's requirements,
+# which pin 4.0.5. That version's glTF writer calls `(a - b).ptp()`, and
+# `ptp` was removed from the ndarray class in NumPy 2.0 - so reconstruction
+# ran to completion on the GPU and then died on export, at the last step
+# after the expensive part. Pinning numpy below 2 instead would fix it and
+# break opencv-python-headless 5, which requires numpy>=2; moving trimesh
+# forward satisfies both. Verified in the image: numpy 2.2.6, trimesh 5.1.0,
+# cv2 5.0.0, GLB export works.
 RUN pip uninstall -y cmake ninja scikit-build-core pybind11 || true
 
 
