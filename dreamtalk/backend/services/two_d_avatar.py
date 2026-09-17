@@ -335,7 +335,7 @@ class TwoDAvatarRenderer:
             self._render_audio_reactive(source, audio, output, emotion)
             return self._result(
                 output, "audio-reactive-2d", emotion, started,
-                neural=False, lipsync=True, fallback_reason=neural_error,
+                neural=False, lipsync=False, fallback_reason=neural_error,
             )
 
     @staticmethod

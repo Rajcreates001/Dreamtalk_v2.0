@@ -5,10 +5,12 @@ import numpy as np
 
 def calc_eye_close_ratio(lmk):
     if lmk is None:
-        return np.zeros((1, 3), dtype=np.float32)
+        return np.zeros((1, 2), dtype=np.float32)
     left_eye_ratio = calc_eye_ratio(lmk[:, 96:108])
     right_eye_ratio = calc_eye_ratio(lmk[:, 108:120])
-    eye_close_ratio = np.concatenate([left_eye_ratio, right_eye_ratio, (left_eye_ratio + right_eye_ratio) / 2], axis=1)
+    # The eye retargeter takes 63 keypoint values + two source-eye ratios
+    # + one target ratio (66 inputs). A third source average breaks its input.
+    eye_close_ratio = np.concatenate([left_eye_ratio, right_eye_ratio], axis=1)
     return eye_close_ratio
 
 
