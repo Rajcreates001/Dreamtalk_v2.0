@@ -325,9 +325,27 @@ def phase_lipsync() -> dict:
         mouth_ratio_ok = eyes <= 0.15 or (m.get("mouth_over_eyes") or 0) > 1.5
         ok = (m.get("mouth", 0) > 0.5 and mouth_ratio_ok and
               m.get("background", 9) < 0.5)
-        res["verdict"] = ("PASS mouth moves, rest is still" if ok else
-                          "FAIL see numbers above")
-        res["ok"] = bool(ok)
+
+        # "rest is still" was the verdict this check printed, and it was the
+        # wrong thing to want. It was written to catch a renderer that shook
+        # the whole face, and it ended up certifying the opposite failure: a
+        # photograph with a moving mouth, eyes at exactly 0.000, no blink in
+        # four seconds, no head movement at all. Every run passed. The face
+        # was dead and the harness called it correct.
+        #
+        # Isolation is still worth checking, so it stays - but it is now
+        # reported as isolation, and the absence of life is reported beside
+        # it instead of being the pass condition.
+        alive = eyes > 0.02
+        res["mouth_isolated"] = bool(ok)
+        res["shows_life"] = bool(alive)
+        res["verdict"] = (
+            ("mouth isolated" if ok else "FAIL mouth not isolated")
+            + ("; face shows secondary motion" if alive else
+               "; STILL FACE - no blink, no head motion, only the mouth moves")
+        )
+        # A still face is not a pass. It is the defect that reads as unreal.
+        res["ok"] = bool(ok and alive)
         log("lipsync", res["verdict"])
     else:
         res["verdict"] = "FAIL response video was not found; refusing to inspect an older render"

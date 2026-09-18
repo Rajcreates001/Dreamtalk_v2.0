@@ -5,10 +5,24 @@ import numpy as np
 
 
 def headpose_pred_to_degree(pred):
+    """Bin logits to degrees.
+
+    The motion extractor predicts pitch, yaw and roll as 66-bin
+    classification logits covering roughly -97.5..+97.5 degrees in 3 degree
+    steps. The expected bin index times 3 gives a value in 0..198, and the
+    offset recentres it on zero.
+
+    That offset was -1 here instead of -97.5, which is not a small error: a
+    frontal portrait came out at pitch 100.3, yaw 95.7, roll 96.8 degrees
+    rather than 2.8, -1.8 and -0.7, so every head was rotated about a quarter
+    turn before warping. The generator has no way to render that from a single
+    frontal view and returned a saturated blob - which is what the portrait
+    blink path had been producing, silently, for as long as it has existed.
+    """
     device = pred.device
     idx_tensor = torch.arange(pred.shape[1], device=device).float()
     pred = torch.softmax(pred, dim=1)
-    degree = torch.sum(pred * idx_tensor, dim=1) * 3 - 1
+    degree = torch.sum(pred * idx_tensor, dim=1) * 3 - 97.5
     return degree
 
 
