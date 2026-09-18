@@ -143,9 +143,24 @@ class SPADEResnetBlock(nn.Module):
 
 
 class SPADE(nn.Module):
+    """SPatially-ADaptive DEnormalization.
+
+    The denormalization is the point. Activations are first normalized with a
+    parameter-free instance norm, and the spatial map then supplies a per-pixel
+    scale and shift to put statistics back. Modulating raw activations instead
+    is a different operation entirely, and it does not decode an image.
+
+    The vendored copy here had no normalization step: `out = x * (1 + gamma) +
+    beta` on unnormalized x. That is why LivePortrait returned a saturated blob
+    for every portrait, and why it did so silently - param_free_norm carries no
+    parameters, so leaving it out does not disturb a strict load_state_dict.
+    The weights loaded cleanly into a network that was no longer SPADE.
+    """
+
     def __init__(self, norm_nc, label_nc, nhidden=128):
         super(SPADE, self).__init__()
         pw = 3
+        self.param_free_norm = nn.InstanceNorm2d(norm_nc, affine=False)
         self.mlp_shared = nn.Sequential(
             nn.Conv2d(label_nc, nhidden, kernel_size=pw, padding=pw // 2),
             nn.ReLU()
@@ -154,13 +169,15 @@ class SPADE(nn.Module):
         self.mlp_beta = nn.Conv2d(nhidden, norm_nc, kernel_size=pw, padding=pw // 2)
 
     def forward(self, x, seg):
-        # Interpolate seg to match x's spatial dimensions (handles upsampling in SpadeDecoder)
+        normalized = self.param_free_norm(x)
+        # Interpolate seg to match x's spatial dimensions (handles upsampling
+        # in SPADEDecoder).
         if seg.shape[-2:] != x.shape[-2:]:
             seg = F.interpolate(seg, size=x.shape[-2:], mode='nearest')
         actv = self.mlp_shared(seg)
         gamma = self.mlp_gamma(actv)
         beta = self.mlp_beta(actv)
-        out = x * (1 + gamma) + beta
+        out = normalized * (1 + gamma) + beta
         return out
 
 
