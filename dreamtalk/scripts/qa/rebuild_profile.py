@@ -25,17 +25,10 @@ import time
 
 import httpx
 
-API = "http://localhost:5000/api/v1"
+sys.path.insert(0, "/app/dreamtalk/scripts/qa")
+from e2e_avatar import API, token  # noqa: E402
 
 RUNTIME = "/app/dreamtalk/media/avatar_runtime"
-
-
-def token() -> str:
-    r = httpx.post("%s/auth/login" % API,
-                   json={"email": EMAIL, "password": PASSWORD}, timeout=60)
-    r.raise_for_status()
-    d = r.json()
-    return (d.get("tokens") or d)["access_token"]
 
 
 def glb_summary(path: str) -> dict:

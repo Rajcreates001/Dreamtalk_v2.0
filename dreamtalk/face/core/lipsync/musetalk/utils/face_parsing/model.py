@@ -32,6 +32,10 @@ SKIN_LABELS = {1}
 # mask for a talking mouth was leaving the lips out of the mouth region.
 JAW_RELATED_LABELS = {1, 10, 11, 12, 13}
 
+# The mouth interior and both lips. This is what the network is for;
+# the rest of the lower face is already right in the photograph.
+MOUTH_LABELS = {11, 12, 13}
+
 class ConvBNReLU(nn.Module):
     def __init__(self, in_chan, out_chan, ks=3, stride=1, padding=1):
         super(ConvBNReLU, self).__init__()
@@ -235,6 +239,54 @@ class FaceParsing():
         return Image.fromarray(mask)
 
     def _get_jaw_mask(self, parsing: np.ndarray, image):
+        """Where MuseTalk's output is allowed to replace the photograph.
+
+        This used to be every skin pixel, weighted by a cone peaking near the
+        bottom of the crop - so the region it replaced hardest was the chin,
+        and the whole lower face came from the network. On a subject with a
+        beard that is the worst possible choice. MuseTalk smooths heavy facial
+        hair away, and rendered frames came back with the beard erased into a
+        pale blotchy chin and a visibly reshaped jawline, against a source
+        photograph with a full dark beard. Looking at one frame showed it
+        immediately; four renders of mouth metrics had not, because none of
+        them looked outside the mouth.
+
+        The network only needs the mouth. Everything else in the lower face is
+        already correct in the photograph and moves very little on a frontal
+        talking head, so it is kept. The mask is now the mouth and lips grown
+        by a margin proportional to the mouth's own width, clipped to face
+        skin so it cannot bleed into beard-free background or hair, and
+        feathered.
+
+        If the parser finds no mouth - a closed, dark mouth on a low-contrast
+        frame - this falls back to the previous behaviour rather than
+        returning an empty mask, because no mask at all means no lip-sync.
+        """
+        h, w = parsing.shape
+        mouth = np.isin(parsing, list(MOUTH_LABELS))
+        if not mouth.any():
+            return self._get_jaw_mask_legacy(parsing, image)
+
+        ys, xs = np.nonzero(mouth)
+        mouth_w = max(1, int(xs.max() - xs.min()))
+        grow = max(3, int(mouth_w * 0.55))
+        if grow % 2 == 0:
+            grow += 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (grow, grow))
+        grown = cv2.dilate(mouth.astype(np.uint8), kernel, iterations=1)
+
+        # Stay on the face. Without this the dilation walks onto the beard
+        # boundary and the background either side of the chin.
+        face = np.isin(parsing, list(SKIN_LABELS | MOUTH_LABELS | {10}))
+        mask = (grown.astype(bool) & face).astype(np.float32) * 255.0
+
+        # Feather, scaled to the mouth rather than the crop, so the seam falls
+        # inside skin that barely moves.
+        blur = max(3.0, mouth_w * 0.18)
+        mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=blur)
+        return Image.fromarray(np.clip(mask, 0, 255).astype(np.uint8))
+
+    def _get_jaw_mask_legacy(self, parsing: np.ndarray, image):
         h, w = parsing.shape
         mask = np.zeros((h, w), dtype=np.uint8)
         for label in JAW_RELATED_LABELS:

@@ -121,10 +121,103 @@ def _restore_detail(generated, reference, sigma=1.5):
     low = cv2.GaussianBlur(gen, (0, 0), sigmaX=sigma)
     high_gen = gen - low
     if w <= 0.0:
-        return np.clip(gen + 0.35 * high_gen, 0, 255).astype(np.uint8)
-    high_ref = ref - cv2.GaussianBlur(ref, (0, 0), sigmaX=sigma)
-    high = w * high_ref + (1.0 - w) * 1.35 * high_gen
-    return np.clip(low + high, 0, 255).astype(np.uint8)
+        out = gen + 0.35 * high_gen
+    else:
+        high_ref = ref - cv2.GaussianBlur(ref, (0, 0), sigmaX=sigma)
+        # The weight is a field, not a scalar. Full reference detail on the
+        # cheeks, chin and jaw, which barely move; none of it across the lips
+        # and the moustache above them, where the donor is a still and this
+        # frame is not.
+        keep = _mouth_exclusion(gen.shape[:2])[..., None]
+        wf = w * (1.0 - keep)
+        out = low + wf * high_ref + (1.0 - wf) * 1.35 * high_gen
+    return _match_contrast(np.clip(out, 0, 255), ref)
+
+
+def _mouth_exclusion(shape, centre_y=0.66, half_w=0.40, half_h=0.26):
+    """1 across the mouth and moustache, 0 elsewhere, with a soft edge.
+
+    Rendering with a single weight for the whole patch makes the choice
+    between two visible defects, and the frames show both. At weight 0 the
+    beard and stubble smear into a waxy wash, because the autoencoder does not
+    reproduce them and nothing puts them back. At weight 0.85 they return, and
+    so does the source photograph's moustache, stamped as a textured band
+    straight across an open mouth.
+
+    Aperture spread does not see the second one - the mouth is still as dark
+    and still opens as far, it just has somebody's moustache printed over it -
+    which is why four renders of numbers said this was fine and looking at one
+    frame said it was not.
+
+    The donor is trustworthy exactly where the face does not move. So it is
+    used there and refused over the lips, in face-patch relative coordinates
+    matching the ellipse _add_mouth_region already uses, raised to take in the
+    moustache band above the lip line.
+    """
+    h, w = shape
+    mask = np.zeros((h, w), np.float32)
+    cv2.ellipse(mask, (int(w * 0.50), int(h * centre_y)),
+                (max(2, int(w * half_w)), max(2, int(h * half_h))),
+                0, 0, 360, 1.0, -1)
+    return cv2.GaussianBlur(mask, (0, 0), sigmaX=max(2.0, w * 0.05))
+
+
+def _match_contrast(patch, reference, window=11, cap=2.2):
+    """Re-expand the tonal range the autoencoder flattened, locally.
+
+    Neither frequency band in the crossover touches the one that was actually
+    missing. Measured on a rendered clip against the source photograph, inside
+    a mouth box taken from the detected mouth landmarks:
+
+        saturation           1.14   (up)
+        chroma               1.13   (up)
+        lip/skin redness     up
+        luminance contrast   0.74   <- and 1.00 on an untouched cheek
+
+    The lips had not lost colour and had not lost fine texture. They had lost
+    the mid-frequency tonal structure separating upper lip from lower and lip
+    from skin - the vermilion border, the shadow between the lips - which sits
+    between a 1.5px high-pass and everything below it, so both halves of the
+    crossover sail straight past it.
+
+    LOCAL is the whole point, and the first version of this got it wrong by
+    computing one gain for the entire face patch. Over a whole face the
+    generated contrast already matches the photograph, because only the mouth
+    is flattened; the gain came out at 1.0 and the measurement moved from 0.74
+    to 0.76. The deficit is local, so the correction has to be.
+
+    So: local mean and local standard deviation of luminance in both patches,
+    and a per-pixel gain sized to close the gap between them. The generated
+    patch keeps its own local mean, which is what carries mouth shape - an open
+    mouth stays open and a closed one stays closed - and only the flatness is
+    undone. Nothing spatial crosses from the reference; what crosses is a
+    scalar field saying how much contrast belongs at each point, which is also
+    why this cannot imprint a still photograph's lips.
+
+    The gain is floored at 1.0 so an already-contrasty region is never
+    softened, and capped so a region the network rendered nearly flat is not
+    multiplied into banding.
+
+    A fixed expansion inside the mouth was tried and removed. The aperture is
+    dark, so expanding contrast about a dark local mean deepens the cavity
+    instead of lifting the teeth: the brightest decile inside an open mouth
+    stayed at 24.0 and the interior mean fell from 12.4 to 11.4. Dim teeth are
+    what the network produced and compositing cannot invent them.
+    """
+    lab = cv2.cvtColor(patch.astype(np.uint8), cv2.COLOR_BGR2LAB).astype(np.float32)
+    ref_lab = cv2.cvtColor(reference.astype(np.uint8), cv2.COLOR_BGR2LAB).astype(np.float32)
+    lum, ref_lum = lab[:, :, 0], ref_lab[:, :, 0]
+
+    k = (window, window)
+    mu = cv2.blur(lum, k)
+    sd = np.sqrt(np.maximum(cv2.blur(lum * lum, k) - mu * mu, 0.0))
+    ref_mu = cv2.blur(ref_lum, k)
+    ref_sd = np.sqrt(np.maximum(cv2.blur(ref_lum * ref_lum, k) - ref_mu * ref_mu, 0.0))
+
+    gain = np.clip(ref_sd / (sd + 1.0), 1.0, cap)
+
+    lab[:, :, 0] = np.clip(mu + (lum - mu) * gain, 0, 255)
+    return cv2.cvtColor(lab.astype(np.uint8), cv2.COLOR_LAB2BGR)
 
 
 def _add_mouth_region(mask_array, face_box, crop_box):
