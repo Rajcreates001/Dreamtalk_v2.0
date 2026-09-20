@@ -315,7 +315,18 @@ def phase_lipsync() -> dict:
             local = cand
             break
     res = {"ok": False, "latency_s": round(dt, 1), "video_url": url,
-           "engine": d.get("engine"), "local": local}
+           "engine": d.get("engine"), "local": local,
+           "fallback_reason": d.get("fallback_reason")}
+    # A render that quietly fell back to the audio-reactive engine still
+    # returns 200 with a video, and every motion check below passes on it -
+    # the mouth does move, just not from the audio. That happened: MuseTalk
+    # failed to initialise, the endpoint answered 200 in 13s, and the only
+    # sign was the latency. The engine that actually ran is the thing to
+    # assert, not the status code.
+    if (d.get("engine") or "").strip().lower() != "musetalk":
+        log("lipsync", "FAIL engine was %r, not musetalk (%s)"
+            % (d.get("engine"), d.get("fallback_reason") or "no reason given"))
+        return res
     if local:
         res["motion"] = _frame_motion(local)
         m = res["motion"]
