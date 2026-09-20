@@ -411,7 +411,14 @@ except Exception as e:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:4000,http://localhost:3000").split(","),
+    # 4500 is the frontend's published port. It is not 4000 because Windows
+    # reserves TCP 3844-4443 for WinNAT, so Docker cannot bind 4000 there and
+    # the container comes up with no published port at all. 4000 stays listed
+    # for hosts where it does bind.
+    allow_origins=os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:4500,http://localhost:4000,http://localhost:3000",
+    ).split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

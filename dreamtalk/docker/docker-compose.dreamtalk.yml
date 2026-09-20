@@ -63,8 +63,17 @@ x-shared-env: &shared-env
   WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
   WHISPER_DEVICE: ${WHISPER_DEVICE:-auto}
   AVATAR_LLM_MAX_TOKENS: ${AVATAR_LLM_MAX_TOKENS:-120}
+  # Declared explicitly rather than left to the code default in
+  # backend/main.py, so the allowed origins are visible in the deployment and
+  # change with the published port. 4500 is the frontend (see the frontend
+  # service for why it is not 4000).
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4500,http://localhost:4000,http://localhost:3000}
   AVATAR_2D_FPS: ${AVATAR_2D_FPS:-25}
-  AVATAR_2D_MAX_SIDE: ${AVATAR_2D_MAX_SIDE:-768}
+  # A ceiling, not a target: the render resolution is derived from the face
+  # so it arrives at MuseTalk's working size. Pinned at 768 this capped a
+  # 1861 px photograph down to a 145 px face, which MuseTalk then upscaled.
+  AVATAR_2D_MAX_SIDE: ${AVATAR_2D_MAX_SIDE:-1536}
+  AVATAR_2D_FACE_PX: ${AVATAR_2D_FACE_PX:-288}
   MUSETALK_BATCH_SIZE: ${MUSETALK_BATCH_SIZE:-4}
   MUSETALK_ALLOW_CPU: ${MUSETALK_ALLOW_CPU:-false}
   # Half precision. MuseTalk loaded in fp32 by default, which does not fit an
@@ -192,7 +201,7 @@ services:
     ports:
       - "5050:5000"
     environment:
-      MUSETALK_DETAIL_REF_WEIGHT: ${MUSETALK_DETAIL_REF_WEIGHT:-0.85}
+      MUSETALK_DETAIL_REF_WEIGHT: ${MUSETALK_DETAIL_REF_WEIGHT:-1.0}
       <<: *shared-env
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -244,7 +253,14 @@ services:
     container_name: dreamtalk-frontend
     restart: unless-stopped
     ports:
-      - "4000:3000"
+      # Not 4000. Windows reserves TCP 3844-4443 for WinNAT/Hyper-V on this
+      # class of machine, so binding 4000 fails with "an attempt was made to
+      # access a socket in a way forbidden by its access permissions" and the
+      # container comes up with NO published port at all - which is why Docker
+      # Desktop showed the frontend with nothing to click and no "open in
+      # browser". Check with:
+      #     netsh interface ipv4 show excludedportrange protocol=tcp
+      - "${FRONTEND_PORT:-4500}:3000"
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5050}
