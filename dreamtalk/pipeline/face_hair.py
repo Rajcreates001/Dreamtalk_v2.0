@@ -39,7 +39,6 @@ logger = logging.getLogger("dreamtalk.face_hair")
 # conservative: too little volume reads as short hair, too much reads as a
 # helmet, and the former is the safer error.
 DEFAULT_WIDTH_RATIO = 1.18
-DEFAULT_TOP_RATIO = 0.22
 
 
 def _vertex_normals(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
@@ -96,74 +95,73 @@ def build_hair(
         return None
     scalp_idx = np.asarray(scalp_idx, dtype=np.int64)
 
-    width_ratio = (metrics or {}).get("width_ratio", DEFAULT_WIDTH_RATIO)
-    top_ratio = (metrics or {}).get("top_ratio", DEFAULT_TOP_RATIO)
-    # A segmentation can report absurd ratios when it mistakes a dark
-    # background for hair, and an over-inflated shell is far more damaging
-    # than an under-inflated one, so clamp both.
-    width_ratio = float(np.clip(width_ratio, 1.0, 1.6))
-    top_ratio = float(np.clip(top_ratio, 0.0, 0.85))
+    # Only width_ratio is used. top_ratio - how far the hair rises above the
+    # skin - drove a vertical lift that measurement showed is harmful at every
+    # offset tried, so it is measured and reported but no longer shapes the
+    # shell. A segmentation can report absurd ratios when it mistakes a dark
+    # background for hair, and an over-inflated shell is more damaging than an
+    # under-inflated one, so it is clamped.
+    width_ratio = float(np.clip(
+        (metrics or {}).get("width_ratio", DEFAULT_WIDTH_RATIO), 1.0, 1.6))
 
-    up, side, fwd = frame.up, frame.side, frame.fwd
+    up, side = frame.up, frame.side
     head_w = float(vertices[:, side].max() - vertices[:, side].min())
     head_h = float(vertices[:, up].max() - vertices[:, up].min())
+    scalp_top = float(vertices[np.asarray(scalp_idx, dtype=np.int64)][:, up].max())
 
-    # The photo measures hair rising above the topmost SKIN pixel, and the
-    # skull already rises above the skin — forehead to crown is bone, not
-    # hair. Subtracting that is the whole correction: taking the photo
-    # number at face value double-counts the cranium and produced a shell
-    # 0.3618 tall over a head whose crown sits at 0.3430, i.e. it more than
-    # doubled the head's height into a cone.
+    # What actually widens the visible silhouette is standing the shell OFF
+    # the skull, not lifting it.
     #
-    # So: locate the top of the face skin on the mesh, project where the
-    # photo says the hair should end, and lift only the remainder.
-    face_idx = masks.get("face")
-    if face_idx is not None and len(face_idx):
-        face_v = vertices[np.asarray(face_idx, dtype=np.int64)]
-        face_top = float(face_v[:, up].max())
-        face_h = float(face_v[:, up].max() - face_v[:, up].min())
-    else:
-        face_top = float(vertices[:, up].max())
-        face_h = float(vertices[:, up].max() - vertices[:, up].min())
-
-    scalp_top = float(vertices[scalp_idx][:, up].max())
-    target_top = face_top + top_ratio * face_h
-    lift = max(0.0, target_top - scalp_top)
-    # Even a correct measurement can be inflated by a dark background caught
-    # in the hair mask, so never add more than a third of the face height.
-    lift = min(lift, face_h * 0.33)
-    spread = head_w * (width_ratio - 1.0) * 0.5
+    # The hair a viewer sees is only the part of the shell that projects
+    # outside the head's own silhouette; the rest is occluded. Measured
+    # against the subject's segmented hair, with the shipped construction as
+    # the baseline (IoU 0.2178, recall 0.2212):
+    #
+    #     outward offset (of head width), lift 0      IoU     recall
+    #         0.09                                  0.3261    0.3353
+    #         0.12                                  0.3378    0.3495
+    #         0.16                                  0.3369    0.3533
+    #         0.20                                  0.3271    0.3484
+    #
+    #     offset 0.12, with lift added
+    #         lift 0.06                             0.2849    0.2927
+    #         lift 0.12                             0.2124    0.2169
+    #         lift 0.20                             0.1041    0.1057
+    #
+    # Lift hurts monotonically at every offset tried. It raises the shell off
+    # the crown, where the visible rim is thin, and away from the sides, where
+    # it is wide. The backward pull is worse still: it grew in proportion to
+    # the spread, so a larger shell was pushed behind the skull faster than it
+    # grew, and uniformly scaling the old displacement - which is exactly what
+    # relaxing the rise cap did - drove IoU from 0.2178 down to 0.0382.
+    #
+    # So: offset along the normals, sized from the photo's own width_ratio,
+    # and nothing else.
+    spread = head_w * float(np.clip((width_ratio - 1.0) * 0.5, 0.04, 0.18))
 
     normals = _vertex_normals(vertices, faces)
     scalp = vertices[scalp_idx].copy()
     n = normals[scalp_idx]
 
-    # Weight the lift by how high each scalp vertex already sits, so the
-    # shell grows from the crown and tapers to nothing at the hairline
-    # rather than detaching in a ring around the head.
+    # Weight by how high each scalp vertex already sits, so the shell grows
+    # from the crown and tapers to nothing at the hairline rather than
+    # detaching in a ring around the head.
     rel = (scalp[:, up] - scalp[:, up].min())
     rel /= max(1e-9, rel.max())
     w = np.clip(rel, 0.0, 1.0) ** 0.75
 
     displacement = n * (spread * w[:, None])
-    displacement[:, up] += frame.up_sign * lift * w
-    # Pull the shell very slightly back: hair sits behind the forehead, and
-    # without this the front edge can poke through the brow.
-    displacement[:, fwd] -= frame.fwd_sign * spread * 0.25 * w
 
-    # Clamp the RESULT, not the ingredients.
-    #
-    # At the crown the surface normal points up, so the sideways `spread`
-    # term adds height too and stacks on top of `lift`. Clamping each part
-    # separately still let them sum to 0.2653 over a skull whose crown sits
-    # at 0.3430 — 77% taller than the head. Measuring the finished rise and
-    # scaling the whole displacement keeps the shape and fixes the size.
-    max_rise = head_h * 0.20
+    # A cap purely as a guard against a segmentation that mistook a dark
+    # background for hair. It used to be 20% of head height and it bound at
+    # exactly 20.0% on a normal subject - i.e. it was setting the shape, not
+    # catching a failure - so it now sits well clear of the measured range.
+    max_rise = head_h * 0.35
     rise = float((scalp[:, up] + displacement[:, up]).max()) - scalp_top
     if rise > max_rise > 0:
         displacement *= max_rise / rise
         logger.info("Hair shell scaled %.2fx to cap rise at %.0f%% of head height",
-                    max_rise / rise, 20)
+                    max_rise / rise, 35)
 
     shell = scalp + displacement
 
@@ -189,9 +187,10 @@ def build_hair(
     shell_faces[flipped] = shell_faces[flipped][:, ::-1]
 
     logger.info(
-        "Built hair shell: %d verts, %d faces (lift %.4f, spread %.4f, "
-        "width_ratio %.2f, top_ratio %.2f)",
-        len(verts), len(shell_faces), lift, spread, width_ratio, top_ratio,
+        "Built hair shell: %d verts, %d faces (offset %.4f = %.2f of head "
+        "width, width_ratio %.2f)",
+        len(verts), len(shell_faces), spread, spread / max(head_w, 1e-9),
+        width_ratio,
     )
     return {
         "parts": [{
