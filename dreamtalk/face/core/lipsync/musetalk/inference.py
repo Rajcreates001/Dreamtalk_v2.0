@@ -14,7 +14,20 @@ import numpy as np
 import subprocess
 from tqdm import tqdm
 from omegaconf import OmegaConf
-from transformers import WhisperConfig, WhisperModel
+# transformers exposes its top level through a _LazyModule, which is not safe
+# to import from concurrently: a thread that arrives while another is still
+# populating the namespace sees it half-filled and raises ImportError for a
+# name that is plainly there. It happened here - one render died with "cannot
+# import name 'WhisperConfig'" after MuseTalk had already loaded successfully
+# in the same process, and the name imports fine from a fresh interpreter.
+#
+# The concrete module paths are not lazy, so falling back to them removes the
+# race rather than retrying into it.
+try:
+    from transformers import WhisperConfig, WhisperModel
+except ImportError:  # pragma: no cover - depends on import interleaving
+    from transformers.models.whisper.configuration_whisper import WhisperConfig
+    from transformers.models.whisper.modeling_whisper import WhisperModel
 
 logger = logging.getLogger("dreamtalk.face.musetalk.inference")
 
@@ -165,7 +178,7 @@ class MuseTalkInference:
                   extra_margin=10, parsing_mode="jaw", version="v15",
                   audio_padding_length_left=2, audio_padding_length_right=2,
                   result_dir="./results", output_vid_name=None, use_saved_coord=False,
-                  saved_coord=False, hw_video_encode=False):
+                  saved_coord=False, hw_video_encode=False, blink=None):
 
         input_basename = os.path.basename(video_path).split('.')[0]
         audio_basename = os.path.basename(audio_path).split('.')[0]
@@ -260,6 +273,31 @@ class MuseTalkInference:
                 res_frame_list.append(res_frame)
 
         # Pad to original
+        _blink_schedule = {}
+        if blink is not None and getattr(blink, "ready", False):
+            from dreamtalk.pipeline.portrait_blink import blink_schedule
+            _blink_schedule = blink_schedule(len(res_frame_list), fps)
+            logger.info("blink: %d of %d frames carry a closure",
+                        len(_blink_schedule), len(res_frame_list))
+
+        # Head motion is built here rather than passed in, because unlike the
+        # blink it needs nothing but the frame itself - no profile directory,
+        # no photograph, no morph target.
+        _motion = None
+        _motion_schedule = []
+        try:
+            from dreamtalk.pipeline import portrait_motion
+            if portrait_motion.enabled() and frame_list_cycle:
+                _motion = portrait_motion.for_frame(frame_list_cycle[0])
+                if _motion is not None:
+                    _motion_schedule = portrait_motion.motion_schedule(
+                        len(res_frame_list), fps)
+                    logger.info("head motion over %d frames",
+                                len(_motion_schedule))
+        except Exception as exc:
+            logger.warning("head motion setup failed (%s); the head will be still",
+                           exc)
+            _motion = None
         for i, res_frame in enumerate(tqdm(res_frame_list)):
             bbox = coord_list_cycle[i % len(coord_list_cycle)]
             ori_frame = copy.deepcopy(frame_list_cycle[i % len(frame_list_cycle)])
@@ -275,6 +313,18 @@ class MuseTalkInference:
                 combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], mode=parsing_mode, fp=self.fp)
             else:
                 combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=self.fp)
+            if blink is not None and getattr(blink, "ready", False):
+                # The mouth is the network's; the eyes are composited on top,
+                # because MuseTalk does not touch them. Without this every
+                # rendered clip measures eye motion 0.000 and zero blinks.
+                combine_frame = blink.apply(
+                    combine_frame, _blink_schedule.get(i, 1.0))
+            if _motion is not None and i < len(_motion_schedule):
+                # Last, so the generated mouth and the composited lids - both
+                # placed at coordinates measured on the still photograph -
+                # travel with the head instead of being left behind by it.
+                combine_frame = _motion.apply(combine_frame,
+                                              _motion_schedule[i])
             cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
 
         # Assemble video with optional HW encoding

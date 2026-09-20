@@ -126,6 +126,7 @@ class MuseTalkAPI:
         saved_coord: bool = False,
         enable_face_enhance: bool = False,
         hw_video_encode: bool = True,
+        blink=None,
     ) -> Dict[str, Any]:
         if not self._loaded:
             raise RuntimeError("Models not loaded. Call load_models() first.")
@@ -151,6 +152,7 @@ class MuseTalkAPI:
             use_saved_coord=use_saved_coord or self.config.use_saved_coord,
             saved_coord=saved_coord or self.config.saved_coord,
             hw_video_encode=hw_video_encode and torch.cuda.is_available(),
+            blink=blink,
         )
 
         if audio_16k != audio_path and os.path.exists(audio_16k):

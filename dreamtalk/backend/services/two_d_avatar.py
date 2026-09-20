@@ -87,6 +87,46 @@ class TwoDAvatarRenderer:
             "dependencies": dependencies,
         }
 
+    def _blink_for(self, source, full_source=None):
+        """A blink compositor for this portrait, cached per source image.
+
+        MuseTalk regenerates the mouth and nothing else, so a rendered clip
+        measures eye motion of exactly 0.000 and contains no blink in four
+        seconds. The lid is warped from the subject's own upper-lid skin at
+        the uploaded photograph's resolution and resampled into the frame;
+        see pipeline/portrait_blink for why it is a warp and not a model.
+
+        Never fatal. A render without a blink is the previous behaviour, and
+        that is better than no render.
+        """
+        if not hasattr(self, "_blink_cache"):
+            self._blink_cache = {}
+        # The photograph is part of the key: the same fitted frame with a
+        # different expression behind it needs its own lid patches, because
+        # they reach into the brow band.
+        key = (str(source), str(full_source or ""))
+        if key in self._blink_cache:
+            return self._blink_cache[key]
+        renderer = None
+        try:
+            import cv2
+
+            from dreamtalk.pipeline import portrait_blink
+
+            if portrait_blink.enabled():
+                image = cv2.imread(str(source))
+                if image is not None:
+                    # The profile directory is two levels above responses/.
+                    runtime = Path(source).resolve().parent.parent
+                    renderer = portrait_blink.for_profile(
+                        image, str(runtime), full_path=(
+                            str(full_source) if full_source else None))
+        except Exception as exc:
+            logger.warning("blink setup failed (%s); rendering without it", exc)
+            renderer = None
+        self._blink_cache[key] = renderer
+        return renderer
+
     @staticmethod
     def _release_host_llm_vram() -> bool:
         """Ask the host Ollama runtime to drop its model from VRAM.
@@ -274,7 +314,10 @@ class TwoDAvatarRenderer:
         # smeared against a sharp background. Bringing the source down so the
         # face lands near MuseTalk's native scale keeps the generated region
         # and the untouched region at comparable detail.
+        original = source
         source = self._fit_source(source, destination)
+        source, expressive_full = self._apply_expression(
+            original, source, destination, emotion)
 
         started = time.perf_counter()
         with self._render_lock:
@@ -299,6 +342,7 @@ class TwoDAvatarRenderer:
                             output_vid_name=filename,
                             batch_size=int(os.environ.get("MUSETALK_BATCH_SIZE", "4")),
                             hw_video_encode=True,
+                            blink=self._blink_for(source, expressive_full),
                         )
                         path = Path(result["video_path"])
                         if not path.exists() or path.stat().st_size < 1024:
@@ -405,31 +449,147 @@ class TwoDAvatarRenderer:
         }.get(emotion, (1.0, 0.65))
 
     @staticmethod
-    def _fit_source(source: Path, destination: Path) -> Path:
-        """Cap the source resolution so MuseTalk is not upscaling its output.
+    def _apply_expression(original: Path, fitted: Path, destination: Path,
+                          emotion: str) -> tuple[Path, Optional[Path]]:
+        """Bake the requested emotion in, and return both sizes of it.
 
-        Returns the original path when no resize is needed, otherwise a resized
-        copy alongside the render. INTER_AREA is the correct filter for
-        downscaling — it averages, so it does not alias the way INTER_LINEAR
-        does on high-frequency detail like hair and fabric.
+        In this path `emotion` previously reached nothing but the response
+        metadata, so a render requested as "happy" was pixel-for-pixel the
+        render requested as "neutral" while the API reported it as happy.
+
+        Both sizes are returned because the blink needs the full-resolution
+        one. It warps the eyelid at the photograph's scale, and its patches
+        reach 8 to 12 px into the brow band - so a blink built from the
+        untouched photograph pastes neutral brow skin back over an expressive
+        face, and the brows snap toward neutral for the frames a blink covers.
+        Measured on a surprised render before this: the brow band came back
+        7.16 grey levels away from the expression it was supposed to hold.
+
+        The fitted copy is a resample of the full-resolution one rather than a
+        second warp, so the two cannot disagree about where the brow went.
         """
         try:
-            max_side = int(os.environ.get("AVATAR_2D_MAX_SIDE", "768"))
+            from dreamtalk.pipeline import portrait_expression
+
+            if not portrait_expression.enabled():
+                return fitted, None
+            full_image = cv2.imread(str(original), cv2.IMREAD_COLOR)
+            if full_image is None:
+                return fitted, None
+            shaped_full, report = portrait_expression.apply_expression(
+                full_image, emotion)
+            if not report.get("applied"):
+                return fitted, None
+
+            suffix = original.suffix or ".jpg"
+            full_path = destination / f"{original.stem}_{emotion}{suffix}"
+            cv2.imwrite(str(full_path), shaped_full)
+
+            fitted_image = cv2.imread(str(fitted), cv2.IMREAD_COLOR)
+            if fitted_image is None:
+                return fitted, None
+            height, width = fitted_image.shape[:2]
+            shaped_fit = (shaped_full if shaped_full.shape[:2] == (height, width)
+                          else cv2.resize(shaped_full, (width, height),
+                                          interpolation=cv2.INTER_AREA))
+            fit_path = destination / f"{fitted.stem}_{emotion}{fitted.suffix or suffix}"
+            cv2.imwrite(str(fit_path), shaped_fit)
+            logger.info("2D expression %s baked in (brows %.1f px): %s and %s",
+                        emotion, report["brow_shift_px"], full_path.name,
+                        fit_path.name)
+            return fit_path, full_path
+        except Exception as exc:
+            logger.warning("expression %s not applied (%s); face stays neutral",
+                           emotion, exc)
+            return fitted, None
+
+    @staticmethod
+    def _fit_source(source: Path, destination: Path) -> Path:
+        """Scale the source so the FACE lands at MuseTalk's working size.
+
+        This used to cap the whole frame at 768 px, with the stated intent of
+        keeping MuseTalk from upscaling its output. It did the opposite. The
+        face is only a fifth of the frame on a half-body portrait, so a 768 px
+        frame delivers a 145 px face, MuseTalk upsamples that to its 256 px
+        working size, generates, and pastes the result back down. Everything
+        downstream inherits a face reconstructed from 145 px of a 1861 px
+        photograph: a soft mouth, and an eye aperture six pixels tall, which
+        no amount of eyelid work can make read as a blink.
+
+        So derive the scale from the face box instead of the frame. The target
+        is slightly above MuseTalk's 256 so the paste-back is a downsample -
+        resampling down keeps detail, resampling up invents it. The source's
+        own resolution is a hard ceiling; this never upscales.
+        """
+        # Measured on the detector box, which is the box MuseTalk pastes its
+        # 256x256 generated patch back into - so this is the quantity that
+        # decides whether that patch is upscaled. 288 puts the box at roughly
+        # 267 px on this subject, near MuseTalk's native scale.
+        #
+        # Raising it is tempting and was tried: at 480 the box reaches 468 px,
+        # the surrounding real skin gets visibly finer (HF share +8%), and the
+        # eye aperture doubles from 7.5 to 15.2 px. But the generated mouth is
+        # then upsampled 1.6x and its gradient energy falls 11%, measured over
+        # 17 matched frames. The mouth is the part MuseTalk actually makes, so
+        # it wins the tie; a bigger eye is no use if the mouth goes soft.
+        try:
+            target_face = int(os.environ.get("AVATAR_2D_FACE_PX", "288"))
         except ValueError:
-            max_side = 768
-        if max_side <= 0:
+            target_face = 288
+        try:
+            ceiling = int(os.environ.get("AVATAR_2D_MAX_SIDE", "1536"))
+        except ValueError:
+            ceiling = 1536
+        if ceiling <= 0:
             return source
         image = cv2.imread(str(source), cv2.IMREAD_COLOR)
         if image is None:
             return source
         height, width = image.shape[:2]
-        if max(height, width) <= max_side:
+
+        # _face_box falls back to a guessed centre box when detection fails,
+        # which must not be allowed to set the render resolution. Detect here
+        # so "no face found" stays distinguishable from "face found".
+        face = None
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        if Path(cascade_path).exists():
+            cascade = cv2.CascadeClassifier(cascade_path)
+            if not cascade.empty():
+                found = cascade.detectMultiScale(
+                    cv2.cvtColor(image, cv2.COLOR_BGR2GRAY),
+                    scaleFactor=1.08, minNeighbors=5, minSize=(80, 80))
+                if len(found):
+                    face = max(found, key=lambda item: item[2] * item[3])
+
+        scale = 1.0
+        if face is not None and face[2] > 0:
+            # Enlarging the frame past the source's own pixels would be
+            # upscaling by another name, so cap the scale at 1.0.
+            scale = min(1.0, max(0.05, target_face / float(face[2])))
+            logger.info(
+                "2D detector face %d px in a %dx%d source; scaling by %.2f "
+                "for a %d px detector box (inner face roughly %d px)",
+                face[2], width, height, scale, int(face[2] * scale),
+                int(face[2] * scale / 1.8),
+            )
+        else:
+            logger.info("2D face not detected; falling back to the frame cap")
+            longest_now = max(height, width)
+            if longest_now > ceiling:
+                scale = ceiling / longest_now
+
+        longest = max(height, width) * scale
+        if longest > ceiling:
+            scale *= ceiling / longest
+        if scale >= 0.999:
             return source
-        scale = max_side / max(height, width)
+
         resized = cv2.resize(
-            image, (int(width * scale), int(height * scale)), interpolation=cv2.INTER_AREA
+            image,
+            (max(1, int(round(width * scale))), max(1, int(round(height * scale)))),
+            interpolation=cv2.INTER_AREA,
         )
-        fitted = destination / f"source_fit_{max_side}{source.suffix or '.png'}"
+        fitted = destination / f"source_fit_{resized.shape[1]}{source.suffix or '.png'}"
         cv2.imwrite(str(fitted), resized)
         logger.info(
             "2D source scaled %dx%d -> %dx%d for MuseTalk",
@@ -441,11 +601,10 @@ class TwoDAvatarRenderer:
         image = cv2.imread(str(source), cv2.IMREAD_COLOR)
         if image is None:
             raise ValueError("The avatar source image cannot be decoded")
-        max_side = int(os.environ.get("AVATAR_2D_MAX_SIDE", "768"))
-        height, width = image.shape[:2]
-        scale = min(1.0, max_side / max(height, width))
-        if scale < 1.0:
-            image = cv2.resize(image, (int(width * scale), int(height * scale)), interpolation=cv2.INTER_AREA)
+        # The caller already ran _fit_source, so the image arrives at the
+        # render resolution. Re-capping it here would fight that decision with
+        # a frame-based rule and, now that the ceiling is 1536, would let this
+        # fallback emit a larger video than the MuseTalk path it stands in for.
         height, width = image.shape[:2]
         fps = int(os.environ.get("AVATAR_2D_FPS", "25"))
         envelope, _ = self._audio_envelope(audio, fps)

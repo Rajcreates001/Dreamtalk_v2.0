@@ -1,9 +1,12 @@
 # Dreamtalk - Face Engine
 # Extracted from MuseTalk
 from PIL import Image
+import logging
 import numpy as np
 import cv2
 import os
+
+logger = logging.getLogger(__name__)
 
 
 def get_crop_box(box, expand):
@@ -97,11 +100,24 @@ def _restore_detail(generated, reference, sigma=1.5):
     across the whole range. That is the static donor fighting the animation.
     It is real and it is the price.
 
-    0.85 is the default because it buys six times the texture of generated-only
-    sharpening for 14% of the motion, with the mouth opening at least as wide.
-    Sharpness is not linear in the weight - the two high-frequency fields are
-    different signals and partly cancel - which is why the useful range is
-    bunched near the top.
+    0.85 was the default on that table, and it was measured on the mouth box.
+    The beard is the case it misses. Texture loss is worst where texture is
+    highest, so a face-box average of 65% recovered hides a beard at 14% of
+    the photograph - the washed-out, patchy jaw that reads as fake at normal
+    viewing size. Measured on a beard patch specifically:
+
+        weight   whole patch   beard
+         0.85        56%        42%
+         1.00        70%        54%
+
+    Since the weight is already a field that is zero across the lips and the
+    moustache, raising it to 1.0 changes nothing where the donor is a still of
+    a different mouth shape, and takes the jaw and cheeks - which barely move -
+    entirely from the photograph, which is where they should come from.
+
+    Restoring more frequency bands was tried and is slightly WORSE, not better:
+    adding sigma 3.5 and 7.0 took the beard from 54% to 52%. The texture that
+    was destroyed lives above sigma 1.5; the lower bands only dilute it.
 
     MUSETALK_DETAIL_REF_WEIGHT overrides it: 1.0 is all reference detail, 0.0
     falls back to sharpening the generated patch alone. The generated half is
@@ -113,9 +129,9 @@ def _restore_detail(generated, reference, sigma=1.5):
         return generated
 
     try:
-        w = float(os.environ.get("MUSETALK_DETAIL_REF_WEIGHT", "0.85"))
+        w = float(os.environ.get("MUSETALK_DETAIL_REF_WEIGHT", "1.0"))
     except (TypeError, ValueError):
-        w = 0.85
+        w = 1.0
     w = min(max(w, 0.0), 1.0)
 
     low = cv2.GaussianBlur(gen, (0, 0), sigmaX=sigma)
@@ -134,7 +150,7 @@ def _restore_detail(generated, reference, sigma=1.5):
     return _match_contrast(np.clip(out, 0, 255), ref)
 
 
-def _mouth_exclusion(shape, centre_y=0.66, half_w=0.40, half_h=0.26):
+def _mouth_exclusion(shape, centre_y=0.68, half_w=0.24, half_h=0.16):
     """1 across the mouth and moustache, 0 elsewhere, with a soft edge.
 
     Rendering with a single weight for the whole patch makes the choice
@@ -153,13 +169,78 @@ def _mouth_exclusion(shape, centre_y=0.66, half_w=0.40, half_h=0.26):
     used there and refused over the lips, in face-patch relative coordinates
     matching the ellipse _add_mouth_region already uses, raised to take in the
     moustache band above the lip line.
+
+    It has to be the lips and the moustache and nothing else. At 0.40 by 0.26
+    the ellipse spanned x 0.10-0.90 and y 0.40-0.92 of the patch - the whole
+    lower face, both jaws and the chin included - so `keep` was 1 across the
+    beard, the weight field was 0 there, and no photographic texture was
+    restored anywhere it mattered. The face-box average still read 65%
+    recovered while the beard itself sat at 4-15% of the photograph, which is
+    the washed-out jaw that made the render look fake. Refusing the donor is
+    for where the face moves, and the jaw is not it.
     """
+    # Two ways of replacing this ellipse with something measured were tried
+    # and both are worse. They are recorded because both look obviously right.
+    #
+    # Optical flow, to move the donor onto the mouth instead of refusing it:
+    # it made alignment WORSE in every region of every frame, by up to 0.264.
+    # There is little real motion to find - the moustache already correlates
+    # at 0.94-0.97 and the chin at 0.76-0.81 with no warping at all - and flow
+    # invents correspondence in a mouth interior whose teeth and tongue have
+    # no counterpart in a closed-mouth photograph.
+    #
+    # A per-pixel alignment field from local normalised cross-correlation,
+    # used as the weight instead of this shape: chin 35% -> 16%, jaw 88% ->
+    # 45%, moustache 40% -> 27%. Correlation does not reach 1.0 even where the
+    # donor is perfectly registered, so multiplying the weight by it under-uses
+    # the donor everywhere, while the ellipse gives full weight outside its
+    # own boundary. Low-passing both sides before correlating - the generated
+    # patch is blurry by construction, so a raw comparison reads sharpness
+    # mismatch as misregistration - recovered part of it and still lost.
+    #
+    # The crude shape wins because the quantity that matters is not how well
+    # the donor correlates but whether the region moves, and a fixed ellipse
+    # over the lips states that directly.
     h, w = shape
     mask = np.zeros((h, w), np.float32)
     cv2.ellipse(mask, (int(w * 0.50), int(h * centre_y)),
                 (max(2, int(w * half_w)), max(2, int(h * half_h))),
                 0, 0, 360, 1.0, -1)
-    return cv2.GaussianBlur(mask, (0, 0), sigmaX=max(2.0, w * 0.05))
+    mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=max(2.0, w * 0.05))
+    # A partial refusal, not a total one. At 1.0 the lips, moustache and chin
+    # received no photographic texture whatever and measured 24%, 14% and 10%
+    # of the source - the washed-out mouth that survives every fix aimed at
+    # the beard beside it. Those parts do move, so the still cannot be trusted
+    # for their SHAPE, but their texture is still this person's stubble, and a
+    # fraction of it misaligned reads better than none at all.
+    #
+    # The ceiling was swept, five renders on one model load, measuring the
+    # texture it buys against the artifact it risks:
+    #
+    #     keep   chin  moustache  lips  jaw   aperture  ghosting
+    #     0.00   192%    113%     175%  135%   0.2188    -0.056
+    #     0.35   120%     77%      84%  111%   0.2106    -0.099
+    #     0.62    67%     52%      37%   92%   0.2188    -0.132
+    #     0.85    36%     35%      20%   79%   0.2139    -0.154
+    #     1.00    23%     26%      19%   73%   0.2191    -0.111
+    #
+    # Ghosting is the open mouth's correlation with the CLOSED photograph, so
+    # more negative is cleaner. Aperture spread is flat across the whole range:
+    # nothing is held shut at any setting, which is why that column cannot be
+    # used to choose, and why an earlier round of four renders concluded there
+    # was no problem here.
+    #
+    # The widest-open frame is what chooses. At 0.00 the photograph's moustache
+    # is stamped across the open mouth as a band of hair with texture inside
+    # the opening - the exact defect this function exists to avoid - and the
+    # 192% chin says the same thing in numbers: the donor's beard is being
+    # added on top of the generated one rather than restoring it. At 0.35 it is
+    # still visible. At 0.62 the moustache is clean and the lips read as lips.
+    try:
+        ceiling = float(os.environ.get("MUSETALK_MOUTH_KEEP_MAX", "0.62"))
+    except (TypeError, ValueError):
+        ceiling = 0.62
+    return mask * min(max(ceiling, 0.0), 1.0)
 
 
 def _match_contrast(patch, reference, window=11, cap=2.2):
@@ -248,6 +329,35 @@ def _add_mouth_region(mask_array, face_box, crop_box):
     return np.maximum(mask_array, mouth)
 
 
+_DETAIL_WARNED = False
+_DETAIL_LOGGED = False
+
+
+def _detail_report(generated, reference, restored):
+    """Say once, per process, how much texture the restoration actually put back.
+
+    The measurement that matters is not whether the function ran but whether
+    its output carries the photograph's detail. Reported once so it appears in
+    a render log without flooding it.
+    """
+    global _DETAIL_LOGGED
+    if _DETAIL_LOGGED:
+        return
+    _DETAIL_LOGGED = True
+    try:
+        def detail(img):
+            grey = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_RGB2GRAY)
+            return float(cv2.Laplacian(grey, cv2.CV_64F).var())
+
+        ref_d = detail(reference)
+        logger.info("detail restoration: generated %.0f -> %.0f of the "
+                    "photograph's %.0f (%.0f%% recovered)",
+                    detail(generated), detail(restored), ref_d,
+                    100.0 * detail(restored) / max(ref_d, 1e-6))
+    except Exception:
+        pass
+
+
 def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode="raw", fp=None):
     body = Image.fromarray(image[:, :, ::-1])
     face = Image.fromarray(face[:, :, ::-1])
@@ -294,8 +404,17 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
             ref = cv2.resize(ref, (generated.shape[1], generated.shape[0]), interpolation=cv2.INTER_CUBIC)
         sharpened = _restore_detail(generated, ref)
         face = Image.fromarray(sharpened)
-    except Exception:
-        pass  # sharpening is an enhancement; never fail a render for it
+        _detail_report(generated, ref, sharpened)
+    except Exception as exc:
+        # Still never fatal, but no longer silent. Swallowing this meant a
+        # render could lose every bit of the photograph's skin texture - the
+        # beard measured 14% of the source - and report nothing at all.
+        global _DETAIL_WARNED
+        if not _DETAIL_WARNED:
+            _DETAIL_WARNED = True
+            logger.warning("detail restoration failed (%s); the regenerated "
+                           "face keeps only what the VAE produced", exc,
+                           exc_info=True)
 
     face_large.paste(face, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))
     body.paste(face_large, crop_box[:2], mask_image)
