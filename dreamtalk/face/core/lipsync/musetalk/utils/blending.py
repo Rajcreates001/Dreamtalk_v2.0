@@ -150,7 +150,7 @@ def _restore_detail(generated, reference, sigma=1.5):
     return _match_contrast(np.clip(out, 0, 255), ref)
 
 
-def _mouth_exclusion(shape, centre_y=0.68, half_w=0.24, half_h=0.16):
+def _mouth_exclusion(shape, centre_y=None, half_w=None, half_h=None):
     """1 across the mouth and moustache, 0 elsewhere, with a soft edge.
 
     Rendering with a single weight for the whole patch makes the choice
@@ -201,6 +201,36 @@ def _mouth_exclusion(shape, centre_y=0.68, half_w=0.24, half_h=0.16):
     # The crude shape wins because the quantity that matters is not how well
     # the donor correlates but whether the region moves, and a fixed ellipse
     # over the lips states that directly.
+    # Tunable so the geometry can be swept against a render rather than
+    # guessed. The moustache sits ABOVE the lip line: it travels with the lip
+    # but never opens, so it is much safer to give the donor than the aperture
+    # is, and it is the one part MuseTalk does not draw at all.
+    def _env(name, default):
+        try:
+            return float(os.environ.get(name, default))
+        except (TypeError, ValueError):
+            return default
+
+    # The ellipse sits on the APERTURE, not on the whole mouth region.
+    #
+    # At 0.68/0.16 it covered the moustache band, and MuseTalk does not draw a
+    # moustache - it regenerates that area as scattered stubble. So the donor
+    # was refused over the one part of the face the generator erases, and the
+    # render lost his moustache entirely. Moving it down onto the aperture,
+    # measured over a whole clip against the photograph:
+    #
+    #     cy / hh      moustache  lips  chin  jaw   aperture  ghosting
+    #     0.68 / 0.16      55%     36%   67%   91%   0.2129    -0.131
+    #     0.72 / 0.13     105%     59%   59%  106%   0.2078    -0.122
+    #     0.74 / 0.11     118%     89%   58%  113%   0.2158    -0.106
+    #
+    # Aperture spread is flat across all three, so the mouth still opens as
+    # wide; ghosting stays strongly negative, so the closed mouth is not being
+    # stamped over the open one. Confirmed on the widest-open frame of each.
+    centre_y = _env("MUSETALK_MOUTH_CY", 0.74) if centre_y is None else centre_y
+    half_w = _env("MUSETALK_MOUTH_HW", 0.24) if half_w is None else half_w
+    half_h = _env("MUSETALK_MOUTH_HH", 0.11) if half_h is None else half_h
+
     h, w = shape
     mask = np.zeros((h, w), np.float32)
     cv2.ellipse(mask, (int(w * 0.50), int(h * centre_y)),

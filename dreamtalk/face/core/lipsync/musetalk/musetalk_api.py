@@ -108,6 +108,22 @@ class MuseTalkAPI:
         return compressed
 
     @torch.no_grad()
+    # There is deliberately no face-enhancement option.
+    #
+    # `enable_face_enhance` used to sit in this signature, declared and never
+    # referenced - the API accepted it and did nothing, which is worse than
+    # not offering it. GFPGANv1.4 is on disk with its detector and parser, and
+    # the package imports once basicsr is shimmed past the
+    # torchvision.transforms.functional_tensor removal, so it looked like a
+    # free win.
+    #
+    # Measured on a real render, it is not. GFPGAN smooths rather than
+    # restores: moustache 54% -> 15% of the photograph, chin 63% -> 11%, and
+    # the jaw, which was already at 96%, fell to 23%. It keeps the identity
+    # (upper-face correlation 0.968) and destroys the texture - the plastic
+    # skin it is known for. The mouth region is better served by the donor
+    # path in blending._restore_detail, which takes real pixels from this
+    # person's own photograph.
     def generate(
         self,
         video_path: str,
@@ -124,7 +140,6 @@ class MuseTalkAPI:
         output_vid_name: Optional[str] = None,
         use_saved_coord: bool = False,
         saved_coord: bool = False,
-        enable_face_enhance: bool = False,
         hw_video_encode: bool = True,
         blink=None,
     ) -> Dict[str, Any]:
