@@ -1013,9 +1013,20 @@ class FacePipeline:
                             # head-sized crop of the same photo measures 0.28
                             # and 0.67. The parser is fine; it was being shown
                             # a picture in which the hair was a few pixels tall.
+                            #
+                            # The crop is SQUARE, and resized to a square 512.
+                            # It used to be 0.60w x 0.55h, which scales x and y
+                            # by different factors on the way in. A ratio along
+                            # one axis survives that - width_ratio and
+                            # top_ratio both do - but an angle does not, and
+                            # the hair silhouette is now measured as a radius
+                            # per direction. Checked against mesh-space truth
+                            # through the landmark fit, the profile measured
+                            # from a square crop came out at a factor of 1.00.
                             fw, fh = full.size
-                            head = full.crop((int(fw * 0.20), 0,
-                                              int(fw * 0.80), int(fh * 0.55)))
+                            crop_px = int(min(fw, fh * 0.75))
+                            left = max(0, (fw - crop_px) // 2)
+                            head = full.crop((left, 0, left + crop_px, crop_px))
                             pil = head.resize((512, 512))
                             parsing = FaceParsing()(pil, mode="all")
                             hair_i = FACE_LABELS.index("hair")
