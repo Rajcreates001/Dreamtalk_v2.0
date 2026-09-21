@@ -177,6 +177,18 @@ class AvatarExporter:
             p_pos = np.ascontiguousarray(part["vertices"], dtype=np.float32)
             p_idx = np.ascontiguousarray(part["faces"], dtype=np.uint32).reshape(-1)
             p_attrs = {"POSITION": add_accessor(p_pos, "VEC3", FLOAT, ARRAY_BUF, minmax=True)}
+            # Per-vertex colour, when the part brought one. glTF renderers
+            # multiply COLOR_0 by baseColorFactor, so a part that carries both
+            # still shows its flat colour in a viewer that ignores COLOR_0 -
+            # which is why the factor is set to the part's brightest tone and
+            # the attribute holds each vertex relative to it, rather than the
+            # other way round. Float COLOR_0 must stay within 0..1.
+            p_col = part.get("colors")
+            if p_col is not None and len(p_col) == len(p_pos):
+                p_attrs["COLOR_0"] = add_accessor(
+                    np.ascontiguousarray(np.clip(p_col, 0.0, 1.0),
+                                         dtype=np.float32),
+                    "VEC3", FLOAT, ARRAY_BUF)
             p_prim: Dict[str, Any] = {
                 "attributes": p_attrs,
                 "indices": add_accessor(p_idx, "SCALAR", UINT, ELEM_BUF),

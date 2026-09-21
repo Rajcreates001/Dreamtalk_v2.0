@@ -991,6 +991,10 @@ class FacePipeline:
                     # Measure the subject's actual hair from their photo, so
                     # the shell matches this head rather than an average one.
                     hair_metrics, hair_colour = None, None
+                    # Kept for the per-vertex colour pass below: the
+                    # square crop and its parse are what the shell is
+                    # sampled from, and both are built here.
+                    hair_photo, hair_parse, hair_label = None, None, None
                     if source_image is not None:
                         try:
                             from PIL import Image as _Image
@@ -1034,6 +1038,9 @@ class FacePipeline:
                             hair_metrics = hair_metrics_from_parsing(parsing, hair_i, skin_i)
                             hair_colour = sample_hair_colour(
                                 np.asarray(pil), parsing, hair_i)
+                            hair_photo = np.asarray(pil)
+                            hair_parse = np.asarray(parsing)
+                            hair_label = hair_i
                             logger.info("Hair measured from photo: %s colour=%s",
                                         hair_metrics, hair_colour)
                         except Exception as exc:
@@ -1049,6 +1056,28 @@ class FacePipeline:
                             colour=hair_colour or (0.07, 0.05, 0.04),
                         )
                         for part in (hair or {}).get("parts", []):
+                            # Give the shell the photograph's own tones. It is
+                            # 489 vertices of one flat value otherwise, which
+                            # renders as a silhouette with no highlight and no
+                            # parting - and the bigger the shell, the worse a
+                            # flat mass looks. Non-fatal: if the sampling
+                            # cannot place the vertices on hair it returns
+                            # nothing and the flat colour stands.
+                            if part.get("name") == "hair" and hair_photo is not None:
+                                try:
+                                    from dreamtalk.pipeline.face_hair import (
+                                        sample_hair_vertex_colours,
+                                    )
+
+                                    sampled = sample_hair_vertex_colours(
+                                        np.asarray(part["vertices"], dtype=np.float64),
+                                        vertices, masks, frame, hair_photo,
+                                        hair_parse, hair_label)
+                                    if sampled is not None:
+                                        part["colors"], part["color"] = sampled
+                                except Exception as exc:
+                                    logger.info("Per-vertex hair colour "
+                                                "unavailable (%s)", exc)
                             mouth_parts.append(part)
                     except Exception as exc:
                         logger.warning("Hair shell build failed: %s", exc)

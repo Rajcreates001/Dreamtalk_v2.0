@@ -52,6 +52,14 @@ _PROFILE_START = -90.0
 # on a normal subject - i.e. it was setting the shape, not catching a failure.
 MAX_HAIR_RADIUS = 1.30
 
+# Rec. 601 luma, used to compare the shell's brightness with the
+# photograph's hair without letting one channel dominate.
+_LUMA = np.array([0.299, 0.587, 0.114])
+
+# The parser class the profile and the colour sampling both take
+# their origin from. CelebAMask-HQ puts skin at 1.
+_SKIN_FOR_ORIGIN = 1
+
 # The silhouette measurement constrains width and height. Hair has depth too,
 # so a fraction of the same push is carried along the surface normal's forward
 # component; without it the shell is a flat billboard seen from the side.
@@ -347,6 +355,115 @@ def build_hair(
             "jaw_follow": 0.0,
         }]
     }
+
+
+def sample_hair_vertex_colours(
+    shell: np.ndarray, vertices: np.ndarray, masks: Dict[str, np.ndarray],
+    frame, image: np.ndarray, parsing: np.ndarray, hair_label: int,
+) -> Optional[Tuple[np.ndarray, Tuple[float, float, float]]]:
+    """A colour per shell vertex, read off the photograph where it projects.
+
+    The shell is one flat value: 489 vertices all carrying the material's
+    baseColorFactor. The photograph's hair runs across a wide range of
+    luminance with real structure in it, so a single value renders the hair as
+    a silhouette with no highlight, no parting and no sense of volume - and
+    now that the shell is the right size, that flat mass is bigger and reads
+    worse, not better.
+
+    No new geometry is needed for this. The vertices are already spread over
+    the hair, and the profile gave a mapping between mesh units and the
+    parse's own pixels: both are measured about the middle of the top of the
+    face, in face widths. So the same mapping that decides how far to push a
+    vertex also decides which pixel it lands on.
+
+    Returns the per-vertex colours and the factor they are relative to. The
+    factor is the brightest tone on the shell, not its median, so the
+    attribute divides down into 0..1 as glTF requires and a renderer ignoring
+    COLOR_0 gets a plausible flat hair colour rather than white.
+    """
+    if image is None or parsing is None:
+        return None
+    hair = parsing == hair_label
+    skin = parsing == _SKIN_FOR_ORIGIN
+    if not hair.any() or not skin.any():
+        return None
+    if image.shape[:2] != parsing.shape[:2]:
+        return None
+
+    sy, sx = np.nonzero(skin)
+    sw = float(max(1, sx.max() - sx.min()))
+    ox = float((sx.min() + sx.max()) / 2.0)
+    oy = float(sy.min())
+
+    up, side = frame.up, frame.side
+    face_idx = masks.get("face")
+    ref = (vertices[np.asarray(face_idx, dtype=np.int64)]
+           if face_idx is not None and len(face_idx) else vertices)
+    across = ref[:, side]
+    along = ref[:, up] * frame.up_sign
+    width = max(float(across.max() - across.min()), 1e-9)
+    mx = float((across.max() + across.min()) / 2.0)
+    my = float(along.max())
+
+    px = ox + (shell[:, side] - mx) / width * sw
+    py = oy - (shell[:, up] * frame.up_sign - my) / width * sw
+    h, w = parsing.shape[:2]
+    xi = np.clip(px, 0, w - 1).astype(np.int64)
+    yi = np.clip(py, 0, h - 1).astype(np.int64)
+    inside = ((px >= 0) & (px < w) & (py >= 0) & (py < h)
+              & hair[np.clip(py, 0, h - 1).astype(np.int64),
+                     np.clip(px, 0, w - 1).astype(np.int64)])
+    if int(inside.sum()) < len(shell) // 4:
+        logger.info("Only %d of %d hair vertices land on hair in the photo - "
+                    "keeping the flat colour", int(inside.sum()), len(shell))
+        return None
+
+    # Blur INSIDE the hair only. A plain blur near the silhouette mixes in
+    # whatever is behind the head - here a pale studio backdrop - and the
+    # vertices around the rim are exactly the ones that then come back far too
+    # light. The first attempt did that and rendered black hair as a grey
+    # helmet: the tonal spread was right, 93% of the photograph's, and the
+    # level was several times too bright. So carry the mask through the blur
+    # and divide it out, which keeps every sample made of hair.
+    import cv2
+
+    sigma = max(1.5, sw / 180.0)
+    m = hair.astype(np.float64)
+    num = cv2.GaussianBlur(image[:, :, :3].astype(np.float64) * m[:, :, None],
+                           (0, 0), sigmaX=sigma)
+    den = cv2.GaussianBlur(m, (0, 0), sigmaX=sigma)
+    smooth = num / np.maximum(den, 1e-6)[:, :, None]
+
+    rgb = np.clip(smooth[yi, xi], 0.0, 255.0) / 255.0
+    linear = np.where(rgb <= 0.04045, rgb / 12.92,
+                      ((rgb + 0.055) / 1.055) ** 2.4)
+    median = np.median(linear[inside], axis=0)
+    linear[~inside] = median
+
+    # Match the level as well as the variation. The spread alone says nothing
+    # about how dark the hair is, and hair that is the right shape, the right
+    # size and the wrong brightness is still wrong - more visibly so now that
+    # the shell is large.
+    photo = image[:, :, :3][hair].astype(np.float64) / 255.0
+    photo = np.where(photo <= 0.04045, photo / 12.92,
+                     ((photo + 0.055) / 1.055) ** 2.4)
+    want = float((photo @ _LUMA).mean())
+    have = float((linear @ _LUMA).mean())
+    if have > 1e-6:
+        linear = linear * (want / have)
+
+    # glTF float COLOR_0 has to sit in 0..1, so the material carries the
+    # brightest tone and the attribute holds each vertex relative to it. That
+    # also means a renderer ignoring COLOR_0 gets a plausible flat hair colour
+    # rather than white.
+    factor = np.maximum(linear.max(axis=0), 1e-4)
+    cols = np.clip(linear / factor, 0.0, 1.0)
+    lum = linear @ _LUMA
+    logger.info("Hair colour sampled per vertex: %d of %d on hair, luminance "
+                "%.4f..%.4f mean %.4f against the photo's %.4f",
+                int(inside.sum()), len(shell), float(lum.min()),
+                float(lum.max()), float(lum.mean()), want)
+    return cols, tuple(float(c) for c in np.clip(factor, 0.0, 1.0))
 
 
 def sample_hair_colour(image: np.ndarray, parsing: np.ndarray,
