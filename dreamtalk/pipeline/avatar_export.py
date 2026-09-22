@@ -183,6 +183,11 @@ class AvatarExporter:
             # which is why the factor is set to the part's brightest tone and
             # the attribute holds each vertex relative to it, rather than the
             # other way round. Float COLOR_0 must stay within 0..1.
+            p_nrm = part.get("normals")
+            if p_nrm is not None and len(p_nrm) == len(p_pos):
+                p_attrs["NORMAL"] = add_accessor(
+                    np.ascontiguousarray(p_nrm, dtype=np.float32),
+                    "VEC3", FLOAT, ARRAY_BUF)
             p_col = part.get("colors")
             if p_col is not None and len(p_col) == len(p_pos):
                 p_attrs["COLOR_0"] = add_accessor(
