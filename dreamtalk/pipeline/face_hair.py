@@ -656,6 +656,132 @@ def sample_hair_vertex_colours(
     return cols, tuple(float(c) for c in np.clip(factor, 0.0, 1.0))
 
 
+def bake_hair_texture(
+    shell: np.ndarray, vertices: np.ndarray, masks: Dict[str, np.ndarray],
+    frame, image: np.ndarray, parsing: np.ndarray, hair_label: int,
+    size: int = 2048, shell_faces: Optional[np.ndarray] = None,
+) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    """UVs for the shell and a texture of the subject's own hair.
+
+    Per-vertex colour gave the shell the photograph's tones - its mean matched
+    to the fourth decimal - but a colour per vertex, interpolated across
+    triangles a few millimetres wide, cannot carry a curl. The hair still read
+    as a smooth mass. Curls are a few pixels across in the photograph, so they
+    have to come through a texture.
+
+    The shell is projected straight onto the photograph through the same
+    face-width mapping the profile and the colour sampling use, so wherever
+    the shell faces the camera it shows the subject's actual hair. The rest -
+    the back of the head, and the stretch of the texture that the back
+    vertices project onto, which in the photograph is the face - is filled
+    with a tile cut from the most interior patch of hair, mirrored so it has
+    no edges, and feathered into the real hair.
+
+    `image` is the square head crop at full resolution, RGB; `parsing` is the
+    parse of the same crop at any resolution. Returns (uvs (N, 2), texture
+    RGB uint8 size x size), or None when there is too little hair to cut a
+    tile from.
+    """
+    import cv2
+
+    if image is None or parsing is None:
+        return None
+    ih, iw = image.shape[:2]
+    ph, pw = parsing.shape[:2]
+    hair = cv2.resize((parsing == hair_label).astype(np.uint8), (iw, ih),
+                      interpolation=cv2.INTER_NEAREST)
+    skin = cv2.resize((parsing == _SKIN_FOR_ORIGIN).astype(np.uint8), (iw, ih),
+                      interpolation=cv2.INTER_NEAREST)
+    if hair.sum() < 2000 or skin.sum() < 2000:
+        return None
+
+    sy, sx = np.nonzero(skin)
+    sw = float(max(1, sx.max() - sx.min()))
+    ox = float((sx.min() + sx.max()) / 2.0)
+    oy = float(sy.min())
+
+    up, side = frame.up, frame.side
+    face_idx = masks.get("face")
+    ref = (vertices[np.asarray(face_idx, dtype=np.int64)]
+           if face_idx is not None and len(face_idx) else vertices)
+    across = ref[:, side]
+    along = ref[:, up] * frame.up_sign
+    width = max(float(across.max() - across.min()), 1e-9)
+    mx = float((across.max() + across.min()) / 2.0)
+    my = float(along.max())
+    px = ox + (shell[:, side] - mx) / width * sw
+    py = oy - (shell[:, up] * frame.up_sign - my) / width * sw
+
+    # Unfold the sides. A straight projection squeezes every vertex that turns
+    # away from the camera into a thin band at the edge of the hair, so seen
+    # from the side the texture stretched along the head into horizontal
+    # streaks. Push each vertex outward in the texture in proportion to how
+    # far it faces away - by nothing where it looks at the camera, so the
+    # front stays registered to the photograph, and by about a head's radius
+    # at the silhouette, which restores roughly its true spacing there. The
+    # pushed coordinates land outside the hair in the photograph, where the
+    # texture is the tile.
+    if shell_faces is not None and len(shell_faces):
+        n = _vertex_normals(np.asarray(shell, dtype=np.float64),
+                            np.asarray(shell_faces, dtype=np.int64))
+        # Clamped below -0.4: the far back is all tile anyway, and pushing it
+        # the full two radii would triple the texture's footprint and cut the
+        # resolution of the real hair to a third.
+        facing = np.clip(n[:, frame.fwd] * frame.fwd_sign, -0.4, 1.0)
+        planar = np.column_stack([n[:, side], -n[:, up] * frame.up_sign])
+        length = np.linalg.norm(planar, axis=1, keepdims=True)
+        planar = np.where(length > 1e-6, planar / np.maximum(length, 1e-6), 0.0)
+        radius = 0.5 * max(float(np.ptp(px)), float(np.ptp(py)))
+        push = radius * (1.0 - facing)
+        px = px + planar[:, 0] * push
+        py = py + planar[:, 1] * push
+
+    hy, hx = np.nonzero(hair)
+    x0 = int(np.floor(min(px.min(), hx.min()))) - 8
+    y0 = int(np.floor(min(py.min(), hy.min()))) - 8
+    x1 = int(np.ceil(max(px.max(), hx.max()))) + 8
+    y1 = int(np.ceil(max(py.max(), hy.max()))) + 8
+    side_len = max(x1 - x0, y1 - y0)
+    x1, y1 = x0 + side_len, y0 + side_len
+
+    # The crop, padded with edge pixels where the region runs past the photo.
+    pad = max(0, -x0, -y0, x1 - iw, y1 - ih)
+    big = cv2.copyMakeBorder(image, pad, pad, pad, pad, cv2.BORDER_REFLECT)
+    bigm = cv2.copyMakeBorder(hair, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=0)
+    crop = big[y0 + pad:y1 + pad, x0 + pad:x1 + pad]
+    mask = bigm[y0 + pad:y1 + pad, x0 + pad:x1 + pad]
+    crop = cv2.resize(crop, (size, size), interpolation=cv2.INTER_AREA)
+    mask = cv2.resize(mask, (size, size), interpolation=cv2.INTER_NEAREST)
+    # The parser's hair boundary runs through the curls' gaps, where the
+    # backdrop shows; pull it in so no backdrop reaches the texture.
+    mask = cv2.erode(mask, np.ones((7, 7), np.uint8))
+    if mask.sum() < 500:
+        return None
+
+    # The tile: the largest square wholly inside the hair.
+    dist = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    cy, cx = np.unravel_index(int(np.argmax(dist)), dist.shape)
+    half = int(max(16, min(dist[cy, cx] * 0.7, size // 6)))
+    tile = crop[max(0, cy - half):cy + half, max(0, cx - half):cx + half]
+    row = np.concatenate([tile, tile[:, ::-1]], axis=1)
+    block = np.concatenate([row, row[::-1]], axis=0)
+    reps = (size // block.shape[0] + 2, size // block.shape[1] + 2, 1)
+    tiled = np.tile(block, reps)[:size, :size]
+
+    soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), sigmaX=size / 180.0)
+    soft = np.clip(soft, 0.0, 1.0)[..., None]
+    texture = (soft * crop.astype(np.float32)
+               + (1.0 - soft) * tiled.astype(np.float32)).clip(0, 255).astype(np.uint8)
+
+    uvs = np.column_stack([(px - x0) / side_len, (py - y0) / side_len]).astype(np.float32)
+    on_hair = mask[np.clip((uvs[:, 1] * (size - 1)).astype(int), 0, size - 1),
+                   np.clip((uvs[:, 0] * (size - 1)).astype(int), 0, size - 1)] > 0
+    logger.info("Hair texture baked: %dx%d from a %d px region of the photo, "
+                "%d of %d shell vertices on real hair, tile %d px",
+                size, size, side_len, int(on_hair.sum()), len(shell), 2 * half)
+    return uvs, texture
+
+
 def sample_hair_colour(image: np.ndarray, parsing: np.ndarray,
                        hair_label: int) -> Tuple[float, float, float]:
     """Median hair colour from the photo, as linear 0..1 RGB.

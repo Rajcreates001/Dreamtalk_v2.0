@@ -210,6 +210,7 @@ class AvatarExporter:
         # + node so it can carry its own material and morph targets — FLAME has
         # no mouth interior, so without these an open viseme shows a void.
         extra_materials: list = []
+        extra_textures: list = []          # (material slot, image bytes, mime)
         for part in (extra_parts or []):
             p_pos = np.ascontiguousarray(part["vertices"], dtype=np.float32)
             p_idx = np.ascontiguousarray(part["faces"], dtype=np.uint32).reshape(-1)
@@ -225,6 +226,16 @@ class AvatarExporter:
                 p_attrs["NORMAL"] = add_accessor(
                     np.ascontiguousarray(p_nrm, dtype=np.float32),
                     "VEC3", FLOAT, ARRAY_BUF)
+            # A part may bring its own texture - the hair does, read off the
+            # photograph - with a UV per vertex. Its image is appended after
+            # the head's so the head texture stays index 0.
+            p_uv = part.get("uvs")
+            p_tex = part.get("texture")
+            if p_tex and p_uv is not None and len(p_uv) == len(p_pos):
+                p_attrs["TEXCOORD_0"] = add_accessor(
+                    np.ascontiguousarray(p_uv, dtype=np.float32), "VEC2", FLOAT, ARRAY_BUF)
+                extra_textures.append((len(extra_materials), bytes(p_tex),
+                                       part.get("texture_mime", "image/jpeg")))
             p_col = part.get("colors")
             if p_col is not None and len(p_col) == len(p_pos):
                 p_attrs["COLOR_0"] = add_accessor(
@@ -282,6 +293,18 @@ class AvatarExporter:
                 },
             }]
             primitive["material"] = 0
+
+        for slot, img, mime in extra_textures:
+            gltf.setdefault("images", [])
+            gltf.setdefault("textures", [])
+            if not gltf.get("samplers"):
+                gltf["samplers"] = [{"magFilter": 9729, "minFilter": 9987,
+                                     "wrapS": 10497, "wrapT": 10497}]
+            gltf["images"].append({"bufferView": add_view(img), "mimeType": mime})
+            gltf["textures"].append({"source": len(gltf["images"]) - 1, "sampler": 0})
+            extra_materials[slot]["pbrMetallicRoughness"]["baseColorTexture"] = {
+                "index": len(gltf["textures"]) - 1}
+            extra_materials[slot]["pbrMetallicRoughness"]["baseColorFactor"] = [1.0, 1.0, 1.0, 1.0]
 
         # Append the solid-colour materials after the textured head material so
         # their indices are stable whether or not a texture was supplied.

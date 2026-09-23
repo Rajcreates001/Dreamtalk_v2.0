@@ -995,6 +995,7 @@ class FacePipeline:
                     # square crop and its parse are what the shell is
                     # sampled from, and both are built here.
                     hair_photo, hair_parse, hair_label = None, None, None
+                    hair_photo_full = None
                     if source_image is not None:
                         try:
                             from PIL import Image as _Image
@@ -1039,6 +1040,7 @@ class FacePipeline:
                             hair_colour = sample_hair_colour(
                                 np.asarray(pil), parsing, hair_i)
                             hair_photo = np.asarray(pil)
+                            hair_photo_full = np.asarray(head.convert("RGB"))
                             hair_parse = np.asarray(parsing)
                             hair_label = hair_i
                             logger.info("Hair measured from photo: %s colour=%s",
@@ -1075,6 +1077,31 @@ class FacePipeline:
                                         hair_parse, hair_label)
                                     if sampled is not None:
                                         part["colors"], part["color"] = sampled
+                                    # Then a real texture, which carries the
+                                    # curls a colour per vertex cannot. The
+                                    # vertex colours stay as the fallback.
+                                    from dreamtalk.pipeline.face_hair import (
+                                        bake_hair_texture,
+                                    )
+
+                                    baked = bake_hair_texture(
+                                        np.asarray(part["vertices"], dtype=np.float64),
+                                        vertices, masks, frame, hair_photo_full,
+                                        hair_parse, hair_label,
+                                        shell_faces=part["faces"])
+                                    if baked is not None:
+                                        import cv2 as _cv2
+
+                                        uvs, tex_rgb = baked
+                                        ok, enc = _cv2.imencode(
+                                            ".jpg", tex_rgb[:, :, ::-1],
+                                            [_cv2.IMWRITE_JPEG_QUALITY, 90])
+                                        if ok:
+                                            part["uvs"] = uvs
+                                            part["texture"] = enc.tobytes()
+                                            part["texture_mime"] = "image/jpeg"
+                                            part.pop("colors", None)
+                                            part["color"] = (1.0, 1.0, 1.0)
                                 except Exception as exc:
                                     logger.info("Per-vertex hair colour "
                                                 "unavailable (%s)", exc)
