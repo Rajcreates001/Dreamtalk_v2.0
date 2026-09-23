@@ -71,6 +71,22 @@ SILHOUETTE_COS = 0.40
 # worth the four times the vertices.
 SHELL_SUBDIVISIONS = 1
 
+# The thinnest the shell may be anywhere, as a fraction of head height (about
+# 2 mm on an adult head). Pinning the thickness to exactly zero along the rim
+# sealed the shell onto the scalp - and a surface coinciding with another is
+# drawn as whichever the depth buffer happens to prefer, pixel by pixel. Along
+# the nape that came out as dark and skin-coloured blocks alternating down the
+# neck: the tiger stripes, which survived every texture fix because they were
+# never in the texture. Hiding the hair mesh made them vanish.
+MIN_THICKNESS = 0.006
+
+# Where the hair stops at the back, relative to the ear lobes, as a fraction of
+# head height below them. FLAME's `scalp` region runs from the crown to the base
+# of the neck - a quarter of its vertices sit below the ear lobes, all of them
+# on the back of the neck - so a shell built on all of it put hair down to the
+# collar. A nape hairline sits a little below the lobes.
+NAPE_BELOW_LOBES = 0.03
+
 
 def _profile_edges() -> np.ndarray:
     return np.linspace(_PROFILE_START, _PROFILE_START + 360.0,
@@ -171,7 +187,8 @@ def _radial_profile(hx: np.ndarray, hy: np.ndarray,
 
 
 def _uniform_displacement(scalp: np.ndarray, normals: np.ndarray, frame,
-                          head_w: float, width_ratio: float) -> np.ndarray:
+                          head_w: float, width_ratio: float,
+                          head_h: float = 0.0) -> np.ndarray:
     """One outward distance along the normals - the fallback construction.
 
     What widens the visible silhouette is standing the shell OFF the skull,
@@ -188,7 +205,8 @@ def _uniform_displacement(scalp: np.ndarray, normals: np.ndarray, frame,
     # Weight by how high each vertex already sits, so the shell grows from the
     # crown and tapers to nothing at the hairline rather than detaching in a
     # ring around the head.
-    return normals * (spread * (np.clip(rel, 0.0, 1.0) ** 0.75))[:, None]
+    offset = spread * (np.clip(rel, 0.0, 1.0) ** 0.75)
+    return normals * np.maximum(offset, MIN_THICKNESS * head_h)[:, None]
 
 
 def _adjacency(count, faces):
@@ -359,6 +377,8 @@ def _cap_shell(vertices, scalp_idx, normals, faces_local, masks, frame,
     thickness = _diffuse(thickness, on_silhouette | rim,
                          _adjacency(len(scalp), faces_local))
     thickness = _clamp_gradient(thickness, scalp, _edges(faces_local))
+    head_h = float(np.ptp(vertices[:, up]))
+    thickness = np.maximum(thickness, MIN_THICKNESS * head_h)
 
     # A last guard against a segmentation that mistook a dark background for
     # hair. MAX_HAIR_RADIUS already bounds the profile, so this bounds the
@@ -386,6 +406,22 @@ def _cap_shell(vertices, scalp_idx, normals, faces_local, masks, frame,
     return shell, shell_faces
 
 
+def _above_nape(vertices, scalp_idx, masks, frame):
+    """The scalp vertices above a nape hairline just below the ear lobes."""
+    ears = [np.asarray(masks[k], dtype=np.int64)
+            for k in ("left_ear", "right_ear")
+            if masks.get(k) is not None and len(masks[k])]
+    if not ears:
+        return scalp_idx
+    signed = vertices[:, frame.up] * frame.up_sign
+    lobe = float(min(signed[e].min() for e in ears))
+    cut = lobe - NAPE_BELOW_LOBES * float(np.ptp(signed))
+    keep = scalp_idx[signed[scalp_idx] >= cut]
+    logger.info("Hair stops at the nape: %d of %d scalp vertices kept",
+                len(keep), len(scalp_idx))
+    return keep
+
+
 def build_hair(
     vertices: np.ndarray,
     faces: np.ndarray,
@@ -404,6 +440,10 @@ def build_hair(
         logger.info("No scalp region in the FLAME masks — skipping hair")
         return None
     scalp_idx = np.asarray(scalp_idx, dtype=np.int64)
+    scalp_idx = _above_nape(vertices, scalp_idx, masks, frame)
+    if len(scalp_idx) == 0:
+        logger.info("No scalp above the nape — skipping hair")
+        return None
 
     # Two constructions. The cap, used when the photo segmentation yielded a
     # per-direction profile, solves for how THICK the hair is over each part
@@ -459,7 +499,7 @@ def build_hair(
         how = "cap from %d directions" % HAIR_PROFILE_BINS
     else:
         displacement = _uniform_displacement(scalp, n, frame, head_w,
-                                             width_ratio)
+                                             width_ratio, head_h)
         signed = scalp[:, up] * frame.up_sign
         top = float(signed.max())
         rise = float((signed + displacement[:, up] * frame.up_sign).max()) - top

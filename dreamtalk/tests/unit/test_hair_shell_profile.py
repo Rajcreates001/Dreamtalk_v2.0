@@ -247,6 +247,38 @@ class ShellIsShapedLikeHair(unittest.TestCase):
         self.assertLess(float(radius.max()), 0.56,
                         "the rim has lifted off the skull")
 
+    def test_the_shell_never_coincides_with_the_scalp(self):
+        """A surface lying on another is drawn as whichever the depth buffer
+        prefers, pixel by pixel. Sealing the rim at zero thickness did exactly
+        that along the nape and it rendered as dark and skin-coloured blocks
+        down the neck - stripes no texture fix could touch."""
+        verts, faces, masks = _head()
+        part = build_hair(verts, faces, masks, _Frame(),
+                          metrics={"profile": [0.80] * HAIR_PROFILE_BINS}
+                          )["parts"][0]
+        sv = np.asarray(part["vertices"], np.float64)
+        # On the sphere the scalp is at radius 0.5; every shell vertex must
+        # stand clear of it.
+        clearance = np.linalg.norm(sv, axis=1) - 0.5
+        self.assertGreater(float(clearance.min()), 0.002,
+                           "shell touches the scalp: min clearance %.4f"
+                           % clearance.min())
+
+    def test_the_hair_stops_at_the_nape(self):
+        """FLAME's scalp runs down to the base of the neck. Hair does not."""
+        verts, faces, masks = _head()
+        y = verts[:, 1]
+        masks = dict(masks,
+                     scalp=np.nonzero(y > -0.35)[0],
+                     left_ear=np.nonzero((np.abs(y) < 0.05) & (verts[:, 0] > 0.45))[0],
+                     right_ear=np.nonzero((np.abs(y) < 0.05) & (verts[:, 0] < -0.45))[0])
+        part = build_hair(verts, faces, masks, _Frame(),
+                          metrics={"width_ratio": 1.35})["parts"][0]
+        lobe = min(y[masks["left_ear"]].min(), y[masks["right_ear"]].min())
+        sv = np.asarray(part["vertices"], np.float64)
+        self.assertGreater(float(sv[:, 1].min()), lobe - 0.1,
+                           "hair runs %.3f below the ear lobes" % (lobe - sv[:, 1].min()))
+
     def test_the_shell_carries_normals(self):
         verts, faces, masks = _head()
         part = build_hair(verts, faces, masks, _Frame(),

@@ -37,6 +37,102 @@ _STATIC_DIR = os.path.join(_PROJECT_ROOT, "avatar", "static")
 # ── FLAME Model Loader ────────────────────────────────────────────────
 
 
+# ── FLAME landmark embedding ──────────────────────────────────────────
+#
+# Where each of the 68 semantic landmarks (iBUG order, the order of
+# MP_TO_IBUG68 below) lies on FLAME: a triangle, and a barycentric position in
+# it. Derived by scripts/derive_flame_landmarks.py from FLAME's own mean shape
+# and mean albedo, rendered through a known camera and read by the same
+# MediaPipe detector the pipeline uses - no licensed file, nothing guessed.
+#
+# It replaced 68 vertex indices, labelled "from DECA", that were not
+# landmarks: their lowest point was index 2 rather than the chin at 8, their
+# most forward was 9 rather than the nose tip at 30, and the two "jaw ends"
+# sat 2 cm apart in the middle of the face. This one puts the chin at 8 and
+# the nose tip at 30, spans 27 x 8 mm across an eye, and mirrors left to right
+# within 4.4 mm (mean 2.6 mm) - the spread of MediaPipe's own detections.
+# Two jaw-contour points (12, 13) sit a few pixels past the rendered
+# silhouette and are snapped to the nearest front-facing vertex.
+FLAME_MP68_FACES = np.array([
+    7726, 7727, 3410, 3307, 8370, 8371, 8372, 8386, 8248, 8144, 8196, 8139,
+    3069, 24, 5239, 149, 1467, 8830, 7930, 225, 3779, 7915, 6592, 7326,
+    3, 8891, 3194, 6108, 5990, 471, 8800, 7342, 3534, 5936, 830, 1148,
+    5066, 2675, 6802, 6866, 6823, 9550, 6409, 3799, 9205, 8004, 4509, 9039,
+    7290, 2294, 3567, 393, 5934, 1065, 863, 944, 985, 8804, 3610, 7451,
+    2377, 8669, 5555, 8634, 5965, 8634, 5555, 8669,
+], dtype=np.int64)
+FLAME_MP68_BARY = np.array([
+    [0.174822, 0.037928, 0.787250],
+    [0.387417, 0.073264, 0.539319],
+    [0.301508, 0.037487, 0.661005],
+    [0.141862, 0.171575, 0.686563],
+    [0.632478, 0.069238, 0.298284],
+    [0.536603, 0.396736, 0.066661],
+    [0.134303, 0.782427, 0.083270],
+    [0.192744, 0.710161, 0.097095],
+    [0.068804, 0.622523, 0.308673],
+    [0.115050, 0.793297, 0.091653],
+    [0.015789, 0.622036, 0.362175],
+    [0.257599, 0.587374, 0.155027],
+    [0.000000, 1.000000, 0.000000],
+    [1.000000, 0.000000, 0.000000],
+    [0.234036, 0.086146, 0.679819],
+    [0.156859, 0.334612, 0.508529],
+    [0.364742, 0.129404, 0.505854],
+    [0.044722, 0.698949, 0.256329],
+    [0.000074, 0.486409, 0.513517],
+    [0.557218, 0.320963, 0.121819],
+    [0.489296, 0.082979, 0.427725],
+    [0.145191, 0.651472, 0.203336],
+    [0.212824, 0.219569, 0.567607],
+    [0.530390, 0.274598, 0.195012],
+    [0.251759, 0.338281, 0.409960],
+    [0.109188, 0.482375, 0.408437],
+    [0.314644, 0.582070, 0.103286],
+    [0.328200, 0.399266, 0.272534],
+    [0.301991, 0.136267, 0.561742],
+    [0.241035, 0.283786, 0.475179],
+    [0.344657, 0.385600, 0.269743],
+    [0.219911, 0.330628, 0.449461],
+    [0.275502, 0.673507, 0.050991],
+    [0.429108, 0.324915, 0.245977],
+    [0.564877, 0.355494, 0.079629],
+    [0.304167, 0.233133, 0.462700],
+    [0.079555, 0.676558, 0.243887],
+    [0.397714, 0.017620, 0.584666],
+    [0.490573, 0.366436, 0.142991],
+    [0.494953, 0.331911, 0.173136],
+    [0.813795, 0.042945, 0.143260],
+    [0.875679, 0.101609, 0.022712],
+    [0.128142, 0.341336, 0.530522],
+    [0.326406, 0.467181, 0.206412],
+    [0.498107, 0.255903, 0.245990],
+    [0.667814, 0.044375, 0.287811],
+    [0.676727, 0.198491, 0.124782],
+    [0.143006, 0.627340, 0.229655],
+    [0.334632, 0.650013, 0.015355],
+    [0.660733, 0.026087, 0.313179],
+    [0.456459, 0.010870, 0.532671],
+    [0.281155, 0.235598, 0.483247],
+    [0.587372, 0.162202, 0.250426],
+    [0.487044, 0.159292, 0.353664],
+    [0.084807, 0.864666, 0.050527],
+    [0.351814, 0.460599, 0.187587],
+    [0.193637, 0.679328, 0.127034],
+    [0.186112, 0.636424, 0.177464],
+    [0.805118, 0.128624, 0.066258],
+    [0.624962, 0.359327, 0.015712],
+    [0.157769, 0.087194, 0.755038],
+    [0.126041, 0.068376, 0.805583],
+    [0.227546, 0.589684, 0.182769],
+    [0.316880, 0.584616, 0.098505],
+    [0.061718, 0.870557, 0.067725],
+    [0.332153, 0.525662, 0.142186],
+    [0.240259, 0.543977, 0.215763],
+    [0.106894, 0.076881, 0.816225],
+], dtype=np.float64)
+
+
 class FLAMELoader:
     """Minimal FLAME model loader (numpy-only, no chumpy dependency)."""
 
@@ -58,22 +154,17 @@ class FLAMELoader:
         self.num_vertices = self.v_template.shape[0]
         self.num_faces = self.faces.shape[0]
 
-        # FLAME 2020 68-landmark vertex indices (from DECA project)
-        self.lmk_inds = np.array([
-            1630, 1976, 3658, 3850, 3973, 1632, 3485, 3769,
-            3847, 3821, 3817, 810, 1416, 1158, 838, 1649, 1645,
-            3545, 3754, 2207, 2185, 2180,
-            1275, 1237, 1259, 1273, 1229,
-            2136, 2144, 2140, 2145,
-            333, 338, 341, 350, 363,
-            3561, 3757, 2638, 2589, 2555, 2780,
-            4140, 4134, 4087, 3572, 3493, 3131,
-            4518, 4417, 4318, 4220, 4122, 4023,
-            4019, 4116, 4214, 4312, 4411, 4511,
-            4584, 4481, 4381, 4282, 4182, 4185, 4288, 4388
-        ])
-        assert self.lmk_inds.max() < self.num_vertices, \
-            f"Landmark index {self.lmk_inds.max()} >= {self.num_vertices}"
+        # Where the 68 semantic landmarks sit on the mesh, as a triangle and a
+        # barycentric position inside it (see FLAME_MP68_FACES). This replaced
+        # a list of 68 vertex indices labelled "from DECA" that were not
+        # landmarks at all. The nearest vertex of each is kept as lmk_inds for
+        # callers that need an index.
+        self.lmk_faces = FLAME_MP68_FACES
+        self.lmk_bary = FLAME_MP68_BARY
+        corners = self.faces[self.lmk_faces]                      # (68, 3)
+        self.lmk_inds = corners[np.arange(68), np.argmax(self.lmk_bary, axis=1)]
+        assert self.lmk_faces.max() < self.num_faces, \
+            f"Landmark face {self.lmk_faces.max()} >= {self.num_faces}"
 
     def generate_mesh(
         self,
@@ -97,7 +188,19 @@ class FLAMELoader:
         return v
 
     def get_landmarks(self, vertices: np.ndarray) -> np.ndarray:
-        return vertices[self.lmk_inds]
+        """The 68 landmarks on a mesh of this topology, in iBUG order."""
+        corners = vertices[self.faces[self.lmk_faces]]            # (68, 3, 3)
+        return (corners * self.lmk_bary[:, :, None]).sum(axis=1)
+
+    def landmark_basis(self) -> np.ndarray:
+        """The identity basis evaluated at the landmarks: (68, 3, 300)."""
+        corners = self.identity_basis[self.faces[self.lmk_faces]]  # (68,3,3,300)
+        return (corners * self.lmk_bary[:, :, None, None]).sum(axis=1)
+
+    def landmark_values(self, per_vertex: np.ndarray) -> np.ndarray:
+        """Interpolate any per-vertex quantity (UVs, colours) at the landmarks."""
+        corners = per_vertex[self.faces[self.lmk_faces]]
+        return (corners * self.lmk_bary.reshape(68, 3, *([1] * (corners.ndim - 2)))).sum(axis=1)
 
 
 # ── Landmark Detection ────────────────────────────────────────────────
@@ -163,6 +266,48 @@ def detect_landmarks(image_path: str) -> Tuple[Optional[np.ndarray], Optional[in
     except Exception as e:
         logger.warning("MediaPipe landmark detection failed: %s", e)
         return None, None
+
+
+# ── Semantic MediaPipe -> iBUG-68 correspondence ─────────────────────
+#
+# MediaPipe's 478-point topology is fixed, so which of its points is "the outer
+# corner of the right eye" is a fact about the model, not something to infer
+# per photograph. derive_mp68_mapping (below) inferred it anyway - by
+# projecting the mean FLAME face through a guessed camera and taking whichever
+# MediaPipe point was nearest - and on a real portrait that agreed with this
+# table on 0 of 68 points: its "right eye" spread 433 x 220 px and sat 127 px
+# from the iris, where these six sit 5 px from it. Every identity fit and every
+# texture projection was built on those pairs, which is what put the fitted
+# eyes a full eye-height below the real ones.
+#
+# Each left point is the mirror of its right counterpart in MediaPipe's own
+# symmetric topology (127/356, 234/454, 93/323, 132/361, 58/288, 172/397,
+# 136/365, 150/379; brows 70/300 ...; eyes 33/263 ...; lips 61/291 ...). The
+# first draft of this table had the left jaw shifted by one point, which a
+# mirror check on the derived FLAME embedding caught at 38 mm of asymmetry.
+MP_TO_IBUG68 = np.array([
+    127, 234, 93, 132, 58, 172, 136, 150, 152, 379, 365, 397, 288, 361, 323, 454, 356,
+    70, 63, 105, 66, 107,
+    336, 296, 334, 293, 300,
+    168, 197, 5, 4,
+    75, 97, 2, 326, 305,
+    33, 160, 158, 133, 153, 144,
+    362, 385, 387, 263, 373, 380,
+    61, 39, 37, 0, 267, 269, 291, 405, 314, 17, 84, 181,
+    78, 82, 13, 312, 308, 317, 14, 87,
+], dtype=np.int64)
+
+
+def semantic_mp68_mapping(landmarks_2d: np.ndarray):
+    """The fixed correspondence, when MediaPipe returned its full topology.
+
+    Returns (indices, distances) in the shape derive_mp68_mapping returns, so
+    callers can use either; distances are zero because nothing was matched by
+    proximity. None when there are too few points to index into.
+    """
+    if landmarks_2d is None or len(landmarks_2d) < 468:
+        return None
+    return MP_TO_IBUG68.copy(), np.zeros(68)
 
 
 # ── Model-Derived Landmark Correspondence ───────────────────────────
@@ -263,9 +408,13 @@ def derive_mp68_mapping(
 # ── Confidence-Weighted Reprojection ─────────────────────────────────
 
 _LANDMARK_REGION_WEIGHTS = np.array([
-    # Jaw (0-16) — prone to occlusion by hair/neck
-    0.50, 0.50, 0.55, 0.55, 0.55, 0.55, 0.50, 0.50,
-    0.45, 0.45, 0.50, 0.60, 0.65, 0.65, 0.60, 0.55, 0.55,
+    # Jaw (0-16) — MediaPipe traces the jaw along the visible outline, which
+    # on a bearded face is the beard, not the bone. With the correspondence
+    # fixed, letting those 17 points weigh half as much as an eye corner
+    # widened the whole fitted face; at 0.3x the old values the median miss on
+    # the 51 inner landmarks fell from 8.2 px to 4.6.
+    0.15, 0.15, 0.165, 0.165, 0.165, 0.165, 0.15, 0.15,
+    0.135, 0.135, 0.15, 0.18, 0.195, 0.195, 0.18, 0.165, 0.165,
     # Left eyebrow (17-21) — can be obscured by hair/lighting
     0.65, 0.70, 0.70, 0.65, 0.60,
     # Right eyebrow (22-26)
@@ -390,6 +539,7 @@ def fit_identity_from_landmarks(
     n_components: int = 30,
     reg_strength: float = 5.0,
     n_iters: int = 30,
+    unseen_reg: Optional[float] = None,
 ) -> np.ndarray:
     """Fit FLAME identity coefficients with joint camera optimization.
 
@@ -426,8 +576,9 @@ def fit_identity_from_landmarks(
 
     # Step 1: Derive landmark correspondence from mesh geometry
     mean_verts = flame.generate_mesh()
-    mp_indices, mapping_distances = derive_mp68_mapping(
-        flame, mean_verts, landmarks_2d, image_width
+    mp_indices, mapping_distances = (
+        semantic_mp68_mapping(landmarks_2d)
+        or derive_mp68_mapping(flame, mean_verts, landmarks_2d, image_width)
     )  # (68,), (68,)
 
     # Also get the valid FLAME landmark indices (all 68 from the model)
@@ -473,7 +624,7 @@ def fit_identity_from_landmarks(
     angle_init = 0.0
 
     # ── Build landmark basis for identity deformation ──
-    lmk_basis = flame.identity_basis[flame_idx_subset]  # (N, 3, 300)
+    lmk_basis = flame.landmark_basis()[valid_mask]  # (N, 3, 300)
     # Each landmark gives 3 rows (x, y, z offset), but we only use x, y
     # in the objective (z doesn't affect weak perspective projection)
     lmk_basis_xy = lmk_basis[:, :2, :n_components]  # (N, 2, n_components)
@@ -483,6 +634,20 @@ def fit_identity_from_landmarks(
     basis_std = np.std(lmk_basis_flat, axis=0)
     basis_std = np.where(basis_std > 1e-8, basis_std, 1.0)
     lmk_basis_norm = lmk_basis_flat / basis_std  # (N*2, n_components)
+
+    # What a frontal photograph cannot see, it cannot fit - but FLAME's identity
+    # components are global, so the coefficients bought to match the face also
+    # move the neck. Unconstrained, that went both ways: with the old scrambled
+    # landmarks the neck came out 20 mm long against the mean's 80, and with the
+    # correct ones it came out 141 mm - a small face on a stretched throat. So
+    # penalise how far the unseen vertices move, in pixels at the fitted scale,
+    # the same units the landmark error is in.
+    if unseen_reg is None:
+        unseen_reg = UNSEEN_REGULARISATION
+    unseen_basis = None
+    if unseen_reg > 0 and UNSEEN_VERTICES is not None:
+        ub = flame.identity_basis[UNSEEN_VERTICES][:, :, :n_components]
+        unseen_basis = ub.reshape(-1, n_components) / basis_std   # (U*3, n)
 
     # ── Joint objective: camera(4) + identity(n_components) ──
     def objective(params):
@@ -525,6 +690,9 @@ def fit_identity_from_landmarks(
         # landmark influence is amplified; penalising the raw normalised value
         # left those effectively unconstrained.
         reg = reg_strength * np.sum((coeffs / basis_std) ** 2) / max(1, n_components)
+        if unseen_basis is not None:
+            moved = np.exp(log_scale) * (unseen_basis @ coeffs)
+            reg += unseen_reg * np.mean(moved ** 2) * 3.0
 
         # Mild regularization on camera to prevent extreme values
         cam_reg = 0.01 * (log_scale ** 2 + angle ** 2 + tx ** 2 + ty ** 2) / (image_width ** 2)
@@ -762,6 +930,144 @@ def project_vertices_to_photo(
     return points_2d.reshape(-1, 2).astype(np.float32)
 
 
+# Weight of the prior that keeps unseen anatomy near the mean shape. Swept on
+# the reference portrait, where the mean neck is 80 mm:
+#
+#     weight    neck    head height   brow-chin/eyes   inner-landmark miss
+#       0       145 mm     387 mm         1.53              4.6 px
+#       0.1      98        329            1.48              -
+#       0.5      90        325            1.49              3.4
+#       2.0      85        325            1.53              3.0
+#
+# (photograph: brow-chin/eyes 1.50). 0.5 brings the neck within ~12% of the
+# mean while the face's own proportions stay on the photograph's.
+UNSEEN_REGULARISATION = 0.5
+
+
+def _load_unseen_vertices() -> Optional[np.ndarray]:
+    """The neck and the ring along its base: never in a portrait's view."""
+    try:
+        path = os.path.join(os.path.dirname(_DEFAULT_MODEL_PATH), "FLAME_masks.pkl")
+        with open(path, "rb") as f:
+            masks = pickle.load(f, encoding="latin1")
+        idx = np.unique(np.concatenate([np.asarray(masks["neck"], np.int64),
+                                        np.asarray(masks["boundary"], np.int64)]))
+        return idx[:: max(1, len(idx) // 400)]
+    except Exception as exc:
+        logger.info("FLAME masks unavailable (%s); no prior on unseen anatomy", exc)
+        return None
+
+
+UNSEEN_VERTICES = _load_unseen_vertices()
+
+# Landmarks the texture camera is solved from: everything but the jaw.
+POSE_LANDMARKS = np.arange(17, 68)
+
+# Parser classes that belong to the subject's head (CelebAMask-HQ order). The
+# texture must not sample background, clothing, a hat or jewellery onto the
+# head: with no mask at all, the ears came out white where they sampled the
+# studio backdrop and the throat carried the shirt collar.
+_HEAD_PARSE_CLASSES = (1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 17)
+
+
+def head_parse_mask(photo_bgr: np.ndarray):
+    """Pixels of the photograph that are the subject's head, and their skin tone.
+
+    Returns (mask, skin_rgb). The skin tone is the median of the parser's SKIN
+    class, for filling what the camera never saw. It used to be the median of
+    every covered texel, which once the scalp was allowed to sample hair came
+    out as a muddy brown - a colour no part of the subject actually is.
+
+    (None, None) if the parser is unavailable, which leaves sampling exactly
+    as it was rather than failing the texture.
+    """
+    try:
+        import cv2
+        from PIL import Image
+
+        from dreamtalk.face.core.lipsync.musetalk.utils.face_parsing.model import (
+            FaceParsing,
+        )
+
+        parsed = np.asarray(FaceParsing()(
+            Image.fromarray(cv2.cvtColor(photo_bgr, cv2.COLOR_BGR2RGB)), mode="all"))
+        h, w = photo_bgr.shape[:2]
+        if parsed.shape[:2] != (h, w):
+            parsed = cv2.resize(parsed, (w, h), interpolation=cv2.INTER_NEAREST)
+        mask = np.isin(parsed, _HEAD_PARSE_CLASSES).astype(np.uint8)
+        skin = parsed == 1
+        # Keep only the part of the mask joined to the face. The parser is
+        # wrong in small places far from the head - on the reference portrait
+        # it labelled 8% of the TIE as eyeglasses, an allowed class, and the
+        # knot came out on the throat in navy. Anything the collar separates
+        # from the skin is not the head, whatever it was labelled.
+        count, comp = cv2.connectedComponents(mask)
+        if count > 2 and skin.any():
+            overlap = np.bincount(comp[skin], minlength=count)
+            overlap[0] = 0
+            mask = (comp == int(np.argmax(overlap))).astype(np.uint8)
+        skin_rgb = (np.median(photo_bgr[skin], axis=0)[::-1].astype(np.float32)
+                    if int(skin.sum()) > 500 else None)
+        # A thin erosion keeps a vertex on the silhouette from straddling the
+        # backdrop by a pixel.
+        return cv2.erode(mask, np.ones((5, 5), np.uint8)), skin_rgb
+    except Exception as exc:
+        logger.info("Head parse mask unavailable (%s); sampling unmasked", exc)
+        return None, None
+
+
+def vertex_occlusion(vertices_3d: np.ndarray, faces: np.ndarray,
+                     pixels_2d: np.ndarray, rvec: np.ndarray, tvec: np.ndarray,
+                     image_size: Tuple[int, int], tolerance: float = 0.004,
+                     downscale: int = 2) -> np.ndarray:
+    """Which vertices the camera actually saw, not merely faced.
+
+    Facing the camera is not the same as being seen. The underside of the jaw
+    and the front of the neck face the lens and sit behind the chin; the
+    visibility test used to be the normal alone, so those surfaces sampled the
+    beard and collar in front of them, and because a triangle is written only
+    when all three of its corners pass, the boundary came out in whole-triangle
+    blocks - the tiger stripes down the neck.
+
+    Rasterises the mesh's camera-space depth into a buffer at the photo's
+    resolution (halved - a vertex is a few pixels across), and keeps a vertex
+    only if nothing nearer covers its pixel.
+    """
+    import cv2
+
+    h, w = image_size[1] // downscale, image_size[0] // downscale
+    R, _ = cv2.Rodrigues(np.asarray(rvec, dtype=np.float64))
+    cam = vertices_3d @ R.T + np.asarray(tvec, dtype=np.float64).reshape(1, 3)
+    z = cam[:, 2]
+    px = pixels_2d / float(downscale)
+    depth = np.full((h, w), np.inf)
+    for a, b, c in faces:
+        tri = px[[a, b, c]]
+        lo = np.floor(tri.min(0)).astype(int)
+        hi = np.ceil(tri.max(0)).astype(int)
+        x0, y0 = max(lo[0], 0), max(lo[1], 0)
+        x1, y1 = min(hi[0], w - 1), min(hi[1], h - 1)
+        if x0 > x1 or y0 > y1:
+            continue
+        (xa, ya), (xb, yb), (xc, yc) = tri
+        den = (yb - yc) * (xa - xc) + (xc - xb) * (ya - yc)
+        if abs(den) < 1e-9:
+            continue
+        gx, gy = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        l1 = ((yb - yc) * (gx - xc) + (xc - xb) * (gy - yc)) / den
+        l2 = ((yc - ya) * (gx - xc) + (xa - xc) * (gy - yc)) / den
+        l3 = 1.0 - l1 - l2
+        ins = (l1 >= 0) & (l2 >= 0) & (l3 >= 0)
+        if not ins.any():
+            continue
+        zz = l1 * z[a] + l2 * z[b] + l3 * z[c]
+        cur = depth[gy[ins], gx[ins]]
+        depth[gy[ins], gx[ins]] = np.minimum(cur, zz[ins])
+    xi = np.clip(np.round(px[:, 0]).astype(int), 0, w - 1)
+    yi = np.clip(np.round(px[:, 1]).astype(int), 0, h - 1)
+    return z <= depth[yi, xi] + tolerance
+
+
 def sample_colors_from_photo(
     photo_img: np.ndarray,
     pixels_2d: np.ndarray,
@@ -812,6 +1118,8 @@ def generate_uv_texture(
     vertex_px: Optional[np.ndarray] = None,
     head_mask: Optional[np.ndarray] = None,
     vertex_visible: Optional[np.ndarray] = None,
+    fill_rgb: Optional[np.ndarray] = None,
+    vertex_confidence: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Generate a UV texture atlas from per-vertex colors.
 
@@ -872,6 +1180,21 @@ def generate_uv_texture(
         logger.info("Texture sampling: %.1f%% of vertices projected onto the subject",
                     100.0 * float(inside.mean()))
 
+    # How much to trust the photograph at each vertex, 0..1, rather than a
+    # yes/no. A triangle used to be written only when all three corners
+    # passed, so wherever visibility changed - the silhouette, the back of the
+    # neck, the edge of the jaw - the atlas flipped between photograph and fill
+    # colour in whole-triangle blocks: the tiger stripes down the neck. With a
+    # confidence per vertex, interpolated per texel, the photograph fades into
+    # the fill instead of switching, and grazing-angle samples - stretched and
+    # usually shadow - count for little.
+    vertex_conf = None
+    if vertex_valid is not None:
+        vertex_conf = vertex_valid.astype(np.float32)
+        if vertex_confidence is not None:
+            vertex_conf = vertex_conf * np.clip(
+                np.asarray(vertex_confidence, dtype=np.float32), 0.0, 1.0)
+
     # Render each face as a UV triangle
     # Use the UV coordinates from vt indexed by ft, not vertex_uv, for
     # the triangle rasterization, then sample colors via vertex_uv
@@ -879,7 +1202,7 @@ def generate_uv_texture(
         v_idx = faces[fi]  # (3,) vertex indices
         uv_idx = ft[fi]     # (3,) UV coordinate indices into vt
 
-        if vertex_valid is not None and not vertex_valid[v_idx].all():
+        if vertex_conf is not None and not vertex_conf[v_idx].any():
             continue
 
         # UV triangle in pixel space
@@ -949,12 +1272,30 @@ def generate_uv_texture(
             uvpos = (a[..., None] * tri_px[0]
                      + b[..., None] * tri_px[1]
                      + g[..., None] * tri_px[2])               # (H,W,2)
-            sel = uvpos[inside]
+            if vertex_conf is not None:
+                cv = vertex_conf[v_idx]
+                conf = a * cv[0] + b * cv[1] + g * cv[2]
+            else:
+                conf = np.ones_like(a)
+            if head_mask is not None:
+                # Per texel, not per vertex: a triangle whose corners all sit
+                # on the neck can still span the knot of a tie in between.
+                mh, mw = head_mask.shape[:2]
+                mx = np.clip(uvpos[..., 0].astype(np.int32), 0, mw - 1)
+                my = np.clip(uvpos[..., 1].astype(np.int32), 0, mh - 1)
+                conf = conf * (head_mask[my, mx] > 0)
+            use = inside & (conf > 1e-3)
+            sel = uvpos[use]
             if sel.size:
                 cols = sample_colors_from_photo(photo_img, sel)  # (M,3) RGB
+                wsel = conf[use]
                 for c in range(3):
                     tex_slice = texture[min_y:max_y + 1, min_x:max_x + 1, c]
-                    tex_slice[inside] += cols[:, c]
+                    tex_slice[use] += cols[:, c] * wsel
+                w_slice = weight[min_y:max_y + 1, min_x:max_x + 1]
+                w_slice[use] += wsel
+                weight[min_y:max_y + 1, min_x:max_x + 1] = w_slice
+            continue
         else:
             # Sample colors via barycentric interpolation of vertex colours
             for c in range(3):
@@ -972,6 +1313,13 @@ def generate_uv_texture(
     mask = weight > 0
     for c in range(3):
         texture[..., c] = np.divide(texture[..., c], weight, where=mask)
+    # How much of each texel is photograph; the rest is filled below. The
+    # weight is a sum of confidences, 1 wherever a single well-seen triangle
+    # covers the texel.
+    confidence = np.clip(weight, 0.0, 1.0)
+    photo_part = np.clip(texture, 0.0, 255.0)
+    # Only confidently-seen texels seed the fill; weak ones are blended over it.
+    mask = confidence > 0.5
 
     # Report gaps
     if not np.all(mask):
@@ -997,7 +1345,9 @@ def generate_uv_texture(
     if np.any(uncovered) and np.any(mask):
         try:
             import cv2
-            skin = np.median(texture[mask], axis=0).astype(np.uint8)
+            skin = (np.asarray(fill_rgb, dtype=np.float32).clip(0, 255).astype(np.uint8)
+                    if fill_rgb is not None
+                    else np.median(texture[mask], axis=0).astype(np.uint8))
             texture[uncovered] = skin
             # Inpaint only the boundary band: Telea smears over very large
             # voids, but across the seam it blends the real texture outward,
@@ -1020,6 +1370,13 @@ def generate_uv_texture(
                     mean_tex = None
             if mean_tex is not None:
                 texture[uncovered] = mean_tex[uncovered].astype(np.uint8)
+
+    # Fade the photograph into the fill by its confidence, so there is no
+    # boundary left to see.
+    if vertex_px is not None:
+        k = confidence[..., None]
+        texture = (k * photo_part + (1.0 - k) * texture.astype(np.float32))
+        texture = np.clip(texture, 0.0, 255.0).astype(np.uint8)
 
     # Light edge smoothing with a gentle blur
     try:
@@ -1076,12 +1433,19 @@ def export_textured_obj(
     faces: np.ndarray,
     obj_path: str,
     mtl_name: str = "generated_head.mtl",
+    face_uv: Optional[np.ndarray] = None,
 ):
     """Write Wavefront OBJ with texture coordinates (v/vt/vn format).
 
-    Every vertex gets a corresponding vt entry from the per-vertex UV map.
-    Faces are written as v/vt/vn where all three indices match (1:1 mapping).
-    Three.js OBJLoader uses these vt entries with MTL map_Kd for texturing.
+    With `face_uv` - FLAME's own per-corner UV indices (`ft`) into `texcoords`
+    (`vt`) - each face corner names its own vt, which is what a UV SEAM needs:
+    FLAME has 5118 UVs for 5023 vertices, because 95 vertices sit on a seam
+    and need a different UV on each side of it. Without `face_uv`, every
+    vertex gets exactly one UV and a triangle straddling a seam takes the
+    wrong one for some corner, so it stretches across a third of the atlas.
+    Measured on a shipped head: 136 such triangles, each spanning a median
+    35% of the atlas, running down the back of the head and neck as a
+    smeared stripe.
     """
     with open(obj_path, "w") as f:
         f.write(f"# DreamTalk FLAME 3D Face Mesh (textured)\n")
@@ -1101,11 +1465,16 @@ def export_textured_obj(
             f.write(f"vn {n[0]:.6f} {n[1]:.6f} {n[2]:.6f}\n")
 
         f.write("\n")
-        for face in faces:
-            # v/vt/vn with all three indices matching (1:1 per vertex)
-            idxs = " ".join(
-                f"{int(i)+1}/{int(i)+1}/{int(i)+1}" for i in face
-            )
+        for fi, face in enumerate(faces):
+            if face_uv is not None:
+                idxs = " ".join(
+                    f"{int(i)+1}/{int(t)+1}/{int(i)+1}"
+                    for i, t in zip(face, face_uv[fi])
+                )
+            else:
+                idxs = " ".join(
+                    f"{int(i)+1}/{int(i)+1}/{int(i)+1}" for i in face
+                )
             f.write(f"f {idxs}\n")
 
 
@@ -1201,9 +1570,14 @@ class FlameFitter:
         tex = self._load_texture()
 
         # Derive landmark correspondence from geometry
-        mp_indices, _ = derive_mp68_mapping(
-            self.flame, vertices_3d, landmarks_2d,
-            image_width or photo_bgr.shape[1],
+        mp_indices, _ = (
+            semantic_mp68_mapping(landmarks_2d)
+            or derive_mp68_mapping(
+                self.flame,
+                vertices_3d,
+                landmarks_2d,
+                image_width or photo_bgr.shape[1],
+            )
         )
         valid_mp = mp_indices < len(landmarks_2d)
         mp_idx_subset = mp_indices[valid_mp]
@@ -1212,6 +1586,15 @@ class FlameFitter:
         # FLAME 3D landmarks
         flame_landmarks_3d = self.flame.get_landmarks(vertices_3d)
         lmk_3d = flame_landmarks_3d[valid_mp]
+
+        # Solve the texture camera from the inner 51 landmarks. The jaw is
+        # traced along the visible outline - the beard, on a bearded face - and
+        # giving those points an equal vote in the pose widened the projection
+        # of the whole face. Measured on the reference portrait: median miss on
+        # the inner landmarks 8.2 px with the jaw in, 4.6 without.
+        inner = np.isin(np.nonzero(valid_mp)[0], POSE_LANDMARKS)
+        if inner.sum() >= 10:
+            lmk_2d, lmk_3d = lmk_2d[inner], lmk_3d[inner]
 
         if len(lmk_2d) < 10:
             logger.warning("Too few landmarks (%d) for texture projection", len(lmk_2d))
@@ -1240,6 +1623,7 @@ class FlameFitter:
         # colours, which is what actually puts skin detail in the atlas.
         # Which vertices faced the camera when the photo was taken.
         visible = None
+        confidence = None
         try:
             import cv2 as _cv2
 
@@ -1255,17 +1639,34 @@ class FlameFitter:
             # when its normal has a component back toward the camera.
             n_cam = vn @ R.T
             visible = n_cam[:, 2] < -0.05
+            seen = vertex_occlusion(
+                vertices_3d, faces_i, pixels_2d, rvec, tvec,
+                (photo_bgr.shape[1], photo_bgr.shape[0]))
+            logger.info("Texture visibility: %.1f%% face the camera, %.1f%% of "
+                        "those are not hidden behind nearer surfaces",
+                        100.0 * visible.mean(),
+                        100.0 * (visible & seen).sum() / max(int(visible.sum()), 1))
+            visible &= seen
+            # Facing strength: 1 looking straight at the lens, 0 at grazing.
+            # A smoothstep so the photograph fades out before the silhouette,
+            # where the samples are stretched and mostly shadow.
+            facing = np.clip((-n_cam[:, 2] - 0.10) / (0.45 - 0.10), 0.0, 1.0)
+            confidence = facing * facing * (3.0 - 2.0 * facing) * seen
         except Exception as exc:
             logger.info("Vertex visibility unavailable (%s); "
                         "texture will keep unseen-surface samples", exc)
 
+        head_mask, skin_rgb = head_parse_mask(photo_bgr)
         texture = generate_uv_texture(
             vertex_uv, vertex_colors, tex["mean"],
             self.flame.faces, tex["ft"], tex["vt"],
             output_size=output_size,
             photo_img=photo_bgr,
             vertex_px=pixels_2d,
+            head_mask=head_mask,
             vertex_visible=visible,
+            fill_rgb=skin_rgb,
+            vertex_confidence=confidence,
         )
         return texture
 
@@ -1287,16 +1688,21 @@ class FlameFitter:
 
         # Derive landmark correspondence from geometry
         # For RBF, we need UV→photo pixel mapping via the 68 landmarks
-        mp_indices, _ = derive_mp68_mapping(
-            self.flame, self.flame.generate_mesh(),
-            landmarks_2d, photo_bgr.shape[1],
+        mp_indices, _ = (
+            semantic_mp68_mapping(landmarks_2d)
+            or derive_mp68_mapping(
+                self.flame,
+                self.flame.generate_mesh(),
+                landmarks_2d,
+                photo_bgr.shape[1],
+            )
         )
         valid_mp = mp_indices < len(landmarks_2d)
         mp_idx = mp_indices[valid_mp]
         photo_lmk = landmarks_2d[mp_idx]
 
         # FLAME landmark UV coordinates
-        flame_lmk_uv = vertex_uv[self.flame.lmk_inds[valid_mp]]
+        flame_lmk_uv = self.flame.landmark_values(vertex_uv)[valid_mp]
 
         n = min(len(photo_lmk), len(flame_lmk_uv))
         if n < 10:
@@ -1437,10 +1843,13 @@ class FlameFitter:
             # Export textured OBJ + MTL + texture PNG
             import cv2 as _cv2_export
             _cv2_export.imwrite(texture_path, texture_img[:, :, ::-1])  # RGB→BGR
-            vertex_uv = self._get_vertex_uv()
+            tex = self._load_texture()
             export_textured_mtl(mtl_path, f"{base_name}_texture.png")
-            export_textured_obj(vertices_scaled, normals, vertex_uv,
-                                faces, obj_path)
+            # FLAME's own vt/ft, so the seams survive into the OBJ. The
+            # atlas above was already rasterised from vt/ft; exporting a
+            # collapsed one-UV-per-vertex map threw that away at the last step.
+            export_textured_obj(vertices_scaled, normals, tex["vt"],
+                                faces, obj_path, face_uv=tex["ft"])
             result["texture_path"] = texture_path
         else:
             # Fall back to untextured export

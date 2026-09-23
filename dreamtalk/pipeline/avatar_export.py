@@ -23,6 +23,40 @@ import numpy as np
 logger = logging.getLogger("dreamtalk.avatar_export")
 
 
+def split_uv_seams(vertices, normals, uvs, faces, face_uv, morph_targets=None):
+    """Give every distinct (vertex, UV) pair its own glTF vertex.
+
+    glTF has one UV per vertex. A mesh whose UV layout has seams - FLAME's has
+    95 seam vertices, 5118 UVs for 5023 positions - therefore has to duplicate
+    each seam vertex once per UV it carries. The duplicates share a position,
+    a normal and every morph delta, so the head still deforms as one surface;
+    only the texture lookup differs on either side of the seam.
+
+    Returns (vertices, normals, uvs, faces, morph_targets) in the split
+    numbering. Normals and morph deltas are carried by the ORIGINAL vertex
+    index, which is what keeps the duplicates from tearing apart when the
+    head blinks or speaks.
+    """
+    faces = np.asarray(faces, dtype=np.int64)
+    face_uv = np.asarray(face_uv, dtype=np.int64)
+    pairs = np.stack([faces.reshape(-1), face_uv.reshape(-1)], axis=1)
+    uniq, inverse = np.unique(pairs, axis=0, return_inverse=True)
+    inverse = np.asarray(inverse).reshape(-1)
+    src = uniq[:, 0]
+    out_v = np.asarray(vertices)[src]
+    out_n = (np.asarray(normals)[src]
+             if len(normals) == len(vertices) else np.zeros((0, 3), np.float32))
+    out_uv = np.asarray(uvs)[uniq[:, 1]]
+    out_f = inverse.reshape(-1, 3).astype(np.uint32)
+    out_m = None
+    if morph_targets:
+        out_m = {name: np.asarray(d)[src] for name, d in morph_targets.items()
+                 if np.asarray(d).shape == np.asarray(vertices).shape}
+    logger.info("UV seams split: %d vertices -> %d (%d duplicated on seams)",
+                len(vertices), len(out_v), len(out_v) - len(np.unique(src)))
+    return out_v, out_n, out_uv, out_f, out_m
+
+
 class AvatarExporter:
     """Export 3D face meshes to GLB/FBX format."""
 
@@ -55,7 +89,10 @@ class AvatarExporter:
         # Native writer first: no third-party dependency, and the only path
         # that can emit morph targets. trimesh/pygltflib remain as fallbacks.
         try:
-            vertices, normals, uvs, faces = self._parse_obj(obj_path)
+            vertices, normals, uvs, faces, face_uv = self._parse_obj_full(obj_path)
+            if face_uv is not None:
+                vertices, normals, uvs, faces, morph_targets = split_uv_seams(
+                    vertices, normals, uvs, faces, face_uv, morph_targets)
             return self._export_glb_native(
                 vertices, normals, uvs, faces,
                 texture_path, output_path, metadata, morph_targets,
@@ -425,6 +462,44 @@ class AvatarExporter:
         shutil.copy2(obj_path, output_path)
         logger.info(f"Raw OBJ copied to: {output_path}")
         return output_path
+
+    def _parse_obj_full(self, obj_path: str):
+        """Parse an OBJ keeping each face corner's own UV index.
+
+        Returns (vertices, normals, uvs, faces, face_uv). `face_uv` is None
+        when every corner's vt index equals its v index - the one-UV-per-vertex
+        layout - and an (F, 3) array otherwise, which is the case that needs
+        its seams split before glTF can carry it.
+        """
+        vertices, normals, uvs, faces, fuv = [], [], [], [], []
+        with open(obj_path, "r") as f:
+            for line in f:
+                parts = line.strip().split()
+                if not parts:
+                    continue
+                if parts[0] == "v":
+                    vertices.append([float(x) for x in parts[1:4]])
+                elif parts[0] == "vn":
+                    normals.append([float(x) for x in parts[1:4]])
+                elif parts[0] == "vt":
+                    uvs.append([float(x) for x in parts[1:3]])
+                elif parts[0] == "f":
+                    face, tface = [], []
+                    for p in parts[1:]:
+                        idx = p.split("/")
+                        face.append(int(idx[0]) - 1)
+                        tface.append(int(idx[1]) - 1 if len(idx) > 1 and idx[1]
+                                     else int(idx[0]) - 1)
+                    faces.append(face)
+                    fuv.append(tface)
+        vertices = np.array(vertices, dtype=np.float32) if vertices else np.zeros((0, 3), np.float32)
+        normals = np.array(normals, dtype=np.float32) if normals else np.zeros((0, 3), np.float32)
+        uvs = np.array(uvs, dtype=np.float32) if uvs else np.zeros((0, 2), np.float32)
+        faces = np.array(faces, dtype=np.uint32) if faces else np.zeros((0, 3), np.uint32)
+        fuv = np.array(fuv, dtype=np.uint32) if fuv else np.zeros((0, 3), np.uint32)
+        if len(uvs) == 0 or np.array_equal(fuv, faces):
+            return vertices, normals, uvs, faces, None
+        return vertices, normals, uvs, faces, fuv
 
     def _parse_obj(self, obj_path: str):
         """Parse OBJ file into numpy arrays."""

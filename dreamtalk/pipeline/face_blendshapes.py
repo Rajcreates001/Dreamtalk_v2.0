@@ -45,6 +45,13 @@ AMPLITUDE = {
     "angry": 0.018, "surprised": 0.048,
 }
 
+# Shapes built from exact geometry rather than a unit direction. Calibrating
+# them to a fixed fraction of head height throws the geometry away: the blink
+# computes precisely how far each lid has to travel to meet the lower lid, and
+# rescaling that to 0.095 x head height is what made the old one drag the brow
+# 31 mm while closing only half the eye.
+EXACT_SHAPES = {"blink"}
+
 
 class _Frame:
     """Canonical axes of the FLAME mesh, detected from the region masks."""
@@ -163,7 +170,8 @@ def build_blendshapes(
         if peak < 1e-9:
             logger.warning("blendshape %s is degenerate — skipped", name)
             return
-        delta = delta * (AMPLITUDE.get(name, 0.03) * H / peak)   # calibrate
+        if name not in EXACT_SHAPES:
+            delta = delta * (AMPLITUDE.get(name, 0.03) * H / peak)   # calibrate
         out[name] = delta.astype(np.float32)
 
     def jaw_drop(weight: float) -> np.ndarray:
@@ -202,8 +210,79 @@ def build_blendshapes(
         d[lips] += c[:, None] * F.vec(up=-1.0)
         return d
 
+    def lid_close(weight: float) -> np.ndarray:
+        """Rotate each upper lid down over its eyeball until it meets the lower.
+
+        The previous blink moved every vertex of the eye REGION straight down,
+        weighted by how high it sat - so the vertices that moved most were at
+        the top of the region, which is the brow. On a fitted head the brow
+        slid 31 mm and its hair smeared into a dark block over each eye, while
+        the eyeball stayed 43-55% uncovered: it never actually closed. This
+        was in every build and the browser triggers it every few seconds.
+
+        A lid is a flap sliding over a sphere. Take the region's vertices in
+        front of and around each eyeball, and for each horizontal slice find
+        the aperture: the lowest upper-lid vertex and the highest lower-lid
+        vertex, as angles about the eyeball centre. Rotate the upper lid about
+        the eyeball's horizontal axis by the angle between them - all of it at
+        the margin, fading to nothing a band above - and keep every moved
+        vertex just outside the eyeball so the cornea cannot poke through.
+        Measured on the same head: 100% and 96% of the eyeballs' front caps
+        covered at full blink, the brow moving 8 mm instead of 31.
+        """
+        d = np.zeros((n, 3), dtype=np.float32)
+        band = np.radians(38.0)
+        for eye_key, reg_key in (("left_eyeball", "left_eye_region"),
+                                 ("right_eyeball", "right_eye_region")):
+            ball = _idx(masks, eye_key)
+            region = np.setdiff1d(_idx(masks, reg_key), ball)
+            if len(ball) == 0 or len(region) == 0:
+                continue
+            c = v[ball].mean(axis=0)
+            radius = float(np.median(np.linalg.norm(v[ball] - c, axis=1)))
+            rel = v[region] - c
+            u = rel[:, up] * F.up_sign
+            f = rel[:, fwd] * F.fwd_sign
+            s_ = rel[:, side]
+            near = (f > -0.2 * radius) & (np.abs(s_) < 1.5 * radius) & \
+                   (np.abs(u) < 2.4 * radius)
+            if not near.any():
+                continue
+            idx = region[near]
+            u, f, s_ = u[near], f[near], s_[near]
+            ang = np.arctan2(u, f)                  # 0 = straight ahead
+            upper = ang > 0
+            rot = np.zeros(len(idx))
+            edges = np.linspace(s_.min(), s_.max(), 9)
+            for a, b in zip(edges[:-1], edges[1:]):
+                sl = (s_ >= a) & (s_ <= b)
+                hi, lo = sl & upper, sl & ~upper
+                if not hi.any() or not lo.any():
+                    continue
+                top, bottom = ang[hi].min(), ang[lo].max()
+                t = np.clip(1.0 - (ang[hi] - top) / band, 0.0, 1.0)
+                rot[hi] = max(top - bottom, 0.0) * _smooth(t)
+            ca, sa = np.cos(rot), np.sin(rot)
+            nu = u * ca - f * sa
+            nf = u * sa + f * ca
+            dist = np.sqrt(nu * nu + nf * nf + s_ * s_)
+            floor = radius * 1.02
+            push = (rot > 0) & (dist < floor)
+            k = np.where(push, floor / np.maximum(dist, 1e-9), 1.0)
+            nu, nf, ns = nu * k, nf * k, s_ * k
+            moved = np.zeros((len(idx), 3), dtype=np.float32)
+            moved[:, up] = (nu - u) * F.up_sign
+            moved[:, fwd] = (nf - f) * F.fwd_sign
+            moved[:, side] = ns - s_
+            d[idx] += moved * weight
+        return d
+
     def eyelid_close(weight: float) -> np.ndarray:
-        """Upper lids sweep down over the eye."""
+        """Lift or lower the whole upper eye region, brow included.
+
+        No longer a blink - see lid_close - but the right shape for surprise,
+        where the brows and upper lids do rise together.
+        """
         d = np.zeros((n, 3), dtype=np.float32)
         for region in (l_eye, r_eye) if len(l_eye) and len(r_eye) else (eyes,):
             if len(region) == 0:
@@ -239,7 +318,7 @@ def build_blendshapes(
         "ee": lambda: jaw_drop(0.18) + lip_spread(1.0),
         "ou": lambda: jaw_drop(0.22) + lip_round(1.0),
         "oh": lambda: jaw_drop(0.75) + lip_round(0.55),
-        "blink": lambda: eyelid_close(1.0),
+        "blink": lambda: lid_close(1.0),
         "happy": lambda: smile(1.0) + jaw_drop(0.10),
         "sad": lambda: frown(1.0) + brow(0.6, +1.0, inner=True),
         "angry": lambda: brow(1.0, -1.0, inner=False) + frown(0.3),
