@@ -811,12 +811,15 @@ def load_texture_atlas() -> dict:
     """Load FLAME texture atlas data (UV coordinates + mean texture)."""
     if not os.path.exists(_TEXTURE_ATLAS_PATH):
         raise FileNotFoundError(f"FLAME texture atlas not found: {_TEXTURE_ATLAS_PATH}")
+    # FLAME_texture.npz is 1.26 GB, almost all of it `tex_dir` - 200 albedo
+    # principal components, (512, 512, 3, 200) float64, that nothing in the
+    # project reads. Loading it cost about a minute of every avatar creation.
+    # An npz member is only read when indexed, so leaving it out is enough.
     tex = np.load(_TEXTURE_ATLAS_PATH)
     return {
         "vt": tex["vt"].astype(np.float32),     # (5118, 2)
         "ft": tex["ft"].astype(np.int32),        # (9976, 3)
         "mean": tex["mean"].astype(np.uint8),    # (512, 512, 3)
-        "tex_dir": tex["tex_dir"],               # (512, 512, 3, 200)
     }
 
 
@@ -970,6 +973,24 @@ POSE_LANDMARKS = np.arange(17, 68)
 _HEAD_PARSE_CLASSES = (1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 17)
 
 
+_PARSER = None
+
+
+def _face_parser():
+    """The BiSeNet face parser, loaded once per process.
+
+    Constructing it reads its weights from disk and moves them to the device;
+    doing that per avatar was most of the ~12 s the head mask took.
+    """
+    global _PARSER
+    if _PARSER is None:
+        from dreamtalk.face.core.lipsync.musetalk.utils.face_parsing.model import (
+            FaceParsing,
+        )
+        _PARSER = FaceParsing()
+    return _PARSER
+
+
 def head_parse_mask(photo_bgr: np.ndarray):
     """Pixels of the photograph that are the subject's head, and their skin tone.
 
@@ -985,11 +1006,7 @@ def head_parse_mask(photo_bgr: np.ndarray):
         import cv2
         from PIL import Image
 
-        from dreamtalk.face.core.lipsync.musetalk.utils.face_parsing.model import (
-            FaceParsing,
-        )
-
-        parsed = np.asarray(FaceParsing()(
+        parsed = np.asarray(_face_parser()(
             Image.fromarray(cv2.cvtColor(photo_bgr, cv2.COLOR_BGR2RGB)), mode="all"))
         h, w = photo_bgr.shape[:2]
         if parsed.shape[:2] != (h, w):
@@ -1068,6 +1085,23 @@ def vertex_occlusion(vertices_3d: np.ndarray, faces: np.ndarray,
     return z <= depth[yi, xi] + tolerance
 
 
+def _bilinear(photo_rgb: np.ndarray, pixels_2d: np.ndarray) -> np.ndarray:
+    """Bilinear lookup into an already-converted float RGB image."""
+    h, w = photo_rgb.shape[:2]
+    x = np.clip(pixels_2d[:, 0], 0.0, w - 1.0)
+    y = np.clip(pixels_2d[:, 1], 0.0, h - 1.0)
+    x0 = np.floor(x).astype(np.int32)
+    x1 = np.minimum(x0 + 1, w - 1)
+    y0 = np.floor(y).astype(np.int32)
+    y1 = np.minimum(y0 + 1, h - 1)
+    wx = (x - x0)[:, None]
+    wy = (y - y0)[:, None]
+    return np.clip((1.0 - wx) * (1.0 - wy) * photo_rgb[y0, x0]
+                   + wx * (1.0 - wy) * photo_rgb[y0, x1]
+                   + (1.0 - wx) * wy * photo_rgb[y1, x0]
+                   + wx * wy * photo_rgb[y1, x1], 0.0, 255.0)
+
+
 def sample_colors_from_photo(
     photo_img: np.ndarray,
     pixels_2d: np.ndarray,
@@ -1143,6 +1177,12 @@ def generate_uv_texture(
     """
     texture = np.zeros((output_size, output_size, 3), dtype=np.float32)
     weight = np.zeros((output_size, output_size), dtype=np.float32)
+    # Converted once. sample_colors_from_photo converts the whole photograph
+    # to float on every call, and the atlas calls it once per triangle: 5370
+    # conversions of a 1832 x 1861 image, 233 of the 244 seconds this function
+    # took on the reference portrait.
+    photo_rgb_f = (photo_img[:, :, ::-1].astype(np.float32)
+                   if photo_img is not None else None)
 
     # Which vertices actually saw the subject?
     #
@@ -1287,7 +1327,7 @@ def generate_uv_texture(
             use = inside & (conf > 1e-3)
             sel = uvpos[use]
             if sel.size:
-                cols = sample_colors_from_photo(photo_img, sel)  # (M,3) RGB
+                cols = _bilinear(photo_rgb_f, sel)  # (M,3) RGB
                 wsel = conf[use]
                 for c in range(3):
                     tex_slice = texture[min_y:max_y + 1, min_x:max_x + 1, c]
