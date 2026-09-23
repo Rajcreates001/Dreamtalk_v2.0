@@ -1025,9 +1025,12 @@ def head_parse_mask(photo_bgr: np.ndarray):
             mask = (comp == int(np.argmax(overlap))).astype(np.uint8)
         skin_rgb = (np.median(photo_bgr[skin], axis=0)[::-1].astype(np.float32)
                     if int(skin.sum()) > 500 else None)
-        # A thin erosion keeps a vertex on the silhouette from straddling the
-        # backdrop by a pixel.
-        return cv2.erode(mask, np.ones((5, 5), np.uint8)), skin_rgb
+        # Soft, not binary. The parser's edge along the collar is jagged, and a
+        # hard mask printed that edge onto the neck as a ragged boundary
+        # between photograph and fill. Eroded first so the soft falloff sits
+        # inside the head rather than reaching out over the backdrop.
+        mask = cv2.erode(mask, np.ones((13, 13), np.uint8)).astype(np.float32)
+        return cv2.GaussianBlur(mask, (0, 0), sigmaX=5.0), skin_rgb
     except Exception as exc:
         logger.info("Head parse mask unavailable (%s); sampling unmasked", exc)
         return None, None
@@ -1208,7 +1211,7 @@ def generate_uv_texture(
         if head_mask is not None:
             xi = np.clip(vertex_px[:, 0].astype(np.int32), 0, pw - 1)
             yi = np.clip(vertex_px[:, 1].astype(np.int32), 0, ph - 1)
-            inside &= head_mask[yi, xi] > 0
+            inside &= head_mask[yi, xi] > 0.5
         # The decisive test. A frontal photo shows one side of a closed
         # surface, and the far side projects back INSIDE the frame, over the
         # face - so a bounds check cannot catch it. Only the surface normal
@@ -1323,7 +1326,7 @@ def generate_uv_texture(
                 mh, mw = head_mask.shape[:2]
                 mx = np.clip(uvpos[..., 0].astype(np.int32), 0, mw - 1)
                 my = np.clip(uvpos[..., 1].astype(np.int32), 0, mh - 1)
-                conf = conf * (head_mask[my, mx] > 0)
+                conf = conf * head_mask[my, mx]
             use = inside & (conf > 1e-3)
             sel = uvpos[use]
             if sel.size:
@@ -1692,6 +1695,16 @@ class FlameFitter:
             # where the samples are stretched and mostly shadow.
             facing = np.clip((-n_cam[:, 2] - 0.10) / (0.45 - 0.10), 0.0, 1.0)
             confidence = facing * facing * (3.0 - 2.0 * facing) * seen
+            # Surfaces turned toward the floor - the underside of the jaw -
+            # sit in the deepest shadow of a portrait lit from above, and the
+            # camera only grazes them. Sampled, they printed a near-black band
+            # under the chin that read as a choker in the 3D view. Fade them
+            # out the way grazing surfaces fade, so the skin fill takes over.
+            # (Camera space is OpenCV's: +y points down.)
+            # From 0.5 rather than 0.35: starting lower also erased the beard
+            # on the front of the chin, which faces partly downward too.
+            down = np.clip((n_cam[:, 1] - 0.50) / 0.30, 0.0, 1.0)
+            confidence = confidence * (1.0 - down * down * (3.0 - 2.0 * down))
         except Exception as exc:
             logger.info("Vertex visibility unavailable (%s); "
                         "texture will keep unseen-surface samples", exc)
